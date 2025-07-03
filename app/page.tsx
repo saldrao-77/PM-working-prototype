@@ -3855,6 +3855,27 @@ export default function PMFinancialDashboard() {
                             <tr className="bg-gray-900">
                               <td colSpan={2} className="p-0">
                                 <div className="p-4">
+                                  {/* Owner Information Section */}
+                                  <div className="mb-6">
+                                    <h5 className="text-sm font-semibold text-white mb-3">Owner Information</h5>
+                                    <div className="bg-gray-800 p-3 rounded-lg">
+                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div>
+                                          <span className="text-xs text-gray-400 block">Owner Name</span>
+                                          <span className="text-white">{property.ownerName || 'Not specified'}</span>
+                                        </div>
+                                        <div>
+                                          <span className="text-xs text-gray-400 block">Email</span>
+                                          <span className="text-white">{property.ownerEmail || 'Not specified'}</span>
+                                        </div>
+                                        <div>
+                                          <span className="text-xs text-gray-400 block">Phone</span>
+                                          <span className="text-white">{property.ownerPhone || 'Not specified'}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
                                   <h5 className="text-sm font-semibold text-white mb-3">Staff at {property.name}</h5>
                                   <table className="min-w-full text-sm">
                                     <thead>
