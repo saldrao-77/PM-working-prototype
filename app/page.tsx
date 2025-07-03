@@ -497,9 +497,9 @@ export default function PMFinancialDashboard() {
   }[]>([
     {
       id: "exp1",
-      expenseId: "txn_20240115_001",
+      expenseId: "txn1",
       technicianName: "Carlos Ramirez",
-      question: "Is this expense OK? Need to buy emergency water heater repair kit ($347) for Stanford GSB unit 4B. Tenant has no hot water.",
+      question: "Is this expense OK? Need to buy emergency water heater repair kit ($150) for Stanford GSB unit 4B. Tenant has no hot water.",
       urgency: "high" as const,
       additionalDetails: "Water heater completely failed Saturday night. Tenant can't wait until Monday. Hardware store markup but only option available.",
       status: "pending" as const,
@@ -507,31 +507,31 @@ export default function PMFinancialDashboard() {
     },
     {
       id: "exp2", 
-      expenseId: "txn_20240115_002",
+      expenseId: "txn5",
       technicianName: "Miguel Torres",
-      question: "Should this be billable or not? Bought a 48-pack of Lysol wipes ($89) for Sunnyvale 432. Will use about 85% for common areas, 15% for office.",
+      question: "Should this be billable or not? Bought paper and ink supplies ($89.99) for Sunnyvale 432. Will use about 85% for property records, 15% for office.",
       urgency: "normal" as const,
-      additionalDetails: "Mostly for property cleaning but some for our maintenance office. Following the 'majority rule' you mentioned.",
+      additionalDetails: "Mostly for property management but some for our maintenance office. Following the 'majority rule' you mentioned.",
       status: "pending" as const,
       createdAt: "2024-01-15T11:45:00Z"
     },
     {
       id: "exp3",
-      expenseId: "txn_20240115_003", 
+      expenseId: "t3", 
       technicianName: "Oscar Martinez",
-      question: "Is this expense OK? Bought a new drill ($156) since mine broke at Downtown Lofts. Needed immediately for unit repairs.",
+      question: "Is this expense OK? Bought new tools ($45) since mine broke at Stanford GSB. Needed immediately for unit repairs.",
       urgency: "normal" as const,
-      additionalDetails: "Old drill motor died mid-job. Couldn't complete repairs without it. Will use for multiple properties.",
+      additionalDetails: "Old tools failed mid-job. Couldn't complete repairs without them. Will use for multiple properties.",
       status: "pending" as const,
       createdAt: "2024-01-15T14:20:00Z"
     },
     {
       id: "exp4",
-      expenseId: "txn_20240114_001",
-      technicianName: "John Smith",
-      question: "Should this be billable or not? Bought lunch for Stanford GSB staff ($124) during emergency weekend work.",
+      expenseId: "txn2",
+      technicianName: "Jessica Chen",
+      question: "Should this be billable or not? Bought paint supplies ($75.50) for Stanford GSB emergency weekend work.",
       urgency: "low" as const,
-      additionalDetails: "Weekend emergency repair, team worked 12 hours straight. Seemed appropriate but want to confirm.",
+      additionalDetails: "Weekend emergency repair, team worked long hours. Needed immediate touch-up paint for tenant move-in.",
       status: "answered" as const,
       answer: "no" as const,
       createdAt: "2024-01-14T16:00:00Z",
@@ -539,15 +539,35 @@ export default function PMFinancialDashboard() {
     },
     {
       id: "exp5",
-      expenseId: "txn_20240113_001",
+      expenseId: "t2",
       technicianName: "Sarah Johnson", 
-      question: "Is this expense OK? Bought paint ($89) for Stanford GSB unit 2A without pre-approval. Tenant move-out required immediate touch-up.",
+      question: "Is this expense OK? Bought supplies at Lowe's ($89.99) for Stanford GSB unit 2A without pre-approval. Tenant move-out required immediate supplies.",
       urgency: "normal" as const,
-      additionalDetails: "Under $100 limit but wanted to confirm since it's cosmetic work rather than repair.",
+      additionalDetails: "Under $100 limit but wanted to confirm since it's maintenance supplies rather than emergency repair.",
       status: "answered" as const,
       answer: "yes" as const,
       createdAt: "2024-01-13T10:15:00Z",
       answeredAt: "2024-01-13T10:45:00Z"
+    },
+    {
+      id: "exp6",
+      expenseId: "pending_expense_001",
+      technicianName: "Roberto Martinez",
+      question: "Should this be billable or not? Planning to buy new HVAC filter for Stanford GSB unit 3C ($125). Tenant complained about air quality.",
+      urgency: "high" as const,
+      additionalDetails: "Tenant threatening to withhold rent if air quality not improved immediately. Need to purchase today.",
+      status: "pending" as const,
+      createdAt: "2024-01-16T08:15:00Z"
+    },
+    {
+      id: "exp7",
+      expenseId: "future_expense_002",
+      technicianName: "Michael Rodriguez",
+      question: "Is this expense OK? Need to buy security camera for Stanford GSB main entrance ($299). Recent break-in attempts reported.",
+      urgency: "normal" as const,
+      additionalDetails: "Security company recommended upgrade. Will improve overall property safety and potentially reduce insurance costs.",
+      status: "pending" as const,
+      createdAt: "2024-01-16T11:30:00Z"
     }
   ]);
 
@@ -1179,7 +1199,7 @@ export default function PMFinancialDashboard() {
       : [
           { id: 'dashboard', label: 'Dashboard', icon: Folder },
           { id: 'workorders', label: 'Work Orders', icon: FileText },
-          { id: 'technicianExpenses', label: 'My Expenses', icon: CreditCard },
+          { id: 'technicianExpenses', label: 'Expenses', icon: CreditCard },
           { id: 'profile', label: 'Profile', icon: User },
         ];
 
@@ -1765,7 +1785,7 @@ export default function PMFinancialDashboard() {
                 {/* Expenses This Month KPIs */}
                 <div className="mb-2 mt-8">
                   <h4 className="text-lg font-semibold text-white mb-2">
-                    {role === 'technician' ? 'My Expenses This Month' : 'Expenses This Month'}
+                                            {role === 'technician' ? 'Expenses This Month' : 'Expenses This Month'}
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <Card className="bg-gray-800 border-gray-700">
@@ -2817,9 +2837,20 @@ export default function PMFinancialDashboard() {
             {activeTab === "wallet" && (
               <>
                 <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-white mb-4">
-                    {role === 'technician' ? `Active Cards for ${technicianName}` : 'Active Cards'}
-                  </h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-white">
+                      {role === 'technician' ? `Active Cards for ${technicianName}` : 'Active Cards'}
+                    </h3>
+                    {role === 'pm' && (
+                      <Button 
+                        className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+                        onClick={() => setHelpRequestDialogOpen(true)}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        Ask Central Office
+                      </Button>
+                    )}
+                  </div>
                   {/* Filters for job and property */}
                   <div className="flex gap-6 overflow-x-auto pb-2">
                     {(role === 'technician' ? technicianCards : properties[0].cards.slice(0, 2)).map((card, idx) => {
@@ -3284,7 +3315,7 @@ export default function PMFinancialDashboard() {
               <>
                 <div className="mb-8">
                   <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-white mb-4">My Expenses - {technicianName}</h3>
+                  <h3 className="text-lg font-semibold text-white mb-4">Expenses - {technicianName}</h3>
                     <Button 
                       className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
                       onClick={() => setHelpRequestDialogOpen(true)}
@@ -4273,7 +4304,10 @@ export default function PMFinancialDashboard() {
             {activeTab === "helpRequests" && (
               <>
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-white">Expense Help Requests from Technicians</h3>
+                  <h3 className="text-lg font-semibold text-white">Expense Help Requests</h3>
+                  <div className="text-sm text-gray-400">
+                    From Property Managers and Technicians
+                  </div>
                 </div>
                 
                 {/* Pending Requests Table */}
@@ -4304,9 +4338,10 @@ export default function PMFinancialDashboard() {
                                                       <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead className="text-gray-300">Technician</TableHead>
-                                <TableHead className="text-gray-300">Expense Question</TableHead>
-                                <TableHead className="text-gray-300">Amount</TableHead>
+                                <TableHead className="text-gray-300">Submitted By</TableHead>
+                                <TableHead className="text-gray-300">Urgency</TableHead>
+                                <TableHead className="text-gray-300">Related Expense</TableHead>
+                                <TableHead className="text-gray-300">Question</TableHead>
                                 <TableHead className="text-gray-300">Date</TableHead>
                                 <TableHead className="text-gray-300">AI Suggestion</TableHead>
                                 <TableHead className="text-gray-300">Quick Actions</TableHead>
@@ -4318,19 +4353,43 @@ export default function PMFinancialDashboard() {
                                 .map((request) => (
                                   <TableRow key={request.id} className="border-gray-700">
                                     <TableCell className="text-white font-medium">
-                                      {request.technicianName}
+                                      <div>
+                                        <div className="font-medium">{request.technicianName}</div>
+                                        <div className="text-sm text-gray-400">
+                                          {['Jessica Chen', 'Michael Rodriguez'].includes(request.technicianName) ? '(Property Manager)' : '(Technician)'}
+                                        </div>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-gray-300">
+                                      <Badge 
+                                        className={`${
+                                          request.urgency === 'high' ? 'bg-red-600' : 
+                                          request.urgency === 'normal' ? 'bg-yellow-600' : 'bg-green-600'
+                                        } text-white`}
+                                      >
+                                        {request.urgency === 'high' ? 'HIGH' : request.urgency === 'normal' ? 'NORMAL' : 'LOW'}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-gray-300 text-sm">
+                                      {request.expenseId !== 'none' ? (
+                                        <div className="font-medium">
+                                          {(() => {
+                                            const expense = [...transactions, ...technicianTransactions].find(txn => txn.id === request.expenseId);
+                                            return expense ? `${expense.vendor} - $${expense.amount.toFixed(2)}` : 'Not yet incurred';
+                                          })()}
+                                        </div>
+                                      ) : (
+                                        <span className="text-gray-500">No specific expense</span>
+                                      )}
                                     </TableCell>
                                     <TableCell className="text-gray-300">
                                       <div>
                                         <p className="text-sm">{request.question}</p>
                                         {request.additionalDetails && (
-                                          <p className="text-xs text-gray-400 mt-1">{request.additionalDetails}</p>
+                                          <p className="text-xs text-gray-400 mt-1">
+                                            Additional context: {request.additionalDetails}
+                                          </p>
                                         )}
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-gray-300 text-sm">
-                                      <div className="font-medium">
-                                        {request.question.match(/\$(\d+)/)?.[1] ? `$${request.question.match(/\$(\d+)/)?.[1]}` : 'N/A'}
                                       </div>
                                     </TableCell>
                                     <TableCell className="text-gray-300 text-sm">
@@ -4424,9 +4483,10 @@ export default function PMFinancialDashboard() {
                             <Table>
                               <TableHeader>
                                 <TableRow>
-                                  <TableHead className="text-gray-300">Technician</TableHead>
-                                  <TableHead className="text-gray-300">Expense Question</TableHead>
-                                  <TableHead className="text-gray-300">Amount</TableHead>
+                                  <TableHead className="text-gray-300">Submitted By</TableHead>
+                                  <TableHead className="text-gray-300">Urgency</TableHead>
+                                  <TableHead className="text-gray-300">Related Expense</TableHead>
+                                  <TableHead className="text-gray-300">Question</TableHead>
                                   <TableHead className="text-gray-300">Answer</TableHead>
                                   <TableHead className="text-gray-300">Date</TableHead>
                                 </TableRow>
@@ -4437,21 +4497,45 @@ export default function PMFinancialDashboard() {
                                   .map((request) => (
                                     <TableRow key={request.id} className="border-gray-700">
                                       <TableCell className="text-white font-medium">
-                                        {request.technicianName}
+                                        <div>
+                                          <div className="font-medium">{request.technicianName}</div>
+                                          <div className="text-sm text-gray-400">
+                                            {['Jessica Chen', 'Michael Rodriguez'].includes(request.technicianName) ? '(Property Manager)' : '(Technician)'}
+                                          </div>
+                                        </div>
                                       </TableCell>
                                       <TableCell className="text-gray-300">
-                                        <div>
-                                          <p className="text-sm">{request.question}</p>
-                                          {request.additionalDetails && (
-                                            <p className="text-xs text-gray-400 mt-1">{request.additionalDetails}</p>
-                                          )}
-                                        </div>
+                                        <Badge 
+                                          className={`${
+                                            request.urgency === 'high' ? 'bg-red-600' : 
+                                            request.urgency === 'normal' ? 'bg-yellow-600' : 'bg-green-600'
+                                          } text-white`}
+                                        >
+                                          {request.urgency === 'high' ? 'HIGH' : request.urgency === 'normal' ? 'NORMAL' : 'LOW'}
+                                        </Badge>
                                       </TableCell>
                                       <TableCell className="text-gray-300 text-sm">
-                                        <div className="font-medium">
-                                          {request.question.match(/\$(\d+)/)?.[1] ? `$${request.question.match(/\$(\d+)/)?.[1]}` : 'N/A'}
-                                        </div>
+                                        {request.expenseId !== 'none' ? (
+                                          <div className="font-medium">
+                                            {(() => {
+                                              const expense = [...transactions, ...technicianTransactions].find(txn => txn.id === request.expenseId);
+                                              return expense ? `${expense.vendor} - $${expense.amount.toFixed(2)}` : 'Not yet incurred';
+                                            })()}
+                                          </div>
+                                        ) : (
+                                          <span className="text-gray-500">No specific expense</span>
+                                        )}
                                       </TableCell>
+                                                                              <TableCell className="text-gray-300">
+                                          <div>
+                                            <p className="text-sm">{request.question}</p>
+                                            {request.additionalDetails && (
+                                              <p className="text-xs text-gray-400 mt-1">
+                                                Additional context: {request.additionalDetails}
+                                              </p>
+                                            )}
+                                          </div>
+                                        </TableCell>
                                       <TableCell>
                                         <Badge className={`${request.answer === 'yes' ? 'bg-green-600' : 'bg-red-600'} text-white`}>
                                           {request.answer === 'yes' ? 'Yes' : 'No'}
@@ -5300,7 +5384,7 @@ export default function PMFinancialDashboard() {
                         const newRequest = {
                           id: `help_${Date.now()}`,
                           expenseId: helpRequestForm.expenseId,
-                          technicianName: technicianName,
+                          technicianName: role === 'pm' ? 'Jessica Chen' : technicianName,
                           question: helpRequestForm.question.trim(),
                           urgency: helpRequestForm.urgency,
                           additionalDetails: helpRequestForm.additionalDetails,
