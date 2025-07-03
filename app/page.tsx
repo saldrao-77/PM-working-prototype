@@ -419,6 +419,13 @@ export default function PMFinancialDashboard() {
   const [reimbursementAmount, setReimbursementAmount] = useState(0);
   const [reimbursementNote, setReimbursementNote] = useState('');
   
+  // Enhanced reimbursement form state
+  const [reimbursementOwnerName, setReimbursementOwnerName] = useState('');
+  const [reimbursementOwnerEmail, setReimbursementOwnerEmail] = useState('');
+  const [reimbursementOwnerPhone, setReimbursementOwnerPhone] = useState('');
+  const [reimbursementCcEmail, setReimbursementCcEmail] = useState('');
+  const [attachMonthlyReport, setAttachMonthlyReport] = useState(false);
+  
   // State for Policy tab
   const [aiPolicyContent, setAiPolicyContent] = useState(`# AI Expense Policy Guidelines
 
@@ -548,6 +555,8 @@ export default function PMFinancialDashboard() {
       pendingTransactions: 5,
       lastReport: "Jan 15, 2024",
       ownerEmail: "owner@stanford.edu",
+      ownerName: "Stanford GSB Administration",
+      ownerPhone: "650-725-3341",
       staff: [
         { name: "Linda Evans", role: "Receptionist", phone: "555-101-2020", email: "linda.evans@stanford.edu" },
         { name: "Mark Lee", role: "Property Manager", phone: "555-303-4040", email: "mark.lee@stanford.edu" },
@@ -601,6 +610,8 @@ export default function PMFinancialDashboard() {
       pendingTransactions: 8,
       lastReport: "Jan 10, 2024",
       ownerEmail: "owner@sunnyvale.com",
+      ownerName: "Sunnyvale Properties LLC",
+      ownerPhone: "408-555-0123",
       staff: [
         { name: "Maria Gomez", role: "Receptionist", phone: "555-505-6060", email: "maria.gomez@sunnyvale.com" },
         { name: "James Wu", role: "Property Manager", phone: "555-707-8080", email: "james.wu@sunnyvale.com" },
@@ -654,6 +665,8 @@ export default function PMFinancialDashboard() {
       pendingTransactions: 3,
       lastReport: "Jan 8, 2024",
       ownerEmail: "owner@downtownlofts.com",
+      ownerName: "Downtown Lofts Investment Group",
+      ownerPhone: "415-555-0199",
       staff: [
         { name: "Sophie Tran", role: "Receptionist", phone: "555-909-1010", email: "sophie.tran@downtownlofts.com" },
         { name: "David Kim", role: "Property Manager", phone: "555-111-2121", email: "david.kim@downtownlofts.com" },
@@ -929,6 +942,15 @@ export default function PMFinancialDashboard() {
   const handleReimburseWorkOrder = (job: any, amount: number) => {
     setSelectedReimbursementJob(job);
     setReimbursementAmount(amount);
+    
+    // Pre-fill owner information based on property
+    const property = properties.find(p => p.name === job.property);
+    if (property) {
+      setReimbursementOwnerName(property.ownerName || '');
+      setReimbursementOwnerEmail(property.ownerEmail || '');
+      setReimbursementOwnerPhone(property.ownerPhone || '');
+    }
+    
     setReimbursementDialogOpen(true);
   };
 
@@ -2434,7 +2456,7 @@ export default function PMFinancialDashboard() {
 
                 {/* Reimbursement Dialog */}
                 <Dialog open={reimbursementDialogOpen} onOpenChange={setReimbursementDialogOpen}>
-                  <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
+                  <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Process Reimbursement</DialogTitle>
                       <DialogDescription>
@@ -2444,20 +2466,23 @@ export default function PMFinancialDashboard() {
                     
                     {selectedReimbursementJob && (
                       <div className="space-y-4">
+                        {/* Work Order Summary */}
                         <div className="bg-gray-800 p-4 rounded-lg">
                           <div className="text-sm text-gray-400 mb-1">Work Order</div>
                           <div className="font-medium text-white">{selectedReimbursementJob.description}</div>
                           <div className="text-sm text-gray-400">#{selectedReimbursementJob.id}</div>
                         </div>
                         
+                        {/* Reimbursement Amount */}
                         <div className="bg-gray-800 p-4 rounded-lg">
                           <div className="text-sm text-gray-400 mb-1">Reimbursement Amount</div>
                           <div className="text-2xl font-bold text-white">${reimbursementAmount.toFixed(2)}</div>
                         </div>
                         
+                        {/* Notes */}
                         <div>
                           <Label htmlFor="reimbursement-note" className="text-sm text-gray-400">
-                            Notes (Optional)
+                            Notes
                           </Label>
                           <Textarea
                             id="reimbursement-note"
@@ -2465,16 +2490,111 @@ export default function PMFinancialDashboard() {
                             onChange={(e) => setReimbursementNote(e.target.value)}
                             placeholder="Add any notes about this reimbursement..."
                             className="bg-gray-800 border-gray-600 text-white mt-1"
+                            rows={3}
                           />
+                        </div>
+                        
+                        {/* Owner Contact Information */}
+                        <div className="bg-gray-800 p-4 rounded-lg">
+                          <h4 className="text-sm font-semibold text-white mb-3">Owner Contact Information</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="owner-name" className="text-sm text-gray-400">
+                                Owner Name
+                              </Label>
+                              <Input
+                                id="owner-name"
+                                value={reimbursementOwnerName}
+                                onChange={(e) => setReimbursementOwnerName(e.target.value)}
+                                className="bg-gray-700 border-gray-600 text-white mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="owner-phone" className="text-sm text-gray-400">
+                                Owner Phone
+                              </Label>
+                              <Input
+                                id="owner-phone"
+                                value={reimbursementOwnerPhone}
+                                onChange={(e) => setReimbursementOwnerPhone(e.target.value)}
+                                className="bg-gray-700 border-gray-600 text-white mt-1"
+                              />
+                            </div>
+                          </div>
+                          <div className="mt-4">
+                            <Label htmlFor="owner-email" className="text-sm text-gray-400">
+                              Owner Email
+                            </Label>
+                            <Input
+                              id="owner-email"
+                              type="email"
+                              value={reimbursementOwnerEmail}
+                              onChange={(e) => setReimbursementOwnerEmail(e.target.value)}
+                              className="bg-gray-700 border-gray-600 text-white mt-1"
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* CC Contact */}
+                        <div>
+                          <Label htmlFor="cc-email" className="text-sm text-gray-400">
+                            CC Email (Optional)
+                          </Label>
+                          <Input
+                            id="cc-email"
+                            type="email"
+                            value={reimbursementCcEmail}
+                            onChange={(e) => setReimbursementCcEmail(e.target.value)}
+                            placeholder="Additional email to notify"
+                            className="bg-gray-800 border-gray-600 text-white mt-1"
+                          />
+                        </div>
+                        
+                        {/* Attach Monthly Report */}
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            id="attach-report"
+                            checked={attachMonthlyReport}
+                            onChange={(e) => setAttachMonthlyReport(e.target.checked)}
+                            className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                          />
+                          <Label htmlFor="attach-report" className="text-sm text-gray-300">
+                            Attach monthly report with comments
+                          </Label>
                         </div>
                       </div>
                     )}
                     
                     <DialogFooter>
-                      <Button variant="outline" onClick={() => setReimbursementDialogOpen(false)}>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setReimbursementDialogOpen(false);
+                          // Reset form
+                          setReimbursementNote('');
+                          setReimbursementOwnerName('');
+                          setReimbursementOwnerEmail('');
+                          setReimbursementOwnerPhone('');
+                          setReimbursementCcEmail('');
+                          setAttachMonthlyReport(false);
+                        }}
+                      >
                         Cancel
-                                  </Button>
-                      <Button onClick={processReimbursement} className="bg-green-600 hover:bg-green-700">
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          processReimbursement();
+                          // Reset form
+                          setReimbursementNote('');
+                          setReimbursementOwnerName('');
+                          setReimbursementOwnerEmail('');
+                          setReimbursementOwnerPhone('');
+                          setReimbursementCcEmail('');
+                          setAttachMonthlyReport(false);
+                        }} 
+                        className="bg-green-600 hover:bg-green-700"
+                      >
                         Process Reimbursement
                       </Button>
                     </DialogFooter>
