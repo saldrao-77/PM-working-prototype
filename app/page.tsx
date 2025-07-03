@@ -494,7 +494,62 @@ export default function PMFinancialDashboard() {
     createdAt: string;
     answeredAt?: string;
     answer?: 'yes' | 'no';
-  }[]>([]);
+  }[]>([
+    {
+      id: "exp1",
+      expenseId: "txn_20240115_001",
+      technicianName: "Carlos Ramirez",
+      question: "Is this expense OK? Need to buy emergency water heater repair kit ($347) for Stanford GSB unit 4B. Tenant has no hot water.",
+      urgency: "high" as const,
+      additionalDetails: "Water heater completely failed Saturday night. Tenant can't wait until Monday. Hardware store markup but only option available.",
+      status: "pending" as const,
+      createdAt: "2024-01-15T09:30:00Z"
+    },
+    {
+      id: "exp2", 
+      expenseId: "txn_20240115_002",
+      technicianName: "Miguel Torres",
+      question: "Should this be billable or not? Bought a 48-pack of Lysol wipes ($89) for Sunnyvale 432. Will use about 85% for common areas, 15% for office.",
+      urgency: "normal" as const,
+      additionalDetails: "Mostly for property cleaning but some for our maintenance office. Following the 'majority rule' you mentioned.",
+      status: "pending" as const,
+      createdAt: "2024-01-15T11:45:00Z"
+    },
+    {
+      id: "exp3",
+      expenseId: "txn_20240115_003", 
+      technicianName: "Oscar Martinez",
+      question: "Is this expense OK? Bought a new drill ($156) since mine broke at Downtown Lofts. Needed immediately for unit repairs.",
+      urgency: "normal" as const,
+      additionalDetails: "Old drill motor died mid-job. Couldn't complete repairs without it. Will use for multiple properties.",
+      status: "pending" as const,
+      createdAt: "2024-01-15T14:20:00Z"
+    },
+    {
+      id: "exp4",
+      expenseId: "txn_20240114_001",
+      technicianName: "John Smith",
+      question: "Should this be billable or not? Bought lunch for Stanford GSB staff ($124) during emergency weekend work.",
+      urgency: "low" as const,
+      additionalDetails: "Weekend emergency repair, team worked 12 hours straight. Seemed appropriate but want to confirm.",
+      status: "answered" as const,
+      answer: "no" as const,
+      createdAt: "2024-01-14T16:00:00Z",
+      answeredAt: "2024-01-14T16:30:00Z"
+    },
+    {
+      id: "exp5",
+      expenseId: "txn_20240113_001",
+      technicianName: "Sarah Johnson", 
+      question: "Is this expense OK? Bought paint ($89) for Stanford GSB unit 2A without pre-approval. Tenant move-out required immediate touch-up.",
+      urgency: "normal" as const,
+      additionalDetails: "Under $100 limit but wanted to confirm since it's cosmetic work rather than repair.",
+      status: "answered" as const,
+      answer: "yes" as const,
+      createdAt: "2024-01-13T10:15:00Z",
+      answeredAt: "2024-01-13T10:45:00Z"
+    }
+  ]);
 
   // State for help request response dialog
   const [responseDialogOpen, setResponseDialogOpen] = useState(false);
@@ -1116,7 +1171,7 @@ export default function PMFinancialDashboard() {
           { id: 'activity', label: 'Activity Log', icon: Zap },
           { id: 'transactions', label: 'Transactions', icon: FileText },
           { id: 'payments', label: 'Payments', icon: DollarSign },
-          { id: 'helpRequests', label: 'Help Requests', icon: MessageSquare },
+          { id: 'helpRequests', label: 'Expense Help Requests', icon: MessageSquare },
           { id: 'policy', label: 'Policy', icon: BookOpen },
           { id: 'properties', label: 'Properties', icon: Home },
           { id: 'staff', label: 'Technicians', icon: User },
@@ -4218,7 +4273,7 @@ export default function PMFinancialDashboard() {
             {activeTab === "helpRequests" && (
               <>
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-white">Help Requests from Technicians</h3>
+                  <h3 className="text-lg font-semibold text-white">Expense Help Requests from Technicians</h3>
                 </div>
                 
                 {/* Pending Requests Table */}
@@ -4246,14 +4301,15 @@ export default function PMFinancialDashboard() {
                         </div>
                       ) : (
                         <div className="overflow-x-auto">
-                          <Table>
+                                                      <Table>
                             <TableHeader>
                               <TableRow>
                                 <TableHead className="text-gray-300">Technician</TableHead>
-                                <TableHead className="text-gray-300">Question</TableHead>
+                                <TableHead className="text-gray-300">Expense Question</TableHead>
+                                <TableHead className="text-gray-300">Amount</TableHead>
                                 <TableHead className="text-gray-300">Date</TableHead>
                                 <TableHead className="text-gray-300">AI Suggestion</TableHead>
-                                <TableHead className="text-gray-300">Actions</TableHead>
+                                <TableHead className="text-gray-300">Quick Actions</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -4273,16 +4329,23 @@ export default function PMFinancialDashboard() {
                                       </div>
                                     </TableCell>
                                     <TableCell className="text-gray-300 text-sm">
+                                      <div className="font-medium">
+                                        {request.question.match(/\$(\d+)/)?.[1] ? `$${request.question.match(/\$(\d+)/)?.[1]}` : 'N/A'}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-gray-300 text-sm">
                                       {new Date(request.createdAt).toLocaleDateString()}
                                     </TableCell>
                                     <TableCell className="text-gray-300">
                                       <div className="flex items-center gap-2">
                                         <Bot className="h-4 w-4 text-blue-400" />
                                         <Badge className="bg-blue-600 text-white">
-                                          {request.question.toLowerCase().includes('receipt') ? 'YES' :
-                                           request.question.toLowerCase().includes('billable') ? 'YES' :
-                                           request.question.toLowerCase().includes('emergency') ? 'YES' :
-                                           request.question.toLowerCase().includes('pre-approval') ? 'MAYBE' : 'REVIEW'}
+                                          {request.question.toLowerCase().includes('emergency') ? 'YES' :
+                                           request.question.toLowerCase().includes('billable') && request.question.toLowerCase().includes('85%') ? 'YES' :
+                                           request.question.toLowerCase().includes('billable') && request.question.toLowerCase().includes('lunch') ? 'NO' :
+                                           request.question.toLowerCase().includes('drill') ? 'YES' :
+                                           request.question.toLowerCase().includes('paint') && request.question.toLowerCase().includes('$89') ? 'YES' :
+                                           request.question.toLowerCase().includes('water heater') ? 'YES' : 'REVIEW'}
                                         </Badge>
                                       </div>
                                     </TableCell>
@@ -4362,7 +4425,8 @@ export default function PMFinancialDashboard() {
                               <TableHeader>
                                 <TableRow>
                                   <TableHead className="text-gray-300">Technician</TableHead>
-                                  <TableHead className="text-gray-300">Question</TableHead>
+                                  <TableHead className="text-gray-300">Expense Question</TableHead>
+                                  <TableHead className="text-gray-300">Amount</TableHead>
                                   <TableHead className="text-gray-300">Answer</TableHead>
                                   <TableHead className="text-gray-300">Date</TableHead>
                                 </TableRow>
@@ -4381,6 +4445,11 @@ export default function PMFinancialDashboard() {
                                           {request.additionalDetails && (
                                             <p className="text-xs text-gray-400 mt-1">{request.additionalDetails}</p>
                                           )}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="text-gray-300 text-sm">
+                                        <div className="font-medium">
+                                          {request.question.match(/\$(\d+)/)?.[1] ? `$${request.question.match(/\$(\d+)/)?.[1]}` : 'N/A'}
                                         </div>
                                       </TableCell>
                                       <TableCell>
