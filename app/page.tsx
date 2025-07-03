@@ -3720,7 +3720,14 @@ export default function PMFinancialDashboard() {
                             onClick={() => setExpandedPropertyEmployees(expandedPropertyEmployees === property.id ? null : property.id)}
                           >
                             <td className="py-3 px-4">
-                              <div className="font-medium text-white">{property.name}</div>
+                              <div className="flex items-center gap-2">
+                                <ChevronDown 
+                                  className={`h-4 w-4 text-gray-400 transition-transform ${
+                                    expandedPropertyEmployees === property.id ? 'transform rotate-180' : ''
+                                  }`} 
+                                />
+                                <div className="font-medium text-white">{property.name}</div>
+                              </div>
                             </td>
                             <td className="py-3 px-4 text-gray-300">{property.address}</td>
                           </tr>
