@@ -201,6 +201,21 @@ export default function PMFinancialDashboard() {
   console.log('Current role:', role);
   console.log('Can delete jobs:', role === 'pm' || role === 'centralOffice');
   
+  // Handle URL parameters for role
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const roleParam = urlParams.get('role');
+    const tabParam = urlParams.get('tab');
+    
+    if (roleParam && ['pm', 'technician', 'centralOffice'].includes(roleParam)) {
+      setRole(roleParam as 'pm' | 'technician' | 'centralOffice');
+    }
+    
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, []);
+  
   const [expandedProperty, setExpandedProperty] = useState<string | null>(null)
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
   const [reportDialogOpen, setReportDialogOpen] = useState(false)

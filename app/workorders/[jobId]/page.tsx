@@ -358,7 +358,7 @@ export default function WorkOrderDetailPage() {
             <div className="flex items-center space-x-2">
               <Button
                 variant="ghost"
-                onClick={() => router.push('/?tab=workorders')}
+                onClick={() => router.push(`/?tab=workorders&role=${currentRole}`)}
                 className="text-gray-300 hover:text-white hover:bg-blue-600/20 border border-transparent hover:border-blue-500/30"
               >
                 <ChevronLeft className="h-4 w-4 mr-2" />
