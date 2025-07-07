@@ -73,8 +73,7 @@ import {
   AlertTriangle,
   ChevronDown,
   Edit,
-  BookOpen,
-  Bot
+  BookOpen
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from 'next/navigation'
@@ -195,27 +194,6 @@ if (workStartedIndex !== -1) {
 }
 
 export default function PMFinancialDashboard() {
-  const [role, setRole] = useState<'pm' | 'technician' | 'centralOffice'>('pm')
-  
-  // Debug: Log current role
-  console.log('Current role:', role);
-  console.log('Can delete jobs:', role === 'pm' || role === 'centralOffice');
-  
-  // Handle URL parameters for role
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const roleParam = urlParams.get('role');
-    const tabParam = urlParams.get('tab');
-    
-    if (roleParam && ['pm', 'technician', 'centralOffice'].includes(roleParam)) {
-      setRole(roleParam as 'pm' | 'technician' | 'centralOffice');
-    }
-    
-    if (tabParam) {
-      setActiveTab(tabParam);
-    }
-  }, []);
-  
   const [expandedProperty, setExpandedProperty] = useState<string | null>(null)
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
   const [reportDialogOpen, setReportDialogOpen] = useState(false)
@@ -256,6 +234,8 @@ export default function PMFinancialDashboard() {
   const [showPreApprovalDialog, setShowPreApprovalDialog] = useState(false);
   const [showSendEmailDialog, setShowSendEmailDialog] = useState(false);
   const [pendingJob, setPendingJob] = useState<any>(null);
+  // Update role state to include 'owner'
+  const [role, setRole] = useState<'pm' | 'technician' | 'centralOffice' | 'owner'>('pm');
   // For demo, use Alice Johnson as the logged-in technician
   const technicianName = 'Alice Johnson';
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
@@ -419,13 +399,6 @@ export default function PMFinancialDashboard() {
   const [reimbursementAmount, setReimbursementAmount] = useState(0);
   const [reimbursementNote, setReimbursementNote] = useState('');
   
-  // Enhanced reimbursement form state
-  const [reimbursementOwnerName, setReimbursementOwnerName] = useState('');
-  const [reimbursementOwnerEmail, setReimbursementOwnerEmail] = useState('');
-  const [reimbursementOwnerPhone, setReimbursementOwnerPhone] = useState('');
-  const [reimbursementCcEmail, setReimbursementCcEmail] = useState('');
-  const [attachMonthlyReport, setAttachMonthlyReport] = useState(false);
-  
   // State for Policy tab
   const [aiPolicyContent, setAiPolicyContent] = useState(`# AI Expense Policy Guidelines
 
@@ -462,15 +435,21 @@ export default function PMFinancialDashboard() {
 - Response time: within 24 hours during business days`);
 
   const [policyEditMode, setPolicyEditMode] = useState(false);
-  const [expenseQuestions, setExpenseQuestions] = useState([
-    { id: 1, question: "Is this expense reasonable and necessary?", answer: null, timestamp: null },
-    { id: 2, question: "Should this be billable to the property/owner?", answer: null, timestamp: null },
-    { id: 3, question: "Is a receipt required for this purchase?", answer: null, timestamp: null },
-    { id: 4, question: "Does this require pre-approval?", answer: null, timestamp: null },
-    { id: 5, question: "Is this an emergency repair?", answer: null, timestamp: null },
-    { id: 6, question: "Is this a property-specific expense?", answer: null, timestamp: null },
-    { id: 7, question: "Is this a recurring expense?", answer: null, timestamp: null },
-    { id: 8, question: "Is this expense within budget?", answer: null, timestamp: null }
+  const [expenseQuestions, setExpenseQuestions] = useState<{
+    id: number;
+    question: string;
+    answer: 'yes' | 'no' | null;
+    timestamp: string | null;
+    category: string;
+  }[]>([
+    { id: 1, question: "Is this expense reasonable and necessary?", answer: null, timestamp: null, category: "general" },
+    { id: 2, question: "Should this be billable to the property/owner?", answer: null, timestamp: null, category: "billing" },
+    { id: 3, question: "Is a receipt required for this purchase?", answer: null, timestamp: null, category: "documentation" },
+    { id: 4, question: "Does this require pre-approval?", answer: null, timestamp: null, category: "approval" },
+    { id: 5, question: "Is this an emergency repair?", answer: null, timestamp: null, category: "priority" },
+    { id: 6, question: "Is this a property-specific expense?", answer: null, timestamp: null, category: "billing" },
+    { id: 7, question: "Is this a recurring expense?", answer: null, timestamp: null, category: "general" },
+    { id: 8, question: "Is this expense within budget?", answer: null, timestamp: null, category: "approval" }
   ]);
   const [newQuestionDialogOpen, setNewQuestionDialogOpen] = useState(false);
   const [newQuestion, setNewQuestion] = useState({ question: '', category: 'general' });
@@ -493,83 +472,8 @@ export default function PMFinancialDashboard() {
     status: 'pending' | 'answered' | 'resolved';
     createdAt: string;
     answeredAt?: string;
-    answer?: 'yes' | 'no';
-  }[]>([
-    {
-      id: "exp1",
-      expenseId: "txn1",
-      technicianName: "Carlos Ramirez",
-      question: "Is this expense OK? Need to buy emergency water heater repair kit ($150) for Stanford GSB unit 4B. Tenant has no hot water.",
-      urgency: "high" as const,
-      additionalDetails: "Water heater completely failed Saturday night. Tenant can't wait until Monday. Hardware store markup but only option available.",
-      status: "pending" as const,
-      createdAt: "2024-01-15T09:30:00Z"
-    },
-    {
-      id: "exp2", 
-      expenseId: "txn5",
-      technicianName: "Miguel Torres",
-      question: "Should this be billable or not? Bought paper and ink supplies ($89.99) for Sunnyvale 432. Will use about 85% for property records, 15% for office.",
-      urgency: "normal" as const,
-      additionalDetails: "Mostly for property management but some for our maintenance office. Following the 'majority rule' you mentioned.",
-      status: "pending" as const,
-      createdAt: "2024-01-15T11:45:00Z"
-    },
-    {
-      id: "exp3",
-      expenseId: "t3", 
-      technicianName: "Oscar Martinez",
-      question: "Is this expense OK? Bought new tools ($45) since mine broke at Stanford GSB. Needed immediately for unit repairs.",
-      urgency: "normal" as const,
-      additionalDetails: "Old tools failed mid-job. Couldn't complete repairs without them. Will use for multiple properties.",
-      status: "pending" as const,
-      createdAt: "2024-01-15T14:20:00Z"
-    },
-    {
-      id: "exp4",
-      expenseId: "txn2",
-      technicianName: "Jessica Chen",
-      question: "Should this be billable or not? Bought paint supplies ($75.50) for Stanford GSB emergency weekend work.",
-      urgency: "low" as const,
-      additionalDetails: "Weekend emergency repair, team worked long hours. Needed immediate touch-up paint for tenant move-in.",
-      status: "answered" as const,
-      answer: "no" as const,
-      createdAt: "2024-01-14T16:00:00Z",
-      answeredAt: "2024-01-14T16:30:00Z"
-    },
-    {
-      id: "exp5",
-      expenseId: "t2",
-      technicianName: "Sarah Johnson", 
-      question: "Is this expense OK? Bought supplies at Lowe's ($89.99) for Stanford GSB unit 2A without pre-approval. Tenant move-out required immediate supplies.",
-      urgency: "normal" as const,
-      additionalDetails: "Under $100 limit but wanted to confirm since it's maintenance supplies rather than emergency repair.",
-      status: "answered" as const,
-      answer: "yes" as const,
-      createdAt: "2024-01-13T10:15:00Z",
-      answeredAt: "2024-01-13T10:45:00Z"
-    },
-    {
-      id: "exp6",
-      expenseId: "pending_expense_001",
-      technicianName: "Roberto Martinez",
-      question: "Should this be billable or not? Planning to buy new HVAC filter for Stanford GSB unit 3C ($125). Tenant complained about air quality.",
-      urgency: "high" as const,
-      additionalDetails: "Tenant threatening to withhold rent if air quality not improved immediately. Need to purchase today.",
-      status: "pending" as const,
-      createdAt: "2024-01-16T08:15:00Z"
-    },
-    {
-      id: "exp7",
-      expenseId: "future_expense_002",
-      technicianName: "Michael Rodriguez",
-      question: "Is this expense OK? Need to buy security camera for Stanford GSB main entrance ($299). Recent break-in attempts reported.",
-      urgency: "normal" as const,
-      additionalDetails: "Security company recommended upgrade. Will improve overall property safety and potentially reduce insurance costs.",
-      status: "pending" as const,
-      createdAt: "2024-01-16T11:30:00Z"
-    }
-  ]);
+    answer?: string;
+  }[]>([]);
 
   // State for help request response dialog
   const [responseDialogOpen, setResponseDialogOpen] = useState(false);
@@ -595,9 +499,6 @@ export default function PMFinancialDashboard() {
   const [monthlyReportDialogOpen, setMonthlyReportDialogOpen] = useState(false);
   const [selectedReportProperty, setSelectedReportProperty] = useState<any>(null);
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
-
-  // State for Help Requests tab collapsed sections
-  const [resolvedRequestsCollapsed, setResolvedRequestsCollapsed] = useState(true);
 
   // Handle URL parameters for tab navigation
   useEffect(() => {
@@ -630,8 +531,6 @@ export default function PMFinancialDashboard() {
       pendingTransactions: 5,
       lastReport: "Jan 15, 2024",
       ownerEmail: "owner@stanford.edu",
-      ownerName: "Stanford GSB Administration",
-      ownerPhone: "650-725-3341",
       staff: [
         { name: "Linda Evans", role: "Receptionist", phone: "555-101-2020", email: "linda.evans@stanford.edu" },
         { name: "Mark Lee", role: "Property Manager", phone: "555-303-4040", email: "mark.lee@stanford.edu" },
@@ -685,8 +584,6 @@ export default function PMFinancialDashboard() {
       pendingTransactions: 8,
       lastReport: "Jan 10, 2024",
       ownerEmail: "owner@sunnyvale.com",
-      ownerName: "Sunnyvale Properties LLC",
-      ownerPhone: "408-555-0123",
       staff: [
         { name: "Maria Gomez", role: "Receptionist", phone: "555-505-6060", email: "maria.gomez@sunnyvale.com" },
         { name: "James Wu", role: "Property Manager", phone: "555-707-8080", email: "james.wu@sunnyvale.com" },
@@ -740,8 +637,6 @@ export default function PMFinancialDashboard() {
       pendingTransactions: 3,
       lastReport: "Jan 8, 2024",
       ownerEmail: "owner@downtownlofts.com",
-      ownerName: "Downtown Lofts Investment Group",
-      ownerPhone: "415-555-0199",
       staff: [
         { name: "Sophie Tran", role: "Receptionist", phone: "555-909-1010", email: "sophie.tran@downtownlofts.com" },
         { name: "David Kim", role: "Property Manager", phone: "555-111-2121", email: "david.kim@downtownlofts.com" },
@@ -1017,15 +912,6 @@ export default function PMFinancialDashboard() {
   const handleReimburseWorkOrder = (job: any, amount: number) => {
     setSelectedReimbursementJob(job);
     setReimbursementAmount(amount);
-    
-    // Pre-fill owner information based on property
-    const property = properties.find(p => p.name === job.property);
-    if (property) {
-      setReimbursementOwnerName(property.ownerName || '');
-      setReimbursementOwnerEmail(property.ownerEmail || '');
-      setReimbursementOwnerPhone(property.ownerPhone || '');
-    }
-    
     setReimbursementDialogOpen(true);
   };
 
@@ -1147,15 +1033,15 @@ export default function PMFinancialDashboard() {
     csvContent += `Work Order Details\n`;
     csvContent += `Work Order ID,Description,Technician,Total Amount,Billable Amount,Non-Billable Amount,Transaction Count\n`;
     
-    workOrderGroups.forEach(group => {
+    workOrderGroups.forEach((group: any) => {
       csvContent += `${group.job.id},"${group.job.description}","${group.job.technician || 'Unassigned'}",${group.totalAmount.toFixed(2)},${group.billableAmount.toFixed(2)},${group.nonBillableAmount.toFixed(2)},${group.transactionCount}\n`;
     });
     
     csvContent += `\nTransaction Details\n`;
     csvContent += `Date,Vendor,Made By,Amount,Status,Billable,Work Order,Memo\n`;
     
-    workOrderGroups.forEach(group => {
-      group.transactions.forEach(txn => {
+    workOrderGroups.forEach((group: any) => {
+      group.transactions.forEach((txn: any) => {
         csvContent += `${txn.date},"${txn.vendor}","${txn.madeBy}",${txn.amount.toFixed(2)},${txn.status},${txn.billable ? 'Yes' : 'No'},"${group.job.description}","${txn.memo || ''}"\n`;
       });
     });
@@ -1179,8 +1065,8 @@ export default function PMFinancialDashboard() {
           { id: 'dashboard', label: 'Dashboard', icon: Folder },
           { id: 'workorders', label: 'Work Orders', icon: FileText },
           { id: 'activity', label: 'Activity Log', icon: Zap },
-          { id: 'transactions', label: 'Transactions', icon: FileText },
           { id: 'wallet', label: 'Expenses', icon: CreditCard },
+          { id: 'transactions', label: 'Transactions', icon: FileText },
           { id: 'properties', label: 'Properties', icon: Home },
           { id: 'staff', label: 'Technicians', icon: User },
         ]
@@ -1189,17 +1075,16 @@ export default function PMFinancialDashboard() {
           { id: 'dashboard', label: 'Dashboard', icon: Folder },
           { id: 'workorders', label: 'Work Orders', icon: FileText },
           { id: 'activity', label: 'Activity Log', icon: Zap },
-          { id: 'transactions', label: 'Transactions', icon: FileText },
           { id: 'payments', label: 'Payments', icon: DollarSign },
-          { id: 'helpRequests', label: 'Expense Help Requests', icon: MessageSquare },
           { id: 'policy', label: 'Policy', icon: BookOpen },
+          { id: 'transactions', label: 'Transactions', icon: FileText },
           { id: 'properties', label: 'Properties', icon: Home },
           { id: 'staff', label: 'Technicians', icon: User },
         ]
       : [
           { id: 'dashboard', label: 'Dashboard', icon: Folder },
           { id: 'workorders', label: 'Work Orders', icon: FileText },
-          { id: 'technicianExpenses', label: 'Expenses', icon: CreditCard },
+          { id: 'technicianExpenses', label: 'My Expenses', icon: CreditCard },
           { id: 'profile', label: 'Profile', icon: User },
         ];
 
@@ -1627,10 +1512,6 @@ export default function PMFinancialDashboard() {
     return propertyTransactions.reduce((sum, txn) => sum + txn.amount, 0);
   };
 
-  // Debug: Log current role
-  console.log('Current role:', role);
-  console.log('Can delete jobs:', role === 'pm' || role === 'centralOffice');
-
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       {/* Role Toggle for Demo */}
@@ -1785,7 +1666,7 @@ export default function PMFinancialDashboard() {
                 {/* Expenses This Month KPIs */}
                 <div className="mb-2 mt-8">
                   <h4 className="text-lg font-semibold text-white mb-2">
-                                            {role === 'technician' ? 'Expenses This Month' : 'Expenses This Month'}
+                    {role === 'technician' ? 'My Expenses This Month' : 'Expenses This Month'}
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <Card className="bg-gray-800 border-gray-700">
@@ -2100,29 +1981,31 @@ export default function PMFinancialDashboard() {
                                   <div className="flex items-center gap-2">
                                     {(role === 'pm' || role === 'centralOffice') && (
                                       <>
-
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              size="icon"
+                                              variant="ghost"
+                                              className="h-8 w-8 text-gray-300 hover:text-white hover:bg-blue-500/20"
+                                              onClick={e => { e.stopPropagation(); setEditJob({ ...job }); setEditJobDialogOpen(true); }}
+                                            >
+                                              <Settings className="h-4 w-4" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>Edit job</TooltipContent>
+                                        </Tooltip>
                                         <Tooltip>
                                           <TooltipTrigger asChild>
                                             <Button
                                               size="icon"
                                               variant="ghost"
                                               className="h-8 w-8 text-gray-300 hover:text-red-300 hover:bg-red-500/20"
-                                              onClick={e => { 
-                                                console.log('Delete button clicked for job:', job);
-                                                console.log('Current role:', role);
-                                                console.log('Can delete jobs:', role === 'pm' || role === 'centralOffice');
-                                                e.stopPropagation(); 
-                                                setJobToDelete(job);
-                                                setDeleteDialogOpen(true);
-                                                console.log('Delete dialog opened, jobToDelete set to:', job);
-                                              }}
+                                              onClick={e => { e.stopPropagation(); setJobToDelete(job); setDeleteDialogOpen(true); }}
                                             >
                                               <Trash2 className="h-4 w-4" />
                                             </Button>
                                           </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Delete work order</p>
-                                          </TooltipContent>
+                                          <TooltipContent>Delete job</TooltipContent>
                                         </Tooltip>
                                       </>
                                     )}
@@ -2181,32 +2064,32 @@ export default function PMFinancialDashboard() {
                                     <div className="p-4">
                                       <h5 className="text-sm font-semibold text-white mb-2">Expenses for this job</h5>
                                       <div className="overflow-x-auto">
-                                      <table className="min-w-full text-xs mb-2">
-                                        <thead>
+                                        <table className="min-w-full text-xs mb-2">
+                                          <thead>
                                             <tr className="border-b border-gray-700">
-                                            <th className="text-left py-2 px-3 font-semibold text-white">Date</th>
-                                            <th className="text-left py-2 px-3 font-semibold text-white">Vendor</th>
+                                              <th className="text-left py-2 px-3 font-semibold text-white">Date</th>
+                                              <th className="text-left py-2 px-3 font-semibold text-white">Vendor</th>
                                               <th className="text-left py-2 px-3 font-semibold text-white">Made By</th>
-                                            <th className="text-left py-2 px-3 font-semibold text-white">Amount</th>
-                                            <th className="text-left py-2 px-3 font-semibold text-white">Memo</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {filterExpensesByRole([...transactions, ...technicianTransactions])
+                                              <th className="text-left py-2 px-3 font-semibold text-white">Amount</th>
+                                              <th className="text-left py-2 px-3 font-semibold text-white">Memo</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {filterExpensesByRole([...transactions, ...technicianTransactions])
                                               .filter(txn => txn.jobId === job.id)
                                               .map((txn) => {
-                                              return (
+                                                return (
                                                   <tr key={txn.id} className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700">
                                                     <td className="py-2 px-3 text-left text-gray-300">{txn.date}</td>
                                                     <td className="py-2 px-3 text-left text-gray-300">{txn.vendor}</td>
                                                     <td className="py-2 px-3 text-left text-gray-300">{txn.madeBy}</td>
                                                     <td className="py-2 px-3 text-left text-gray-300">${txn.amount.toFixed(2)}</td>
                                                     <td className="py-2 px-3 text-left text-gray-300">{txn.memo || '-'}</td>
-                                                </tr>
-                                              );
-                                            })}
-                                        </tbody>
-                                      </table>
+                                                  </tr>
+                                                );
+                                              })}
+                                          </tbody>
+                                        </table>
                                       </div>
                                     </div>
                                   </td>
@@ -2365,7 +2248,7 @@ export default function PMFinancialDashboard() {
                   <div className="flex items-center space-x-4">
                     <div className="text-sm text-gray-400">
                       Manage reimbursements for logged transactions by work order
-                              </div>
+                    </div>
                     <Button 
                       onClick={() => setMonthlyReportDialogOpen(true)}
                       className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -2498,15 +2381,15 @@ export default function PMFinancialDashboard() {
                                     </div>
                                     <div className="overflow-x-auto">
                                       <table className="w-full text-sm min-w-[500px] table-fixed">
-                      <thead>
+                                        <thead>
                                           <tr className="border-b border-gray-600">
                                             <th className="text-left py-2 text-gray-400 w-1/4">Date</th>
                                             <th className="text-left py-2 text-gray-400 w-1/4">Vendor</th>
                                             <th className="text-left py-2 text-gray-400 w-1/4">Made By</th>
                                             <th className="text-right py-2 text-gray-400 w-1/4">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
                                           {group.transactions.map((txn) => (
                                             <tr key={txn.id} className="border-b border-gray-600/50">
                                               <td className="py-2 text-gray-300">{txn.date}</td>
@@ -2531,7 +2414,7 @@ export default function PMFinancialDashboard() {
 
                 {/* Reimbursement Dialog */}
                 <Dialog open={reimbursementDialogOpen} onOpenChange={setReimbursementDialogOpen}>
-                  <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
                     <DialogHeader>
                       <DialogTitle>Process Reimbursement</DialogTitle>
                       <DialogDescription>
@@ -2541,23 +2424,20 @@ export default function PMFinancialDashboard() {
                     
                     {selectedReimbursementJob && (
                       <div className="space-y-4">
-                        {/* Work Order Summary */}
                         <div className="bg-gray-800 p-4 rounded-lg">
                           <div className="text-sm text-gray-400 mb-1">Work Order</div>
                           <div className="font-medium text-white">{selectedReimbursementJob.description}</div>
                           <div className="text-sm text-gray-400">#{selectedReimbursementJob.id}</div>
                         </div>
                         
-                        {/* Reimbursement Amount */}
                         <div className="bg-gray-800 p-4 rounded-lg">
                           <div className="text-sm text-gray-400 mb-1">Reimbursement Amount</div>
                           <div className="text-2xl font-bold text-white">${reimbursementAmount.toFixed(2)}</div>
                         </div>
                         
-                        {/* Notes */}
                         <div>
                           <Label htmlFor="reimbursement-note" className="text-sm text-gray-400">
-                            Notes
+                            Notes (Optional)
                           </Label>
                           <Textarea
                             id="reimbursement-note"
@@ -2565,111 +2445,16 @@ export default function PMFinancialDashboard() {
                             onChange={(e) => setReimbursementNote(e.target.value)}
                             placeholder="Add any notes about this reimbursement..."
                             className="bg-gray-800 border-gray-600 text-white mt-1"
-                            rows={3}
                           />
-                        </div>
-                        
-                        {/* Owner Contact Information */}
-                        <div className="bg-gray-800 p-4 rounded-lg">
-                          <h4 className="text-sm font-semibold text-white mb-3">Owner Contact Information</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <Label htmlFor="owner-name" className="text-sm text-gray-400">
-                                Owner Name
-                              </Label>
-                              <Input
-                                id="owner-name"
-                                value={reimbursementOwnerName}
-                                onChange={(e) => setReimbursementOwnerName(e.target.value)}
-                                className="bg-gray-700 border-gray-600 text-white mt-1"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="owner-phone" className="text-sm text-gray-400">
-                                Owner Phone
-                              </Label>
-                              <Input
-                                id="owner-phone"
-                                value={reimbursementOwnerPhone}
-                                onChange={(e) => setReimbursementOwnerPhone(e.target.value)}
-                                className="bg-gray-700 border-gray-600 text-white mt-1"
-                              />
-                            </div>
-                          </div>
-                          <div className="mt-4">
-                            <Label htmlFor="owner-email" className="text-sm text-gray-400">
-                              Owner Email
-                            </Label>
-                            <Input
-                              id="owner-email"
-                              type="email"
-                              value={reimbursementOwnerEmail}
-                              onChange={(e) => setReimbursementOwnerEmail(e.target.value)}
-                              className="bg-gray-700 border-gray-600 text-white mt-1"
-                            />
-                          </div>
-                        </div>
-                        
-                        {/* CC Contact */}
-                        <div>
-                          <Label htmlFor="cc-email" className="text-sm text-gray-400">
-                            CC Email (Optional)
-                          </Label>
-                          <Input
-                            id="cc-email"
-                            type="email"
-                            value={reimbursementCcEmail}
-                            onChange={(e) => setReimbursementCcEmail(e.target.value)}
-                            placeholder="Additional email to notify"
-                            className="bg-gray-800 border-gray-600 text-white mt-1"
-                          />
-                        </div>
-                        
-                        {/* Attach Monthly Report */}
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="checkbox"
-                            id="attach-report"
-                            checked={attachMonthlyReport}
-                            onChange={(e) => setAttachMonthlyReport(e.target.checked)}
-                            className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                          />
-                          <Label htmlFor="attach-report" className="text-sm text-gray-300">
-                            Attach monthly report with comments
-                          </Label>
                         </div>
                       </div>
                     )}
                     
                     <DialogFooter>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          setReimbursementDialogOpen(false);
-                          // Reset form
-                          setReimbursementNote('');
-                          setReimbursementOwnerName('');
-                          setReimbursementOwnerEmail('');
-                          setReimbursementOwnerPhone('');
-                          setReimbursementCcEmail('');
-                          setAttachMonthlyReport(false);
-                        }}
-                      >
+                      <Button variant="outline" onClick={() => setReimbursementDialogOpen(false)}>
                         Cancel
                       </Button>
-                      <Button 
-                        onClick={() => {
-                          processReimbursement();
-                          // Reset form
-                          setReimbursementNote('');
-                          setReimbursementOwnerName('');
-                          setReimbursementOwnerEmail('');
-                          setReimbursementOwnerPhone('');
-                          setReimbursementCcEmail('');
-                          setAttachMonthlyReport(false);
-                        }} 
-                        className="bg-green-600 hover:bg-green-700"
-                      >
+                      <Button onClick={processReimbursement} className="bg-green-600 hover:bg-green-700">
                         Process Reimbursement
                       </Button>
                     </DialogFooter>
@@ -2794,12 +2579,12 @@ export default function PMFinancialDashboard() {
                                                 <td className="p-3 text-right text-green-400">${group.billableAmount.toFixed(2)}</td>
                                                 <td className="p-3 text-right text-gray-400">${group.nonBillableAmount.toFixed(2)}</td>
                                                 <td className="p-3 text-center text-blue-400">{group.transactionCount}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                              </div>
-                              </div>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </div>
                                   ) : (
                                     <div className="text-center py-8 text-gray-400">
                                       No expenses found for this property in {reportMonth}
@@ -2837,20 +2622,9 @@ export default function PMFinancialDashboard() {
             {activeTab === "wallet" && (
               <>
                 <div className="mb-8">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-white">
-                      {role === 'technician' ? `Active Cards for ${technicianName}` : 'Active Cards'}
-                    </h3>
-                    {role === 'pm' && (
-                      <Button 
-                        className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
-                        onClick={() => setHelpRequestDialogOpen(true)}
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        Ask Central Office
-                      </Button>
-                    )}
-                  </div>
+                  <h3 className="text-lg font-semibold text-white mb-4">
+                    {role === 'technician' ? `Active Cards for ${technicianName}` : 'Active Cards'}
+                  </h3>
                   {/* Filters for job and property */}
                   <div className="flex gap-6 overflow-x-auto pb-2">
                     {(role === 'technician' ? technicianCards : properties[0].cards.slice(0, 2)).map((card, idx) => {
@@ -2886,7 +2660,18 @@ export default function PMFinancialDashboard() {
 
                 {/* Completed Expenses Table */}
                 <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-white mb-4">Completed Expenses</h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-white">Completed Expenses</h3>
+                    {role === 'pm' && (
+                      <Button 
+                        className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+                        onClick={() => setHelpRequestDialogOpen(true)}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        Ask Central Office
+                      </Button>
+                    )}
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
                       <thead className="sticky top-0 z-10">
@@ -3315,7 +3100,7 @@ export default function PMFinancialDashboard() {
               <>
                 <div className="mb-8">
                   <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-white mb-4">Expenses - {technicianName}</h3>
+                    <h3 className="text-lg font-semibold text-white mb-4">My Expenses - {technicianName}</h3>
                     <Button 
                       className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
                       onClick={() => setHelpRequestDialogOpen(true)}
@@ -3926,14 +3711,7 @@ export default function PMFinancialDashboard() {
                             onClick={() => setExpandedPropertyEmployees(expandedPropertyEmployees === property.id ? null : property.id)}
                           >
                             <td className="py-3 px-4">
-                              <div className="flex items-center gap-2">
-                                <ChevronDown 
-                                  className={`h-4 w-4 text-gray-400 transition-transform ${
-                                    expandedPropertyEmployees === property.id ? 'transform rotate-180' : ''
-                                  }`} 
-                                />
-                                <div className="font-medium text-white">{property.name}</div>
-                              </div>
+                              <div className="font-medium text-white">{property.name}</div>
                             </td>
                             <td className="py-3 px-4 text-gray-300">{property.address}</td>
                           </tr>
@@ -3941,27 +3719,6 @@ export default function PMFinancialDashboard() {
                             <tr className="bg-gray-900">
                               <td colSpan={2} className="p-0">
                                 <div className="p-4">
-                                  {/* Owner Information Section */}
-                                  <div className="mb-6">
-                                    <h5 className="text-sm font-semibold text-white mb-3">Owner Information</h5>
-                                    <div className="bg-gray-800 p-3 rounded-lg">
-                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div>
-                                          <span className="text-xs text-gray-400 block">Owner Name</span>
-                                          <span className="text-white">{property.ownerName || 'Not specified'}</span>
-                                        </div>
-                                        <div>
-                                          <span className="text-xs text-gray-400 block">Email</span>
-                                          <span className="text-white">{property.ownerEmail || 'Not specified'}</span>
-                                        </div>
-                                        <div>
-                                          <span className="text-xs text-gray-400 block">Phone</span>
-                                          <span className="text-white">{property.ownerPhone || 'Not specified'}</span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  
                                   <h5 className="text-sm font-semibold text-white mb-3">Staff at {property.name}</h5>
                                   <table className="min-w-full text-sm">
                                     <thead>
@@ -4266,10 +4023,17 @@ export default function PMFinancialDashboard() {
                     >
                       <Edit className="h-4 w-4" /> {policyEditMode ? 'Save Policy' : 'Edit Policy'}
                     </Button>
+                    <Button 
+                      variant="outline" 
+                      className="bg-green-600 border-green-600 text-white hover:bg-green-700 hover:border-green-700 flex items-center gap-2"
+                      onClick={() => setNewQuestionDialogOpen(true)}
+                    >
+                      <Plus className="h-4 w-4" /> Add Question
+                    </Button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* AI Policy Content */}
                   <Card className="bg-gray-800 border-gray-700">
                     <CardHeader>
@@ -4298,260 +4062,578 @@ export default function PMFinancialDashboard() {
                       )}
                     </CardContent>
                   </Card>
+
+                  {/* Expense Questions Tracker */}
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5" />
+                        Expense Decision Tracker
+                      </CardTitle>
+                      <CardDescription className="text-gray-400">
+                        Quick decision matrix for expense approvals
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {expenseQuestions.map((question) => (
+                          <div key={question.id} className="p-4 bg-gray-900 rounded-lg border border-gray-700">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-white mb-1">{question.question}</p>
+                                <span className="inline-block px-2 py-1 text-xs bg-blue-600 text-blue-100 rounded">
+                                  {question.category}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant={question.answer === 'yes' ? 'default' : 'outline'}
+                                className={question.answer === 'yes' ? 'bg-green-600 hover:bg-green-700' : 'border-green-600 text-green-400 hover:bg-green-600/20'}
+                                onClick={() => setExpenseQuestions(prev => 
+                                  prev.map(q => q.id === question.id ? { ...q, answer: 'yes' as const } : q)
+                                )}
+                              >
+                                Yes
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={question.answer === 'no' ? 'default' : 'outline'}
+                                className={question.answer === 'no' ? 'bg-red-600 hover:bg-red-700' : 'border-red-600 text-red-400 hover:bg-red-600/20'}
+                                onClick={() => setExpenseQuestions(prev => 
+                                  prev.map(q => q.id === question.id ? { ...q, answer: 'no' as const } : q)
+                                )}
+                              >
+                                No
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-gray-600 text-gray-400 hover:bg-gray-700"
+                                onClick={() => setExpenseQuestions(prev => 
+                                  prev.map(q => q.id === question.id ? { ...q, answer: null } : q)
+                                )}
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Summary */}
+                      <div className="mt-6 p-4 bg-gray-900 rounded-lg border border-gray-700">
+                        <h4 className="text-sm font-semibold text-white mb-3">Decision Summary</h4>
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                          <div>
+                            <div className="text-2xl font-bold text-green-400">
+                              {expenseQuestions.filter(q => q.answer === 'yes').length}
+                            </div>
+                            <div className="text-xs text-gray-400">Yes</div>
+                          </div>
+                          <div>
+                            <div className="text-2xl font-bold text-red-400">
+                              {expenseQuestions.filter(q => q.answer === 'no').length}
+                            </div>
+                            <div className="text-xs text-gray-400">No</div>
+                          </div>
+                          <div>
+                            <div className="text-2xl font-bold text-gray-400">
+                              {expenseQuestions.filter(q => q.answer === null).length}
+                            </div>
+                            <div className="text-xs text-gray-400">Pending</div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-              </>
-            )}
-            {activeTab === "helpRequests" && (
-              <>
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-white">Expense Help Requests</h3>
-                  <div className="text-sm text-gray-400">
-                    From Property Managers and Technicians
-                  </div>
+
+                {/* Quick Actions */}
+                <div className="mt-6">
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Zap className="h-5 w-5" />
+                        Quick Actions
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Button 
+                          variant="outline" 
+                          className="bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700"
+                          onClick={() => setExpenseQuestions(prev => prev.map(q => ({ ...q, answer: null })))}
+                        >
+                          Clear All Answers
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="bg-green-600 border-green-600 text-white hover:bg-green-700 hover:border-green-700"
+                          onClick={() => {
+                            const yesCount = expenseQuestions.filter(q => q.answer === 'yes').length;
+                            const noCount = expenseQuestions.filter(q => q.answer === 'no').length;
+                            const pendingCount = expenseQuestions.filter(q => q.answer === null).length;
+                            alert(`Decision Summary:\nYes: ${yesCount}\nNo: ${noCount}\nPending: ${pendingCount}`);
+                          }}
+                        >
+                          Export Summary
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="bg-purple-600 border-purple-600 text-white hover:bg-purple-700 hover:border-purple-700"
+                          onClick={() => {
+                            const allAnswered = expenseQuestions.every(q => q.answer !== null);
+                            if (allAnswered) {
+                              const yesCount = expenseQuestions.filter(q => q.answer === 'yes').length;
+                              const approvalRate = (yesCount / expenseQuestions.length * 100).toFixed(1);
+                              alert(`Expense Approval Rate: ${approvalRate}%`);
+                            } else {
+                              alert('Please answer all questions first');
+                            }
+                          }}
+                        >
+                          Calculate Approval Rate
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-                
-                {/* Pending Requests Table */}
-                <div className="mb-6">
+
+                {/* Help Requests from Technicians */}
+                <div className="mt-6">
                   <Card className="bg-gray-800 border-gray-700">
                     <CardHeader>
                       <CardTitle className="text-white flex items-center gap-2">
                         <MessageSquare className="h-5 w-5" />
-                        Pending Requests
+                        Help Requests from Technicians
                         {helpRequests.filter(r => r.status === 'pending').length > 0 && (
                           <Badge className="bg-orange-600 text-white ml-2">
-                            {helpRequests.filter(r => r.status === 'pending').length}
+                            {helpRequests.filter(r => r.status === 'pending').length} Pending
                           </Badge>
                         )}
                       </CardTitle>
                       <CardDescription className="text-gray-400">
-                        Questions awaiting response from central office
+                        Questions and requests for guidance from technicians
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      {helpRequests.filter(r => r.status === 'pending').length === 0 ? (
+                      {helpRequests.length === 0 ? (
                         <div className="text-center py-8 text-gray-400">
-                          <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                          <p>No pending requests</p>
+                          <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>No help requests yet</p>
+                          <p className="text-sm">Technicians can submit questions using the "Ask for Help" button in their My Expenses tab</p>
                         </div>
                       ) : (
-                        <div className="overflow-x-auto">
-                                                      <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="text-gray-300">Submitted By</TableHead>
-                                <TableHead className="text-gray-300">Urgency</TableHead>
-                                <TableHead className="text-gray-300">Related Expense</TableHead>
-                                <TableHead className="text-gray-300">Question</TableHead>
-                                <TableHead className="text-gray-300">Date</TableHead>
-                                <TableHead className="text-gray-300">AI Suggestion</TableHead>
-                                <TableHead className="text-gray-300">Quick Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {helpRequests
-                                .filter(r => r.status === 'pending')
-                                .map((request) => (
-                                  <TableRow key={request.id} className="border-gray-700">
-                                    <TableCell className="text-white font-medium">
-                                      <div>
-                                        <div className="font-medium">{request.technicianName}</div>
-                                        <div className="text-sm text-gray-400">
-                                          {['Jessica Chen', 'Michael Rodriguez'].includes(request.technicianName) ? '(Property Manager)' : '(Technician)'}
-                                        </div>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-gray-300">
-                                      <Badge 
-                                        className={`${
-                                          request.urgency === 'high' ? 'bg-red-600' : 
-                                          request.urgency === 'normal' ? 'bg-yellow-600' : 'bg-green-600'
-                                        } text-white`}
-                                      >
-                                        {request.urgency === 'high' ? 'HIGH' : request.urgency === 'normal' ? 'NORMAL' : 'LOW'}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-gray-300 text-sm">
-                                      {request.expenseId !== 'none' ? (
-                                        <div className="font-medium">
-                                          {(() => {
-                                            const expense = [...transactions, ...technicianTransactions].find(txn => txn.id === request.expenseId);
-                                            return expense ? `${expense.vendor} - $${expense.amount.toFixed(2)}` : 'Not yet incurred';
-                                          })()}
-                                        </div>
-                                      ) : (
-                                        <span className="text-gray-500">No specific expense</span>
-                                      )}
-                                    </TableCell>
-                                    <TableCell className="text-gray-300">
-                                      <div>
-                                        <p className="text-sm">{request.question}</p>
-                                        {request.additionalDetails && (
-                                          <p className="text-xs text-gray-400 mt-1">
-                                            Additional context: {request.additionalDetails}
-                                          </p>
-                                        )}
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-gray-300 text-sm">
-                                      {new Date(request.createdAt).toLocaleDateString()}
-                                    </TableCell>
-                                    <TableCell className="text-gray-300">
-                                      <div className="flex items-center gap-2">
-                                        <Bot className="h-4 w-4 text-blue-400" />
-                                        <Badge className="bg-blue-600 text-white">
-                                          {request.question.toLowerCase().includes('emergency') ? 'YES' :
-                                           request.question.toLowerCase().includes('billable') && request.question.toLowerCase().includes('85%') ? 'YES' :
-                                           request.question.toLowerCase().includes('billable') && request.question.toLowerCase().includes('lunch') ? 'NO' :
-                                           request.question.toLowerCase().includes('drill') ? 'YES' :
-                                           request.question.toLowerCase().includes('paint') && request.question.toLowerCase().includes('$89') ? 'YES' :
-                                           request.question.toLowerCase().includes('water heater') ? 'YES' : 'REVIEW'}
-                                        </Badge>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>
-                                      <div className="flex gap-2">
-                                        <Button
-                                          size="sm"
-                                          className="bg-green-600 hover:bg-green-700 text-white"
-                                          onClick={() => {
-                                            setHelpRequests(prev => prev.map(r => 
-                                              r.id === request.id 
-                                                ? { ...r, status: 'answered' as const, answer: 'yes' as const, answeredAt: new Date().toISOString() }
-                                                : r
-                                            ));
-                                          }}
-                                        >
-                                          Yes
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          className="bg-red-600 hover:bg-red-700 text-white"
-                                          onClick={() => {
-                                            setHelpRequests(prev => prev.map(r => 
-                                              r.id === request.id 
-                                                ? { ...r, status: 'answered' as const, answer: 'no' as const, answeredAt: new Date().toISOString() }
-                                                : r
-                                            ));
-                                          }}
-                                        >
-                                          No
-                                        </Button>
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                            </TableBody>
-                          </Table>
+                        <div className="space-y-4">
+                          {helpRequests.map((request) => (
+                            <div key={request.id} className="p-4 bg-gray-900 rounded-lg border border-gray-700">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-sm font-medium text-white">{request.technicianName}</span>
+                                    <Badge 
+                                      className={`${
+                                        request.urgency === 'high' ? 'bg-red-600' : 
+                                        request.urgency === 'normal' ? 'bg-orange-600' : 'bg-blue-600'
+                                      } text-white`}
+                                    >
+                                      {request.urgency}
+                                    </Badge>
+                                    <Badge 
+                                      className={`${
+                                        request.status === 'pending' ? 'bg-yellow-600' : 
+                                        request.status === 'answered' ? 'bg-green-600' : 'bg-gray-600'
+                                      } text-white`}
+                                    >
+                                      {request.status}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-gray-300 mb-2">{request.question}</p>
+                                  {request.additionalDetails && (
+                                    <p className="text-xs text-gray-400 mb-2">{request.additionalDetails}</p>
+                                  )}
+                                  {request.expenseId && (
+                                    <div className="text-xs text-gray-400 mb-2">
+                                      Related Expense: {request.expenseId}
+                                    </div>
+                                  )}
+                                  <div className="text-xs text-gray-500">
+                                    Submitted: {new Date(request.createdAt).toLocaleString()}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {request.status === 'pending' && (
+                                <div className="mt-4 space-y-3">
+                                  <Button
+                                    size="sm"
+                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                    onClick={() => {
+                                      setSelectedHelpRequest(request);
+                                      setResponseForm({
+                                        answer: '',
+                                        decisionTrackerAnswers: {
+                                          'Is this expense reasonable and necessary?': null,
+                                          'Should this be billable to the property/owner?': null,
+                                          'Is a receipt required?': null,
+                                          'Does this require pre-approval?': null,
+                                          'Is this an emergency repair?': null,
+                                          'Is this a capital improvement?': null,
+                                          'Should this be reimbursed?': null,
+                                          'Is this within budget limits?': null
+                                        }
+                                      });
+                                      setResponseDialogOpen(true);
+                                    }}
+                                  >
+                                    Respond with Decision Tracker
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-gray-600 text-gray-300"
+                                    onClick={() => {
+                                      setHelpRequests(prev => 
+                                        prev.map(r => r.id === request.id ? { 
+                                          ...r, 
+                                          status: 'resolved' as const,
+                                          answeredAt: new Date().toISOString()
+                                        } : r)
+                                      );
+                                    }}
+                                  >
+                                    Mark Resolved
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       )}
                     </CardContent>
                   </Card>
                 </div>
-
-                {/* Resolved Requests Table */}
-                <div className="mb-6">
+              </>
+            )}
+            {activeTab === "properties" && (
+              <>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-semibold text-white">Properties</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-900 border-b border-gray-700">
+                        <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
+                        <th className="text-left py-3 px-4 font-semibold text-white">Address</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {properties.map((property) => (
+                        <React.Fragment key={property.id}>
+                          <tr 
+                            className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700/50 transition-colors cursor-pointer"
+                            onClick={() => setExpandedPropertyEmployees(expandedPropertyEmployees === property.id ? null : property.id)}
+                          >
+                            <td className="py-3 px-4">
+                              <div className="font-medium text-white">{property.name}</div>
+                            </td>
+                            <td className="py-3 px-4 text-gray-300">{property.address}</td>
+                          </tr>
+                          {expandedPropertyEmployees === property.id && (
+                            <tr className="bg-gray-900">
+                              <td colSpan={2} className="p-0">
+                                <div className="p-4">
+                                  <h5 className="text-sm font-semibold text-white mb-3">Staff at {property.name}</h5>
+                                  <table className="min-w-full text-sm">
+                                    <thead>
+                                      <tr className="bg-gray-800 border-b border-gray-700">
+                                        <th className="text-left py-2 px-3 font-semibold text-white">Name</th>
+                                        <th className="text-left py-2 px-3 font-semibold text-white">Role</th>
+                                        <th className="text-left py-2 px-3 font-semibold text-white">Phone</th>
+                                        <th className="text-left py-2 px-3 font-semibold text-white">Email</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {property.staff.map((employee, index) => (
+                                        <tr key={index} className="bg-gray-900 border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
+                                          <td className="py-2 px-3 text-gray-300">{employee.name}</td>
+                                          <td className="py-2 px-3 text-gray-300">{employee.role}</td>
+                                          <td className="py-2 px-3 text-gray-300">{employee.phone}</td>
+                                          <td className="py-2 px-3 text-gray-300">{employee.email}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+              </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                    </div>
+              </>
+            )}
+            {activeTab === "staff" && (
+              <>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-semibold text-white">Technicians</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-900 border-b border-gray-700">
+                        <th className="text-left py-3 px-4 font-semibold text-white">Name</th>
+                        <th className="text-left py-3 px-4 font-semibold text-white">Phone</th>
+                        <th className="text-left py-3 px-4 font-semibold text-white">Email</th>
+                        <th className="text-left py-3 px-4 font-semibold text-white">Work Orders Assigned</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {staff.map((technician) => {
+                        const assignedJobs = jobs.filter(job => job.technician === technician.name);
+                        return (
+                          <React.Fragment key={technician.id}>
+                            <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700/50 transition-colors">
+                              <td className="py-3 px-4">
+                                <div className="font-medium text-white">{technician.name}</div>
+                              </td>
+                              <td className="py-3 px-4 text-gray-300">{technician.phone}</td>
+                              <td className="py-3 px-4 text-gray-300">{technician.email}</td>
+                              <td className="py-3 px-4 text-gray-300">
+                                <button
+                                  className={`text-left hover:text-blue-400 transition-colors ${
+                                    assignedJobs.length > 0 ? 'text-blue-400 cursor-pointer' : 'text-gray-500 cursor-default'
+                                  }`}
+                                  onClick={() => assignedJobs.length > 0 && setViewTechnicianWorkOrders(viewTechnicianWorkOrders === technician.id ? null : technician.id)}
+                                  disabled={assignedJobs.length === 0}
+                                >
+                                  {assignedJobs.length} work order{assignedJobs.length !== 1 ? 's' : ''}
+                                </button>
+                              </td>
+                            </tr>
+                            {viewTechnicianWorkOrders === technician.id && assignedJobs.length > 0 && (
+                              <tr className="bg-gray-900">
+                                <td colSpan={4} className="p-0">
+                                  <div className="p-4">
+                                    <h5 className="text-sm font-semibold text-white mb-3">Work Orders for {technician.name}</h5>
+                                    <table className="min-w-full text-sm">
+                                      <thead>
+                                        <tr className="bg-gray-800 border-b border-gray-700">
+                                          <th className="text-left py-2 px-3 font-semibold text-white">Property</th>
+                                          <th className="text-left py-2 px-3 font-semibold text-white">Description</th>
+                                          <th className="text-left py-2 px-3 font-semibold text-white">Status</th>
+                                          <th className="text-left py-2 px-3 font-semibold text-white">Priority</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {assignedJobs.map((job) => (
+                                          <tr key={job.id} className="bg-gray-900 border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
+                                            <td className="py-2 px-3 text-gray-300">{job.property}</td>
+                                            <td className="py-2 px-3 text-gray-300">{job.description}</td>
+                                            <td className="py-2 px-3 text-gray-300">{job.techStatus}</td>
+                                            <td className="py-2 px-3 text-gray-300">{job.priority}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+            </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+            {activeTab === "profile" && (
+              <>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-semibold text-white">My Profile</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Personal Information Card */}
                   <Card className="bg-gray-800 border-gray-700">
                     <CardHeader>
-                      <CardTitle 
-                        className="text-white flex items-center gap-2 cursor-pointer"
-                        onClick={() => setResolvedRequestsCollapsed(!resolvedRequestsCollapsed)}
-                      >
-                        <ChevronRight 
-                          className={`h-5 w-5 transition-transform ${resolvedRequestsCollapsed ? '' : 'rotate-90'}`} 
-                        />
-                        <CheckCircle className="h-5 w-5" />
-                        Resolved Requests
-                        {helpRequests.filter(r => r.status === 'answered').length > 0 && (
-                          <Badge className="bg-green-600 text-white ml-2">
-                            {helpRequests.filter(r => r.status === 'answered').length}
-                          </Badge>
-                        )}
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <User className="h-5 w-5" />
+                        Personal Information
                       </CardTitle>
-                      <CardDescription className="text-gray-400">
-                        Questions that have been answered
-                      </CardDescription>
                     </CardHeader>
-                    {!resolvedRequestsCollapsed && (
-                      <CardContent>
-                        {helpRequests.filter(r => r.status === 'answered').length === 0 ? (
-                          <div className="text-center py-8 text-gray-400">
-                            <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p>No resolved requests</p>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
+                          <User className="h-8 w-8 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-semibold text-white">{technicianName}</h4>
+                          <p className="text-gray-400">HVAC Technician</p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <Label className="text-gray-400">Employee ID</Label>
+                          <span className="text-white">TECH-001</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <Label className="text-gray-400">Email</Label>
+                          <span className="text-white">alice.johnson@company.com</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <Label className="text-gray-400">Phone</Label>
+                          <span className="text-white">(555) 123-4567</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <Label className="text-gray-400">Hire Date</Label>
+                          <span className="text-white">March 15, 2023</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <Label className="text-gray-400">Status</Label>
+                          <Badge className="bg-green-600 text-white">Active</Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Work Statistics Card */}
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5" />
+                        Work Statistics
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-3 bg-gray-700 rounded-lg">
+                          <div className="text-2xl font-bold text-blue-400">{technicianWorkOrders.length}</div>
+                          <div className="text-sm text-gray-400">Total Work Orders</div>
+                        </div>
+                        <div className="text-center p-3 bg-gray-700 rounded-lg">
+                          <div className="text-2xl font-bold text-green-400">{technicianFinishedJobs.length}</div>
+                          <div className="text-sm text-gray-400">Completed</div>
+                        </div>
+                        <div className="text-center p-3 bg-gray-700 rounded-lg">
+                          <div className="text-2xl font-bold text-yellow-400">{technicianInProgressJobs.length}</div>
+                          <div className="text-sm text-gray-400">In Progress</div>
+                        </div>
+                        <div className="text-center p-3 bg-gray-700 rounded-lg">
+                          <div className="text-2xl font-bold text-red-400">{technicianOverdueJobs.length}</div>
+                          <div className="text-sm text-gray-400">Overdue</div>
+                        </div>
+                      </div>
+                      
+                      <div className="pt-4 border-t border-gray-700">
+                        <h5 className="text-sm font-semibold text-white mb-2">This Month's Expenses</h5>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400">Total Spent</span>
+                            <span className="text-white">${technicianTotalSpend.toFixed(2)}</span>
                           </div>
-                        ) : (
-                          <div className="overflow-x-auto">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead className="text-gray-300">Submitted By</TableHead>
-                                  <TableHead className="text-gray-300">Urgency</TableHead>
-                                  <TableHead className="text-gray-300">Related Expense</TableHead>
-                                  <TableHead className="text-gray-300">Question</TableHead>
-                                  <TableHead className="text-gray-300">Answer</TableHead>
-                                  <TableHead className="text-gray-300">Date</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {helpRequests
-                                  .filter(r => r.status === 'answered')
-                                  .map((request) => (
-                                    <TableRow key={request.id} className="border-gray-700">
-                                      <TableCell className="text-white font-medium">
-                                        <div>
-                                          <div className="font-medium">{request.technicianName}</div>
-                                          <div className="text-sm text-gray-400">
-                                            {['Jessica Chen', 'Michael Rodriguez'].includes(request.technicianName) ? '(Property Manager)' : '(Technician)'}
-                                          </div>
-                                        </div>
-                                      </TableCell>
-                                      <TableCell className="text-gray-300">
-                                        <Badge 
-                                          className={`${
-                                            request.urgency === 'high' ? 'bg-red-600' : 
-                                            request.urgency === 'normal' ? 'bg-yellow-600' : 'bg-green-600'
-                                          } text-white`}
-                                        >
-                                          {request.urgency === 'high' ? 'HIGH' : request.urgency === 'normal' ? 'NORMAL' : 'LOW'}
-                                        </Badge>
-                                      </TableCell>
-                                      <TableCell className="text-gray-300 text-sm">
-                                        {request.expenseId !== 'none' ? (
-                                          <div className="font-medium">
-                                            {(() => {
-                                              const expense = [...transactions, ...technicianTransactions].find(txn => txn.id === request.expenseId);
-                                              return expense ? `${expense.vendor} - $${expense.amount.toFixed(2)}` : 'Not yet incurred';
-                                            })()}
-                                          </div>
-                                        ) : (
-                                          <span className="text-gray-500">No specific expense</span>
-                                        )}
-                                      </TableCell>
-                                                                              <TableCell className="text-gray-300">
-                                          <div>
-                                            <p className="text-sm">{request.question}</p>
-                                            {request.additionalDetails && (
-                                              <p className="text-xs text-gray-400 mt-1">
-                                                Additional context: {request.additionalDetails}
-                                              </p>
-                                            )}
-                                          </div>
-                                        </TableCell>
-                                      <TableCell>
-                                        <Badge className={`${request.answer === 'yes' ? 'bg-green-600' : 'bg-red-600'} text-white`}>
-                                          {request.answer === 'yes' ? 'Yes' : 'No'}
-                                        </Badge>
-                                      </TableCell>
-                                      <TableCell className="text-gray-300 text-sm">
-                                        {request.answeredAt && new Date(request.answeredAt).toLocaleDateString()}
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                              </TableBody>
-                            </Table>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400">Billable</span>
+                            <span className="text-green-400">${technicianBillableSpend.toFixed(2)}</span>
                           </div>
-                        )}
-                      </CardContent>
-                    )}
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400">Non-Billable</span>
+                            <span className="text-yellow-400">${technicianNonBillableSpend.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Skills & Certifications Card */}
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Award className="h-5 w-5" />
+                        Skills & Certifications
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                          <div>
+                            <div className="font-medium text-white">HVAC Installation</div>
+                            <div className="text-sm text-gray-400">Certified Technician</div>
+                          </div>
+                          <Badge className="bg-green-600 text-white">Active</Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                          <div>
+                            <div className="font-medium text-white">Refrigeration Systems</div>
+                            <div className="text-sm text-gray-400">EPA Certified</div>
+                          </div>
+                          <Badge className="bg-green-600 text-white">Active</Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                          <div>
+                            <div className="font-medium text-white">Electrical Systems</div>
+                            <div className="text-sm text-gray-400">Licensed Electrician</div>
+                          </div>
+                          <Badge className="bg-green-600 text-white">Active</Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                          <div>
+                            <div className="font-medium text-white">Plumbing</div>
+                            <div className="text-sm text-gray-400">Basic Certification</div>
+                          </div>
+                          <Badge className="bg-yellow-600 text-white">Pending</Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Recent Activity Card */}
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Clock className="h-5 w-5" />
+                        Recent Activity
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="space-y-3">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
+                          <div className="flex-1">
+                            <p className="text-sm text-white">Completed HVAC maintenance at Stanford GSB</p>
+                            <p className="text-xs text-gray-400">2 hours ago</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-3">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
+                          <div className="flex-1">
+                            <p className="text-sm text-white">Started work order at Sunnyvale 432</p>
+                            <p className="text-xs text-gray-400">1 day ago</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-3">
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2"></div>
+                          <div className="flex-1">
+                            <p className="text-sm text-white">Submitted expense report for $150.00</p>
+                            <p className="text-xs text-gray-400">2 days ago</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-3">
+                          <div className="w-2 h-2 bg-purple-400 rounded-full mt-2"></div>
+                          <div className="flex-1">
+                            <p className="text-sm text-white">Received new work order assignment</p>
+                            <p className="text-xs text-gray-400">3 days ago</p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
                   </Card>
                 </div>
               </>
@@ -4580,8 +4662,8 @@ export default function PMFinancialDashboard() {
                     <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`rounded-lg px-4 py-2 max-w-[80%] ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-blue-200'}`}>
                         {msg.content}
-                      </div>
-                    </div>
+                  </div>
+                </div>
                   ))}
                 </div>
                 <div className="flex gap-2 p-4 border-t border-gray-700 bg-gray-900">
@@ -4595,7 +4677,7 @@ export default function PMFinancialDashboard() {
                   <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleSmartAssistSend}>
                     <Send className="h-4 w-4 mr-1" /> Ask
                   </Button>
-                </div>
+                          </div>
               </SheetContent>
             </Sheet>
 
@@ -4608,7 +4690,7 @@ export default function PMFinancialDashboard() {
                     Fill out the details to create a new work order.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                      <div className="space-y-4">
                   {/* Property Dropdown */}
                   <div>
                     <Label className="text-gray-300">Property</Label>
@@ -4628,7 +4710,7 @@ export default function PMFinancialDashboard() {
                       </SelectContent>
                     </Select>
                     {formErrors.property && <div className="text-red-400 text-xs mt-1">{formErrors.property}</div>}
-                  </div>
+                              </div>
                   {/* Work Order Name */}
                   <div>
                     <Label className="text-gray-300">Work Order Name</Label>
@@ -4639,7 +4721,7 @@ export default function PMFinancialDashboard() {
                       onChange={e => setNewWorkOrder(prev => ({ ...prev, description: e.target.value }))}
                     />
                     {formErrors.description && <div className="text-red-400 text-xs mt-1">{formErrors.description}</div>}
-                  </div>
+                            </div>
                   {/* Estimated Cost Dropdown */}
                   <div>
                     <Label className="text-gray-300">Estimated Cost</Label>
@@ -4677,19 +4759,19 @@ export default function PMFinancialDashboard() {
                   </div>
                 </div>
                 <DialogFooter className="mt-4">
-                  <Button
+                              <Button
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                     onClick={handleCreateWorkOrder}
                   >
                     Create Work Order
-                  </Button>
-                  <Button
-                    variant="outline"
+                              </Button>
+                              <Button
+                                variant="outline"
                     className="border-gray-600 text-gray-300"
                     onClick={() => setNewJobDialogOpen(false)}
                   >
                     Cancel
-                  </Button>
+                              </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -4722,9 +4804,9 @@ export default function PMFinancialDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
+                      </div>
                   {/* Work Order Name */}
-                  <div>
+                          <div>
                     <Label className="text-gray-300">Work Order Name</Label>
                     <Input
                       className="bg-gray-800 border-gray-600 text-white w-full"
@@ -4732,9 +4814,9 @@ export default function PMFinancialDashboard() {
                       value={editJobForm.description}
                       onChange={e => setEditJobForm(prev => ({ ...prev, description: e.target.value }))}
                     />
-                  </div>
+                            </div>
                   {/* Estimated Cost Dropdown */}
-                  <div>
+                          <div>
                     <Label className="text-gray-300">Estimated Cost</Label>
                     <Select
                       value={editJobForm.cost ? (Number(editJobForm.cost) >= 1000 ? '1000+' : '<1000') : ''}
@@ -4748,9 +4830,9 @@ export default function PMFinancialDashboard() {
                         <SelectItem value="1000+" className="bg-gray-900 text-white">$1,000 or more</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
+                            </div>
                   {/* Priority Dropdown */}
-                  <div>
+                          <div>
                     <Label className="text-gray-300">Priority</Label>
                     <Select
                       value={editJobForm.priority}
@@ -4765,23 +4847,23 @@ export default function PMFinancialDashboard() {
                         <SelectItem value="High" className="bg-gray-900 text-white">High</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                </div>
+                            </div>
+                          </div>
                 <DialogFooter className="mt-4">
-                  <Button
+                        <Button 
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                     onClick={handleUpdateWorkOrder}
                     disabled={!editJobForm.property || !editJobForm.description}
                   >
                     Update Work Order
-                  </Button>
-                  <Button
-                    variant="outline"
+                        </Button>
+                        <Button 
+                          variant="outline" 
                     className="border-gray-600 text-gray-300"
                     onClick={() => setEditJobDialogOpen(false)}
                   >
                     Cancel
-                  </Button>
+                        </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -4795,7 +4877,7 @@ export default function PMFinancialDashboard() {
                     Enter the details for the new expense. It will be added to the "Needs Review" table.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                        <div className="space-y-4">
                   <div>
                     <Label className="text-gray-300">Merchant</Label>
                     <Input 
@@ -4804,7 +4886,7 @@ export default function PMFinancialDashboard() {
                       onChange={e => setMainExpenseForm(f => ({ ...f, vendor: e.target.value }))} 
                       placeholder="Merchant name" 
                     />
-                  </div>
+                                  </div>
                   <div>
                     <Label className="text-gray-300">Amount</Label>
                     <Input 
@@ -4814,7 +4896,7 @@ export default function PMFinancialDashboard() {
                       onChange={e => setMainExpenseForm(f => ({ ...f, amount: e.target.value }))} 
                       placeholder="Amount" 
                     />
-                  </div>
+                                    </div>
                   <div>
                     <Label className="text-gray-300">Made By</Label>
                     <Input 
@@ -4823,7 +4905,7 @@ export default function PMFinancialDashboard() {
                       onChange={e => setMainExpenseForm(f => ({ ...f, madeBy: e.target.value }))} 
                       placeholder="Name" 
                     />
-                  </div>
+                                  </div>
                   <div>
                     <Label className="text-gray-300">Billable</Label>
                     <Select value={mainExpenseForm.billable ? 'yes' : 'no'} onValueChange={v => setMainExpenseForm(f => ({ ...f, billable: v === 'yes' }))}>
@@ -4835,7 +4917,7 @@ export default function PMFinancialDashboard() {
                         <SelectItem value="no">No</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
+                                </div>
                   <div>
                     <Label className="text-gray-300">Memo</Label>
                     <Input 
@@ -4844,11 +4926,11 @@ export default function PMFinancialDashboard() {
                       onChange={e => setMainExpenseForm(f => ({ ...f, memo: e.target.value }))} 
                       placeholder="Memo" 
                     />
-                  </div>
+                              </div>
                   <div>
                     <Label className="text-gray-300">Receipt</Label>
                     <Input 
-                      className="bg-gray-800 border-gray-600 text-white" 
+                                    className="bg-gray-800 border-gray-600 text-white"
                       type="file" 
                       onChange={e => setMainExpenseForm(f => ({ ...f, receipt: e.target.files?.[0]?.name || '' }))} 
                     />
@@ -4859,10 +4941,10 @@ export default function PMFinancialDashboard() {
                   <Button variant="outline" onClick={() => setNewExpenseDialogOpen(false)} className="border-gray-600 text-gray-300">
                     Cancel
                   </Button>
-                  <Button 
+                                    <Button
                     className="bg-blue-600 hover:bg-blue-700" 
                     disabled={!mainExpenseForm.vendor || !mainExpenseForm.amount || !mainExpenseForm.madeBy} 
-                    onClick={() => {
+                                      onClick={() => {
                       // Add new expense to transactions with pending status
                       const newExpense: Transaction = {
                         id: `txn-${Date.now()}`,
@@ -4883,7 +4965,7 @@ export default function PMFinancialDashboard() {
                     }}
                   >
                     Add Expense
-                  </Button>
+                                    </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -4919,8 +5001,8 @@ export default function PMFinancialDashboard() {
                     ) : (
                       '-'
                     )}
-                    </div>
-                  </div>
+                                  </div>
+                                </div>
                 ) : (
                   <div>No transaction selected.</div>
                 )}
@@ -4945,7 +5027,7 @@ export default function PMFinancialDashboard() {
                       value={newTransactionForm.date}
                       onChange={e => setNewTransactionForm(prev => ({ ...prev, date: e.target.value }))}
                     />
-                  </div>
+                                  </div>
                   <div>
                     <Label className="text-gray-300">Vendor/Merchant</Label>
                     <Input
@@ -4954,7 +5036,7 @@ export default function PMFinancialDashboard() {
                       onChange={e => setNewTransactionForm(prev => ({ ...prev, vendor: e.target.value }))}
                       placeholder="Merchant name"
                     />
-                  </div>
+                                </div>
                   <div>
                     <Label className="text-gray-300">Amount</Label>
                     <Input
@@ -4965,7 +5047,7 @@ export default function PMFinancialDashboard() {
                       onChange={e => setNewTransactionForm(prev => ({ ...prev, amount: e.target.value }))}
                       placeholder="0.00"
                     />
-                  </div>
+                            </div>
                   <div>
                     <Label className="text-gray-300">Made By</Label>
                     <Input
@@ -4974,7 +5056,7 @@ export default function PMFinancialDashboard() {
                       onChange={e => setNewTransactionForm(prev => ({ ...prev, madeBy: e.target.value }))}
                       placeholder="Person name"
                     />
-                  </div>
+                        </div>
                   <div>
                     <Label className="text-gray-300">Card Holder</Label>
                     <Input
@@ -4983,7 +5065,7 @@ export default function PMFinancialDashboard() {
                       onChange={e => setNewTransactionForm(prev => ({ ...prev, cardHolder: e.target.value }))}
                       placeholder="Card holder name"
                     />
-                  </div>
+                </div>
                   <div>
                     <Label className="text-gray-300">Property</Label>
                     <Select
@@ -5001,7 +5083,7 @@ export default function PMFinancialDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
+              </div>
                   <div>
                     <Label className="text-gray-300">Work Order (Optional)</Label>
                     <Select
@@ -5020,7 +5102,7 @@ export default function PMFinancialDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
+                    </div>
                   <div>
                     <Label className="text-gray-300">Billable</Label>
                     <Select
@@ -5035,7 +5117,7 @@ export default function PMFinancialDashboard() {
                         <SelectItem value="no" className="bg-gray-900 text-white">No</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
+            </div>
                   <div className="col-span-2">
                     <Label className="text-gray-300">Memo</Label>
                     <Input
@@ -5044,7 +5126,7 @@ export default function PMFinancialDashboard() {
                       onChange={e => setNewTransactionForm(prev => ({ ...prev, memo: e.target.value }))}
                       placeholder="Transaction description/memo"
                     />
-                  </div>
+                </div>
                   <div className="col-span-2">
                     <Label className="text-gray-300">Receipt</Label>
                     <Input
@@ -5059,7 +5141,7 @@ export default function PMFinancialDashboard() {
                     {newTransactionForm.receipt && (
                       <span className="text-xs text-green-400 mt-1">{newTransactionForm.receipt}</span>
                     )}
-                  </div>
+                </div>
                 </div>
                 <DialogFooter className="mt-4">
                   <Button
@@ -5098,8 +5180,8 @@ export default function PMFinancialDashboard() {
                       value={editTransactionForm.date}
                       onChange={e => setEditTransactionForm(prev => ({ ...prev, date: e.target.value }))}
                     />
-                  </div>
-                  <div>
+                        </div>
+                        <div>
                     <Label className="text-gray-300">Vendor/Merchant</Label>
                     <Input
                       className="bg-gray-800 border-gray-600 text-white"
@@ -5107,7 +5189,7 @@ export default function PMFinancialDashboard() {
                       onChange={e => setEditTransactionForm(prev => ({ ...prev, vendor: e.target.value }))}
                       placeholder="Merchant name"
                     />
-                  </div>
+                        </div>
                   <div>
                     <Label className="text-gray-300">Amount</Label>
                     <Input
@@ -5118,7 +5200,7 @@ export default function PMFinancialDashboard() {
                       onChange={e => setEditTransactionForm(prev => ({ ...prev, amount: e.target.value }))}
                       placeholder="0.00"
                     />
-                  </div>
+                      </div>
                   <div>
                     <Label className="text-gray-300">Made By</Label>
                     <Input
@@ -5127,7 +5209,7 @@ export default function PMFinancialDashboard() {
                       onChange={e => setEditTransactionForm(prev => ({ ...prev, madeBy: e.target.value }))}
                       placeholder="Person name"
                     />
-                  </div>
+                        </div>
                   <div>
                     <Label className="text-gray-300">Card Holder</Label>
                     <Input
@@ -5136,7 +5218,7 @@ export default function PMFinancialDashboard() {
                       onChange={e => setEditTransactionForm(prev => ({ ...prev, cardHolder: e.target.value }))}
                       placeholder="Card holder name"
                     />
-                  </div>
+                        </div>
                   <div>
                     <Label className="text-gray-300">Property</Label>
                     <Select
@@ -5154,7 +5236,7 @@ export default function PMFinancialDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
+                        </div>
                   <div>
                     <Label className="text-gray-300">Work Order (Optional)</Label>
                     <Select
@@ -5173,7 +5255,7 @@ export default function PMFinancialDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
+                        </div>
                   <div>
                     <Label className="text-gray-300">Billable</Label>
                     <Select
@@ -5188,7 +5270,7 @@ export default function PMFinancialDashboard() {
                         <SelectItem value="no" className="bg-gray-900 text-white">No</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
+                        </div>
                   <div className="col-span-2">
                     <Label className="text-gray-300">Memo</Label>
                     <Input
@@ -5197,7 +5279,7 @@ export default function PMFinancialDashboard() {
                       onChange={e => setEditTransactionForm(prev => ({ ...prev, memo: e.target.value }))}
                       placeholder="Transaction description/memo"
                     />
-                  </div>
+                      </div>
                   <div className="col-span-2">
                     <Label className="text-gray-300">Receipt</Label>
                     <Input
@@ -5212,8 +5294,8 @@ export default function PMFinancialDashboard() {
                     {editTransactionForm.receipt && (
                       <span className="text-xs text-green-400 mt-1">{editTransactionForm.receipt}</span>
                     )}
-                  </div>
-                </div>
+                        </div>
+                        </div>
                 <DialogFooter className="mt-4">
                   <Button
                     className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -5252,7 +5334,7 @@ export default function PMFinancialDashboard() {
                       placeholder="Enter the expense question..."
                       rows={3}
                     />
-          </div>
+                          </div>
                   <div>
                     <Label className="text-gray-300">Category</Label>
                     <Select
@@ -5283,6 +5365,7 @@ export default function PMFinancialDashboard() {
                             id: Math.max(...prev.map(q => q.id)) + 1,
                             question: newQuestion.question.trim(),
                             answer: null,
+                            timestamp: null,
                             category: newQuestion.category
                           }
                         ]);
@@ -5338,7 +5421,7 @@ export default function PMFinancialDashboard() {
                           ))}
                       </SelectContent>
                     </Select>
-                                </div>
+                          </div>
                           <div>
                     <Label className="text-gray-300">Your Question *</Label>
                     <Textarea
@@ -5348,7 +5431,7 @@ export default function PMFinancialDashboard() {
                       placeholder="What would you like to ask about this expense or expense policy?"
                       rows={4}
                     />
-                              </div>
+                          </div>
                           <div>
                     <Label className="text-gray-300">Urgency Level</Label>
                     <Select
@@ -5384,14 +5467,14 @@ export default function PMFinancialDashboard() {
                         const newRequest = {
                           id: `help_${Date.now()}`,
                           expenseId: helpRequestForm.expenseId,
-                          technicianName: role === 'pm' ? 'Jessica Chen' : technicianName,
+                          technicianName: technicianName,
                           question: helpRequestForm.question.trim(),
-                          urgency: helpRequestForm.urgency,
+                          urgency: helpRequestForm.urgency as 'low' | 'normal' | 'high',
                           additionalDetails: helpRequestForm.additionalDetails,
                           status: 'pending' as const,
                           createdAt: new Date().toISOString()
                         };
-                        setHelpRequests(prev => [{ ...newRequest, answer: undefined }, ...prev]);
+                        setHelpRequests(prev => [newRequest, ...prev]);
                         setHelpRequestForm({
                           expenseId: 'none',
                           question: '',
@@ -5474,7 +5557,19 @@ export default function PMFinancialDashboard() {
                               }
                             : req
                         ));
-                        setResponseForm({ answer: '', decisionTrackerAnswers: {} });
+                        setResponseForm({ 
+                          answer: '', 
+                          decisionTrackerAnswers: {
+                            'Is this expense reasonable and necessary?': null,
+                            'Should this be billable to the property/owner?': null,
+                            'Is a receipt required?': null,
+                            'Does this require pre-approval?': null,
+                            'Is this an emergency repair?': null,
+                            'Is this a capital improvement?': null,
+                            'Should this be reimbursed?': null,
+                            'Is this within budget limits?': null
+                          }
+                        });
                         setSelectedHelpRequest(null);
                         setResponseDialogOpen(false);
                       }
@@ -5487,67 +5582,24 @@ export default function PMFinancialDashboard() {
                     variant="outline"
                     className="border-gray-600 text-gray-300"
                     onClick={() => {
-                      setResponseForm({ answer: '', decisionTrackerAnswers: {} });
+                      setResponseForm({ 
+                        answer: '', 
+                        decisionTrackerAnswers: {
+                          'Is this expense reasonable and necessary?': null,
+                          'Should this be billable to the property/owner?': null,
+                          'Is a receipt required?': null,
+                          'Does this require pre-approval?': null,
+                          'Is this an emergency repair?': null,
+                          'Is this a capital improvement?': null,
+                          'Should this be reimbursed?': null,
+                          'Is this within budget limits?': null
+                        }
+                      });
                       setSelectedHelpRequest(null);
                       setResponseDialogOpen(false);
                     }}
                   >
                     Cancel
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Delete Job Confirmation Dialog */}
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <DialogContent className="bg-gray-900 border-gray-700 text-white">
-                <DialogHeader>
-                  <DialogTitle>Delete Work Order</DialogTitle>
-                  <DialogDescription className="text-gray-400">
-                    Are you sure you want to delete this work order? This action cannot be undone.
-                  </DialogDescription>
-                </DialogHeader>
-                
-                {jobToDelete && (
-                  <div className="bg-gray-800 p-4 rounded-lg">
-                    <h4 className="text-lg font-semibold text-white mb-2">{jobToDelete.property}</h4>
-                    <div className="text-gray-300 mb-2">{jobToDelete.description}</div>
-                    <div className="text-sm text-gray-400">
-                      <strong>Technician:</strong> {jobToDelete.technician || 'Unassigned'}
-                    </div>
-                  </div>
-                )}
-
-                <DialogFooter className="mt-6">
-                  <Button
-                    variant="outline"
-                    className="border-gray-600 text-gray-300"
-                    onClick={() => {
-                      setDeleteDialogOpen(false);
-                      setJobToDelete(null);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    className="bg-red-600 hover:bg-red-700 text-white"
-                    onClick={() => {
-                      if (jobToDelete) {
-                        console.log('Delete confirmation clicked for job:', jobToDelete);
-                        console.log('Current jobs before deletion:', jobs);
-                        setJobs(prev => {
-                          const newJobs = prev.filter(job => job.id !== jobToDelete.id);
-                          console.log('Jobs after deletion:', newJobs);
-                          return newJobs;
-                        });
-                        setDeleteDialogOpen(false);
-                        setJobToDelete(null);
-                        console.log('Delete completed, dialog closed');
-                      }
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Work Order
                   </Button>
                 </DialogFooter>
               </DialogContent>
