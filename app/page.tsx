@@ -270,6 +270,60 @@ const enhancedCards: EnhancedCard[] = [
     lastUsed: '3 hours ago',
     monthlySpend: 2850,
     assignedStaff: ['tech3']
+  },
+  {
+    id: 'card4',
+    type: 'physical',
+    number: '**** 9876',
+    holder: 'Diana Smith',
+    position: 'Admin',
+    balance: 1200,
+    limit: 2500,
+    status: 'active',
+    assignedProperties: ['stanford', 'downtown'],
+    vendorRestrictions: ['Office Depot', 'Staples', 'Amazon Business', 'Fedex'],
+    isExistingCard: true, // Connected existing Mastercard
+    brand: 'Mastercard',
+    expiryDate: '11/26',
+    lastUsed: '4 days ago',
+    monthlySpend: 890,
+    assignedStaff: ['admin1']
+  },
+  {
+    id: 'card5',
+    type: 'virtual',
+    number: '**** 5432',
+    holder: 'Mike Thompson',
+    position: 'Technician',
+    balance: 3100,
+    limit: 4000,
+    status: 'active',
+    assignedProperties: ['highland'],
+    vendorRestrictions: ['Home Depot', 'Lowes', 'Benjamin Moore', 'Sherwin Williams'],
+    isExistingCard: false,
+    brand: 'Chase',
+    expiryDate: '09/27',
+    lastUsed: '1 hour ago',
+    monthlySpend: 2200,
+    assignedStaff: ['tech4']
+  },
+  {
+    id: 'card6',
+    type: 'physical',
+    number: '**** 1357',
+    holder: 'Sarah Wilson',
+    position: 'PM',
+    balance: 2800,
+    limit: 6000,
+    status: 'active',
+    assignedProperties: ['westside', 'sunnyvale'],
+    vendorRestrictions: ['Office Depot', 'Home Depot', 'Amazon Business', 'Lowes'],
+    isExistingCard: true, // Connected existing Visa
+    brand: 'Visa',
+    expiryDate: '05/28',
+    lastUsed: '6 hours ago',
+    monthlySpend: 1950,
+    assignedStaff: ['pm2']
   }
 ];
 
@@ -789,6 +843,15 @@ export default function PMFinancialDashboard() {
   const [selectedReportProperty, setSelectedReportProperty] = useState<any>(null);
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
 
+  // Enhanced state for monthly reimbursements and trust accounts
+  const [monthlyReimbursementDialogOpen, setMonthlyReimbursementDialogOpen] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState('2025-01');
+  const [selectedPropertyForMonthly, setSelectedPropertyForMonthly] = useState<any>(null);
+  const [ccRecipient, setCcRecipient] = useState({ name: '', email: '' });
+  const [editingPolicyRule, setEditingPolicyRule] = useState<any>(null);
+  const [policyRuleEditDialogOpen, setPolicyRuleEditDialogOpen] = useState(false);
+  const [editedRule, setEditedRule] = useState({ category: '', rule: '', aiEnabled: false, active: false });
+
   // Handle URL parameters for tab navigation
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -819,6 +882,14 @@ export default function PMFinancialDashboard() {
       reconciliationStatus: "balanced",
       pendingTransactions: 5,
       lastReport: "Jan 15, 2024",
+      trustAccount: {
+        bankName: "Wells Fargo",
+        accountNumber: "****2847",
+        routingNumber: "121000248",
+        accountType: "Trust Account",
+        autoMapping: true,
+        lastReimbursement: "2025-01-10"
+      },
       ownerEmail: "owner@stanford.edu",
       ownerName: "Dr. Sarah Wilson",
       ownerPhone: "650-723-2273",
@@ -876,6 +947,14 @@ export default function PMFinancialDashboard() {
       reconciliationStatus: "balanced",
       pendingTransactions: 8,
       lastReport: "Jan 10, 2024",
+      trustAccount: {
+        bankName: "Wells Fargo",
+        accountNumber: "****5923",
+        routingNumber: "121000248",
+        accountType: "Trust Account",
+        autoMapping: true,
+        lastReimbursement: "2025-01-08"
+      },
       ownerEmail: "owner@sunnyvale.com", 
       ownerName: "Michael Chen",
       ownerPhone: "408-555-0123",
@@ -933,6 +1012,14 @@ export default function PMFinancialDashboard() {
       reconciliationStatus: "variance",
       pendingTransactions: 3,
       lastReport: "Jan 8, 2024",
+      trustAccount: {
+        bankName: "Wells Fargo",
+        accountNumber: "****7461",
+        routingNumber: "121000248",
+        accountType: "Trust Account",
+        autoMapping: true,
+        lastReimbursement: "2025-01-05"
+      },
       ownerEmail: "owner@downtownlofts.com",
       ownerName: "Alex Rodriguez",
       ownerPhone: "415-555-7890",
@@ -1850,9 +1937,9 @@ export default function PMFinancialDashboard() {
     
     // Reset form and close dialog
     setCardForm({
-      type: 'virtual',
+    type: 'virtual',
       holder: '',
-      position: 'Technician',
+    position: 'Technician',
       limit: '',
       assignedProperties: [],
       vendorRestrictions: [],
@@ -1872,7 +1959,7 @@ export default function PMFinancialDashboard() {
       position: cardForm.position,
       balance: Number(cardForm.limit) * 0.6, // Existing card might have usage
       limit: Number(cardForm.limit),
-      status: 'active',
+    status: 'active',
       assignedProperties: cardForm.assignedProperties,
       vendorRestrictions: cardForm.vendorRestrictions,
       isExistingCard: true, // Mark as connected existing card
@@ -1894,8 +1981,8 @@ export default function PMFinancialDashboard() {
       limit: '',
       assignedProperties: [],
       vendorRestrictions: [],
-      isExistingCard: false,
-      brand: 'Chase',
+    isExistingCard: false,
+    brand: 'Chase',
       assignedStaff: []
     });
     setConnectCardDialogOpen(false);
@@ -1955,6 +2042,51 @@ export default function PMFinancialDashboard() {
     });
     
     return propertyTransactions.reduce((sum, txn) => sum + txn.amount, 0);
+  };
+
+  // Enhanced functions for new functionality
+  const handleEditPolicyRule = (rule: any) => {
+    setEditingPolicyRule(rule);
+    setEditedRule({
+      category: rule.category,
+      rule: rule.rule,
+      aiEnabled: rule.aiEnabled,
+      active: rule.active
+    });
+    setPolicyRuleEditDialogOpen(true);
+  };
+
+  const handleSavePolicyRule = () => {
+    if (editingPolicyRule) {
+      setPolicyRules(prev => prev.map(rule => 
+        rule.id === editingPolicyRule.id 
+          ? { ...rule, ...editedRule }
+          : rule
+      ));
+      setPolicyRuleEditDialogOpen(false);
+      setEditingPolicyRule(null);
+    }
+  };
+
+  const handleMonthlyReimbursement = (property: any, month: string) => {
+    setSelectedPropertyForMonthly(property);
+    setSelectedMonth(month);
+    setMonthlyReimbursementDialogOpen(true);
+  };
+
+  const processMonthlyReimbursement = () => {
+    if (!selectedPropertyForMonthly) return;
+    
+    // Mock processing - in real app would call API
+    console.log(`Processing monthly reimbursement for ${selectedPropertyForMonthly.name} for ${selectedMonth}`);
+    if (ccRecipient.email) {
+      console.log(`CC'ing report to ${ccRecipient.name} (${ccRecipient.email})`);
+    }
+    
+    // Close dialog and reset state
+    setMonthlyReimbursementDialogOpen(false);
+    setSelectedPropertyForMonthly(null);
+    setCcRecipient({ name: '', email: '' });
   };
 
   return (
@@ -2704,9 +2836,9 @@ export default function PMFinancialDashboard() {
                   </div>
                 </div>
 
-                {/* Trust Account Summary */}
+                {/* Enhanced Trust Account Summary */}
                 <div className="mb-6">
-                  <h4 className="text-md font-semibold text-white mb-3">Trust Account Balances</h4>
+                  <h4 className="text-md font-semibold text-white mb-3">Trust Account Balances & Auto-Mapping</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {properties.map((property) => {
                       const ytdSpending = getPropertyYTDSpending(property.name);
@@ -2715,18 +2847,28 @@ export default function PMFinancialDashboard() {
                           <CardContent className="p-4">
                             <div className="flex justify-between items-start mb-2">
                               <div className="text-sm font-medium text-white">{property.name}</div>
+                              <div className="flex items-center gap-1">
+                                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                                <span className="text-xs text-green-400">Auto-mapped</span>
+                              </div>
                             </div>
                             <div className="text-2xl font-bold text-white mb-1">
                               ${property.trustBalance.toLocaleString()}
                             </div>
                             <div className="text-sm text-gray-400 mb-2">
-                              Trust Balance
+                              Trust Balance • {property.trustAccount.bankName}
+                            </div>
+                            <div className="text-xs text-gray-500 mb-2">
+                              Account: {property.trustAccount.accountNumber} • Routing: {property.trustAccount.routingNumber}
                             </div>
                             <div className="text-lg font-semibold text-blue-400 mb-1">
                               ${ytdSpending.toLocaleString()}
                             </div>
                             <div className="text-xs text-gray-400">
                               YTD Spending • Last sync: {property.lastSync}
+                            </div>
+                            <div className="text-xs text-green-400 mt-1">
+                              🔄 Reimbursements auto-sync to this account
                             </div>
                           </CardContent>
                         </Card>
@@ -2735,51 +2877,113 @@ export default function PMFinancialDashboard() {
                   </div>
                 </div>
 
-                {/* Work Orders with Transactions */}
+                {/* Outstanding Reimbursements Section */}
+                <div className="mb-6 bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
+                  <h4 className="text-md font-semibold text-white mb-3 flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-yellow-400" />
+                    Outstanding Reimbursements - Current Month (January 2025)
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {properties.map((property) => {
+                      const currentMonthPending = [...transactions, ...technicianTransactions]
+                        .filter(txn => {
+                          const job = jobs.find(j => j.id === txn.jobId);
+                          const txnDate = new Date(txn.date);
+                          return job && job.property === property.name && 
+                                 txn.status === 'pending' &&
+                                 txnDate.getMonth() === 0 && // January
+                                 txnDate.getFullYear() === 2025;
+                        })
+                        .reduce((sum, txn) => sum + txn.amount, 0);
+                      
+                      if (currentMonthPending === 0) return null;
+                      
+                      return (
+                        <Card key={property.id} className="bg-gray-800 border-yellow-500/30">
+                          <CardContent className="p-4">
+                            <div className="text-sm font-medium text-white mb-2">{property.name}</div>
+                            <div className="text-xl font-bold text-yellow-400 mb-2">
+                              ${currentMonthPending.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-gray-400 mb-3">
+                              Pending • Auto-maps to {property.trustAccount.bankName}
+                            </div>
+                            <Button 
+                              onClick={() => handleMonthlyReimbursement(property, '2025-01')}
+                              className="bg-green-600 hover:bg-green-700 text-white w-full"
+                              size="sm"
+                            >
+                              <DollarSign className="h-4 w-4 mr-2" />
+                              Reimburse January
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Monthly Expense Reports */}
                 <div className="space-y-6">
-                  <h4 className="text-md font-semibold text-white mb-3">Pending Reimbursements by Work Order</h4>
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-md font-semibold text-white">Monthly GL-Coded Expense Reports</h4>
+                    <div className="text-sm text-gray-400">
+                      📊 Auto-synced with AppFolio • Updated real-time
+                    </div>
+                  </div>
                   
                   {properties.map((property) => {
-                    // Get all transactions for this property's work orders
+                    // Get all transactions for this property by month
                     const propertyJobs = jobs.filter(job => job.property === property.name);
                     const propertyTransactions = [...transactions, ...technicianTransactions].filter(txn => {
                       const job = jobs.find(j => j.id === txn.jobId);
-                      return job && job.property === property.name && txn.status === 'pending';
+                      return job && job.property === property.name;
                     });
 
-                    // Group transactions by work order
-                    const workOrderGroups = propertyJobs.map(job => {
-                      const jobTransactions = propertyTransactions.filter(txn => txn.jobId === job.id);
-                      const totalAmount = jobTransactions.reduce((sum, txn) => sum + txn.amount, 0);
+                    // Group transactions by month (showing last 3 months)
+                    const monthlyGroups = ['2025-01', '2024-12', '2024-11'].map(month => {
+                      const [year, monthNum] = month.split('-').map(Number);
+                      const monthTransactions = propertyTransactions.filter(txn => {
+                        const txnDate = new Date(txn.date);
+                        return txnDate.getFullYear() === year && txnDate.getMonth() === monthNum - 1;
+                      });
+                      
+                      const totalAmount = monthTransactions.reduce((sum, txn) => sum + txn.amount, 0);
+                      const reconciledAmount = monthTransactions.filter(txn => txn.status === 'reconciled').reduce((sum, txn) => sum + txn.amount, 0);
+                      const pendingAmount = monthTransactions.filter(txn => txn.status === 'pending').reduce((sum, txn) => sum + txn.amount, 0);
                       
                       return {
-                        job,
-                        transactions: jobTransactions,
+                        month,
+                        monthName: new Date(year, monthNum - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+                        transactions: monthTransactions,
                         totalAmount,
+                        reconciledAmount,
+                        pendingAmount,
                         property
                       };
                     }).filter(group => group.transactions.length > 0);
 
-                    if (workOrderGroups.length === 0) return null;
+                    if (monthlyGroups.length === 0) return null;
 
                     return (
                       <div key={property.id} className="bg-gray-800 rounded-lg p-6">
                         <div className="flex justify-between items-center mb-4">
                           <h5 className="text-lg font-semibold text-white">{property.name}</h5>
-                          <div className="text-sm text-gray-400">
-                            {workOrderGroups.length} work order{workOrderGroups.length !== 1 ? 's' : ''} with pending reimbursements
+                          <div className="text-sm text-gray-400 flex items-center gap-2">
+                            <span className="text-blue-400">🔄 AppFolio Sync Active</span>
+                            • {monthlyGroups.length} month{monthlyGroups.length !== 1 ? 's' : ''} with expenses
                           </div>
                         </div>
 
                         <div className="space-y-3">
-                          {workOrderGroups.map((group) => {
-                            const isExpanded = expandedWorkOrders.has(group.job.id);
+                          {monthlyGroups.map((group) => {
+                            const isExpanded = expandedWorkOrders.has(group.month);
                             return (
-                              <div key={group.job.id} className="bg-gray-700 rounded-lg border border-gray-600">
-                                {/* Work Order Header - Always Visible */}
+                              <div key={group.month} className="bg-gray-700 rounded-lg border border-gray-600">
+                                {/* Monthly Report Header - Always Visible */}
                                 <div 
                                   className="p-4 cursor-pointer hover:bg-gray-600/50 transition-colors"
-                                  onClick={() => toggleWorkOrderExpansion(group.job.id)}
+                                  onClick={() => toggleWorkOrderExpansion(group.month)}
                                 >
                                   <div className="flex justify-between items-center">
                                     <div className="flex items-center space-x-3">
@@ -2787,9 +2991,10 @@ export default function PMFinancialDashboard() {
                                         <ChevronRight className="h-4 w-4 text-gray-400" />
                                       </div>
                                       <div>
-                                        <h6 className="font-medium text-white">{group.job.description}</h6>
-                                        <div className="text-sm text-gray-400">
-                                          Work Order #{group.job.id} • {group.job.technician || 'Unassigned'}
+                                        <h6 className="font-medium text-white">{group.monthName} GL Report</h6>
+                                        <div className="text-sm text-gray-400 flex items-center gap-2">
+                                          <span className="text-blue-400">📊 AppFolio</span>
+                                          • {group.transactions.length} transaction{group.transactions.length !== 1 ? 's' : ''}
                                         </div>
                                       </div>
                                     </div>
@@ -2798,52 +3003,91 @@ export default function PMFinancialDashboard() {
                                         <div className="text-lg font-bold text-white">
                                           ${group.totalAmount.toFixed(2)}
                                         </div>
-                                        <div className="text-sm text-gray-400">
-                                          {group.transactions.length} transaction{group.transactions.length !== 1 ? 's' : ''}
+                                        <div className="text-sm text-green-400">
+                                          ${group.reconciledAmount.toFixed(2)} reconciled
                                         </div>
+                                        {group.pendingAmount > 0 && (
+                                          <div className="text-sm text-yellow-400">
+                                            ${group.pendingAmount.toFixed(2)} pending
+                                          </div>
+                                        )}
                                       </div>
                                       <Button 
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleReimburseWorkOrder(group.job, group.totalAmount);
+                                          handleMonthlyReimbursement(group.property, group.month);
                                         }}
                                         className="bg-green-600 hover:bg-green-700 text-white"
                                         size="sm"
+                                        disabled={group.pendingAmount === 0}
                                       >
-                                        <DollarSign className="h-4 w-4 mr-2" />
-                                        Reimburse
+                                        <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                        Process GL Report
                                       </Button>
                                     </div>
                                   </div>
                                 </div>
 
-                                {/* Collapsible Transactions Section */}
+                                {/* Collapsible GL Report Section */}
                                 {isExpanded && (
                                   <div className="border-t border-gray-600 p-4 bg-gray-800/50">
-                                    <div className="mb-3">
-                                      <h6 className="text-sm font-medium text-gray-300">Transaction Details</h6>
+                                    <div className="mb-3 flex justify-between items-center">
+                                      <h6 className="text-sm font-medium text-gray-300">GL-Coded Expense Report</h6>
+                                      <div className="text-xs text-blue-400">Auto-synced with AppFolio</div>
                                     </div>
                                     <div className="overflow-x-auto">
-                                      <table className="w-full text-sm min-w-[500px] table-fixed">
+                                      <table className="w-full text-sm min-w-[800px]">
                                         <thead>
                                           <tr className="border-b border-gray-600">
-                                            <th className="text-left py-2 text-gray-400 w-1/4">Date</th>
-                                            <th className="text-left py-2 text-gray-400 w-1/4">Vendor</th>
-                                            <th className="text-left py-2 text-gray-400 w-1/4">Made By</th>
-                                            <th className="text-right py-2 text-gray-400 w-1/4">Amount</th>
+                                            <th className="text-left py-2 text-gray-400">Date</th>
+                                            <th className="text-left py-2 text-gray-400">Merchant</th>
+                                            <th className="text-left py-2 text-gray-400">GL Code</th>
+                                            <th className="text-left py-2 text-gray-400">Property Code</th>
+                                            <th className="text-left py-2 text-gray-400">Billable?</th>
+                                            <th className="text-left py-2 text-gray-400">Memo / Notes</th>
+                                            <th className="text-left py-2 text-gray-400">Receipt</th>
+                                            <th className="text-right py-2 text-gray-400">Amount</th>
                                           </tr>
                                         </thead>
                                         <tbody>
-                                          {group.transactions.map((txn) => (
-                                            <tr key={txn.id} className="border-b border-gray-600/50">
-                                              <td className="py-2 text-gray-300">{txn.date}</td>
-                                              <td className="py-2 text-gray-300">{txn.vendor}</td>
-                                              <td className="py-2 text-gray-300">{txn.madeBy}</td>
-                                              <td className="py-2 text-right text-gray-300">${txn.amount.toFixed(2)}</td>
-                                            </tr>
-                                          ))}
+                                          {group.transactions.map((txn) => {
+                                            const job = jobs.find(j => j.id === txn.jobId);
+                                            const glCode = txn.billable ? '7200 - Repairs & Maintenance' : '6100 - Office Expenses';
+                                            const propertyCode = property.id.toUpperCase();
+                                            
+                                            return (
+                                              <tr key={txn.id} className="border-b border-gray-600/50">
+                                                <td className="py-2 text-gray-300">{txn.date}</td>
+                                                <td className="py-2 text-gray-300">{txn.vendor}</td>
+                                                <td className="py-2 text-blue-300">{glCode}</td>
+                                                <td className="py-2 text-blue-300">{propertyCode}</td>
+                                                <td className="py-2">
+                                                  <Badge className={txn.billable ? "bg-green-600 text-white text-xs" : "bg-gray-600 text-white text-xs"}>
+                                                    {txn.billable ? 'Yes' : 'No'}
+                                                  </Badge>
+                                                </td>
+                                                <td className="py-2 text-gray-300">{txn.memo || job?.description || 'N/A'}</td>
+                                                <td className="py-2">
+                                                  {txn.receipt ? (
+                                                    <Button size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300 p-0 h-auto">
+                                                      [View]
+                                                    </Button>
+                                                  ) : (
+                                                    <span className="text-gray-500">Missing</span>
+                                                  )}
+                                                </td>
+                                                <td className="py-2 text-right text-gray-300">${txn.amount.toFixed(2)}</td>
+                                              </tr>
+                                            );
+                                          })}
                                         </tbody>
                                       </table>
+                                    </div>
+                                    <div className="mt-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded">
+                                      <div className="text-sm text-blue-300 flex items-center gap-2">
+                                        <span className="text-blue-400">🏦</span>
+                                        Trust Account: {property.trustAccount.bankName} {property.trustAccount.accountNumber}
+                                      </div>
                                     </div>
                                   </div>
                                 )}
@@ -6286,6 +6530,529 @@ export default function PMFinancialDashboard() {
                     }}
                   >
                     Cancel
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Issue New Card Dialog */}
+            <Dialog open={issueCardDialogOpen} onOpenChange={setIssueCardDialogOpen}>
+              <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Issue New Card</DialogTitle>
+                  <DialogDescription className="text-gray-400">
+                    Create a new virtual or physical card with limits and restrictions.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-gray-300">Card Type</Label>
+                      <Select
+                        value={cardForm.type}
+                        onValueChange={value => setCardForm(prev => ({ ...prev, type: value as CardType }))}
+                      >
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                          <SelectItem value="virtual" className="bg-gray-900 text-white">Virtual Card</SelectItem>
+                          <SelectItem value="physical" className="bg-gray-900 text-white">Physical Card</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-300">Card Holder Name</Label>
+                      <Input
+                        className="bg-gray-800 border-gray-600 text-white"
+                        value={cardForm.holder}
+                        onChange={e => setCardForm(prev => ({ ...prev, holder: e.target.value }))}
+                        placeholder="Enter cardholder name"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-gray-300">Position</Label>
+                      <Select
+                        value={cardForm.position}
+                        onValueChange={value => setCardForm(prev => ({ ...prev, position: value as EnhancedCard['position'] }))}
+                      >
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                          <SelectItem value="Technician" className="bg-gray-900 text-white">Technician</SelectItem>
+                          <SelectItem value="PM" className="bg-gray-900 text-white">Property Manager</SelectItem>
+                          <SelectItem value="Super" className="bg-gray-900 text-white">Superintendent</SelectItem>
+                          <SelectItem value="Admin" className="bg-gray-900 text-white">Administrator</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-300">Credit Limit</Label>
+                      <Input
+                        type="number"
+                        className="bg-gray-800 border-gray-600 text-white"
+                        value={cardForm.limit}
+                        onChange={e => setCardForm(prev => ({ ...prev, limit: e.target.value }))}
+                        placeholder="Enter credit limit"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Assigned Properties</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {properties.map(property => (
+                        <label key={property.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={cardForm.assignedProperties.includes(property.id)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setCardForm(prev => ({ 
+                                  ...prev, 
+                                  assignedProperties: [...prev.assignedProperties, property.id] 
+                                }));
+                              } else {
+                                setCardForm(prev => ({ 
+                                  ...prev, 
+                                  assignedProperties: prev.assignedProperties.filter(id => id !== property.id) 
+                                }));
+                              }
+                            }}
+                            className="rounded"
+                          />
+                          <span className="text-gray-300 text-sm">{property.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Vendor Restrictions</Label>
+                    <Textarea
+                      className="bg-gray-800 border-gray-600 text-white"
+                      value={cardForm.vendorRestrictions.join(', ')}
+                      onChange={e => setCardForm(prev => ({ 
+                        ...prev, 
+                        vendorRestrictions: e.target.value.split(',').map(v => v.trim()).filter(v => v) 
+                      }))}
+                      placeholder="Home Depot, Lowes, Office Depot (comma-separated)"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Card Brand</Label>
+                    <Select
+                      value={cardForm.brand}
+                      onValueChange={value => setCardForm(prev => ({ ...prev, brand: value as EnhancedCard['brand'] }))}
+                    >
+                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                        <SelectItem value="Chase" className="bg-gray-900 text-white">Chase</SelectItem>
+                        <SelectItem value="Amex" className="bg-gray-900 text-white">American Express</SelectItem>
+                        <SelectItem value="Visa" className="bg-gray-900 text-white">Visa</SelectItem>
+                        <SelectItem value="Mastercard" className="bg-gray-900 text-white">Mastercard</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter className="mt-6">
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={handleIssueNewCard}
+                    disabled={!cardForm.holder || !cardForm.limit || cardForm.assignedProperties.length === 0}
+                  >
+                    Issue Card
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-gray-600 text-gray-300"
+                    onClick={() => setIssueCardDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Connect Existing Card Dialog */}
+            <Dialog open={connectCardDialogOpen} onOpenChange={setConnectCardDialogOpen}>
+              <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Connect Existing Card</DialogTitle>
+                  <DialogDescription className="text-gray-400">
+                    Connect an existing Amex, Visa, or other card to your property management system.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-gray-300">Existing Card Type</Label>
+                      <Select
+                        value={cardForm.type}
+                        onValueChange={value => setCardForm(prev => ({ ...prev, type: value as CardType }))}
+                      >
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                          <SelectItem value="virtual" className="bg-gray-900 text-white">Virtual Card</SelectItem>
+                          <SelectItem value="physical" className="bg-gray-900 text-white">Physical Card</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-300">Card Holder Name</Label>
+                      <Input
+                        className="bg-gray-800 border-gray-600 text-white"
+                        value={cardForm.holder}
+                        onChange={e => setCardForm(prev => ({ ...prev, holder: e.target.value }))}
+                        placeholder="Name on existing card"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-gray-300">Position</Label>
+                      <Select
+                        value={cardForm.position}
+                        onValueChange={value => setCardForm(prev => ({ ...prev, position: value as EnhancedCard['position'] }))}
+                      >
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                          <SelectItem value="Technician" className="bg-gray-900 text-white">Technician</SelectItem>
+                          <SelectItem value="PM" className="bg-gray-900 text-white">Property Manager</SelectItem>
+                          <SelectItem value="Super" className="bg-gray-900 text-white">Superintendent</SelectItem>
+                          <SelectItem value="Admin" className="bg-gray-900 text-white">Administrator</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-300">Current Credit Limit</Label>
+                      <Input
+                        type="number"
+                        className="bg-gray-800 border-gray-600 text-white"
+                        value={cardForm.limit}
+                        onChange={e => setCardForm(prev => ({ ...prev, limit: e.target.value }))}
+                        placeholder="Enter current limit"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Existing Card Brand</Label>
+                    <Select
+                      value={cardForm.brand}
+                      onValueChange={value => setCardForm(prev => ({ ...prev, brand: value as EnhancedCard['brand'] }))}
+                    >
+                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                        <SelectItem value="Amex" className="bg-gray-900 text-white">American Express</SelectItem>
+                        <SelectItem value="Chase" className="bg-gray-900 text-white">Chase</SelectItem>
+                        <SelectItem value="Visa" className="bg-gray-900 text-white">Visa</SelectItem>
+                        <SelectItem value="Mastercard" className="bg-gray-900 text-white">Mastercard</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Assign to Properties</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {properties.map(property => (
+                        <label key={property.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={cardForm.assignedProperties.includes(property.id)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setCardForm(prev => ({ 
+                                  ...prev, 
+                                  assignedProperties: [...prev.assignedProperties, property.id] 
+                                }));
+                              } else {
+                                setCardForm(prev => ({ 
+                                  ...prev, 
+                                  assignedProperties: prev.assignedProperties.filter(id => id !== property.id) 
+                                }));
+                              }
+                            }}
+                            className="rounded"
+                          />
+                          <span className="text-gray-300 text-sm">{property.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Vendor Restrictions</Label>
+                    <Textarea
+                      className="bg-gray-800 border-gray-600 text-white"
+                      value={cardForm.vendorRestrictions.join(', ')}
+                      onChange={e => setCardForm(prev => ({ 
+                        ...prev, 
+                        vendorRestrictions: e.target.value.split(',').map(v => v.trim()).filter(v => v) 
+                      }))}
+                      placeholder="Home Depot, Lowes, Office Depot (comma-separated)"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+                <DialogFooter className="mt-6">
+                  <Button
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    onClick={handleConnectExistingCard}
+                    disabled={!cardForm.holder || !cardForm.limit || cardForm.assignedProperties.length === 0}
+                  >
+                    Connect Card
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-gray-600 text-gray-300"
+                    onClick={() => setConnectCardDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Monthly Reimbursement Dialog */}
+            <Dialog open={monthlyReimbursementDialogOpen} onOpenChange={setMonthlyReimbursementDialogOpen}>
+              <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-xl">Process Monthly GL Report Reimbursement</DialogTitle>
+                  <DialogDescription>
+                    Generate GL-coded expense report and process reimbursement with AppFolio sync
+                  </DialogDescription>
+                </DialogHeader>
+                
+                {selectedPropertyForMonthly && (
+                  <div className="space-y-6">
+                    {/* Property & Month Information */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Card className="bg-gray-800 border-gray-700">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm text-blue-400">Property & Month</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <div>
+                            <div className="text-sm text-gray-400">Property</div>
+                            <div className="font-medium text-white">{selectedPropertyForMonthly.name}</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-gray-400">Report Month</div>
+                            <div className="text-sm text-gray-300">{new Date(selectedMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-gray-400">AppFolio Sync</div>
+                            <div className="text-sm text-green-400 flex items-center gap-1">
+                              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                              Active
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="bg-gray-800 border-gray-700">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm text-blue-400">Trust Account Details</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <div>
+                            <div className="text-sm text-gray-400">Bank</div>
+                            <div className="font-medium text-white">{selectedPropertyForMonthly.trustAccount.bankName}</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-gray-400">Account</div>
+                            <div className="text-sm text-gray-300">{selectedPropertyForMonthly.trustAccount.accountNumber}</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-gray-400">Routing</div>
+                            <div className="text-sm text-gray-300">{selectedPropertyForMonthly.trustAccount.routingNumber}</div>
+                          </div>
+                          <div className="text-xs text-green-400 mt-2">
+                            🔄 Auto-mapping enabled
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* CC Recipient */}
+                    <div>
+                      <Label className="text-gray-300">CC Additional Recipient on GL Report (Optional)</Label>
+                      <div className="grid grid-cols-2 gap-4 mt-2">
+                        <Input
+                          className="bg-gray-800 border-gray-600 text-white"
+                          placeholder="Recipient name"
+                          value={ccRecipient.name}
+                          onChange={e => setCcRecipient(prev => ({ ...prev, name: e.target.value }))}
+                        />
+                        <Input
+                          type="email"
+                          className="bg-gray-800 border-gray-600 text-white"
+                          placeholder="recipient@email.com"
+                          value={ccRecipient.email}
+                          onChange={e => setCcRecipient(prev => ({ ...prev, email: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Process Information */}
+                    <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-blue-300 mb-2">Processing Details</h4>
+                      <div className="space-y-2 text-sm text-gray-300">
+                        <div>• GL report will be generated and sent to property owner</div>
+                        <div>• AppFolio sync will update all transaction statuses</div>
+                        <div>• Reimbursement will auto-map to correct trust account</div>
+                        <div>• All pending transactions will be marked as reconciled</div>
+                        {ccRecipient.email && (
+                          <div className="text-blue-400">• Additional copy will be sent to {ccRecipient.name} ({ccRecipient.email})</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <DialogFooter className="mt-6">
+                  <Button
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    onClick={processMonthlyReimbursement}
+                  >
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Process GL Report & Reimburse
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-gray-600 text-gray-300"
+                    onClick={() => setMonthlyReimbursementDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Policy Rule Dialog */}
+            <Dialog open={policyRuleEditDialogOpen} onOpenChange={setPolicyRuleEditDialogOpen}>
+              <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Edit Expense Policy Rule</DialogTitle>
+                  <DialogDescription className="text-gray-400">
+                    Modify the expense policy rule and AI settings.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-gray-300">Category</Label>
+                    <Input
+                      className="bg-gray-800 border-gray-600 text-white"
+                      value={editedRule.category}
+                      onChange={e => setEditedRule(prev => ({ ...prev, category: e.target.value }))}
+                      placeholder="Rule category"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Rule Description</Label>
+                    <Textarea
+                      className="bg-gray-800 border-gray-600 text-white"
+                      value={editedRule.rule}
+                      onChange={e => setEditedRule(prev => ({ ...prev, rule: e.target.value }))}
+                      placeholder="Describe the expense policy rule..."
+                      rows={4}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-gray-300">AI Enabled</Label>
+                      <div className="text-sm text-gray-400">Allow AI to automatically apply this rule</div>
+                    </div>
+                    <Switch
+                      checked={editedRule.aiEnabled}
+                      onCheckedChange={checked => setEditedRule(prev => ({ ...prev, aiEnabled: checked }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-gray-300">Active</Label>
+                      <div className="text-sm text-gray-400">Rule is currently active and enforced</div>
+                    </div>
+                    <Switch
+                      checked={editedRule.active}
+                      onCheckedChange={checked => setEditedRule(prev => ({ ...prev, active: checked }))}
+                    />
+                  </div>
+                </div>
+                <DialogFooter className="mt-6">
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={handleSavePolicyRule}
+                    disabled={!editedRule.category || !editedRule.rule}
+                  >
+                    Save Changes
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-gray-600 text-gray-300"
+                    onClick={() => setPolicyRuleEditDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Expense Policy Edit Dialog */}
+            <Dialog open={expensePolicyDialogOpen} onOpenChange={setExpensePolicyDialogOpen}>
+              <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Edit Expense Policy Rules</DialogTitle>
+                  <DialogDescription className="text-gray-400">
+                    Manage expense policy rules and AI automation settings.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-lg font-semibold text-white mb-4">Current Policy Rules</h4>
+                    <div className="space-y-3">
+                      {policyRules.map(rule => (
+                        <div key={rule.id} className="p-4 bg-gray-800 rounded-lg border border-gray-600">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-blue-300">{rule.category}</span>
+                            <div className="flex items-center gap-2">
+                              {rule.aiEnabled && (
+                                <Badge className="bg-purple-600 text-white text-xs">AI</Badge>
+                              )}
+                              <Badge className={rule.active ? "bg-green-600 text-white text-xs" : "bg-gray-600 text-white text-xs"}>
+                                {rule.active ? 'Active' : 'Inactive'}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-blue-400 hover:text-blue-300 p-1 h-auto"
+                                onClick={() => handleEditPolicyRule(rule)}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-300">{rule.rule}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    className="border-gray-600 text-gray-300"
+                    onClick={() => setExpensePolicyDialogOpen(false)}
+                  >
+                    Close
                   </Button>
                 </DialogFooter>
               </DialogContent>
