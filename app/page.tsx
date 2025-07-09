@@ -852,12 +852,27 @@ export default function PMFinancialDashboard() {
   const [policyRuleEditDialogOpen, setPolicyRuleEditDialogOpen] = useState(false);
   const [editedRule, setEditedRule] = useState({ category: '', rule: '', aiEnabled: false, active: false });
 
-  // Handle URL parameters for tab navigation
+  // Handle URL parameters for tab navigation and role detection
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get('tab');
+    const roleParam = urlParams.get('role');
+    
+    // Handle tab navigation
     if (tabParam && ['dashboard', 'workorders', 'activity', 'wallet', 'transactions', 'properties', 'staff', 'payments'].includes(tabParam)) {
       setActiveTab(tabParam);
+    }
+    
+    // Handle role detection from URL parameters or localStorage
+    if (roleParam && ['pm', 'technician', 'centralOffice'].includes(roleParam)) {
+      setRole(roleParam as 'pm' | 'technician' | 'centralOffice');
+      localStorage.setItem('currentRole', roleParam);
+    } else {
+      // Fallback to localStorage if URL param is missing
+      const roleFromStorage = localStorage.getItem('currentRole');
+      if (roleFromStorage && ['pm', 'technician', 'centralOffice'].includes(roleFromStorage)) {
+        setRole(roleFromStorage as 'pm' | 'technician' | 'centralOffice');
+      }
     }
   }, []);
 
