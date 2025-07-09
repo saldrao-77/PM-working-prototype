@@ -6823,7 +6823,7 @@ export default function PMFinancialDashboard() {
 
             {/* Monthly Reimbursement Dialog */}
             <Dialog open={monthlyReimbursementDialogOpen} onOpenChange={setMonthlyReimbursementDialogOpen}>
-              <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-6xl max-h-[95vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="text-xl">Process Monthly GL Report Reimbursement</DialogTitle>
                   <DialogDescription>
@@ -6882,6 +6882,34 @@ export default function PMFinancialDashboard() {
                       </Card>
                     </div>
 
+                    {/* Owner Information - Report Recipient */}
+                    <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-green-300 mb-3 flex items-center gap-2">
+                        📧 Report Recipient (Owner)
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-400">Name:</span>
+                          <span className="text-white ml-2 font-medium">{selectedPropertyForMonthly.ownerName}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Email:</span>
+                          <span className="text-green-300 ml-2">{selectedPropertyForMonthly.ownerEmail}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Phone:</span>
+                          <span className="text-white ml-2">{selectedPropertyForMonthly.ownerPhone}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Preferred Contact:</span>
+                          <span className="text-yellow-300 ml-2 capitalize">{selectedPropertyForMonthly.ownerPreferredContact}</span>
+                        </div>
+                      </div>
+                      <div className="mt-3 text-xs text-green-400">
+                        ✉️ This GL report will be automatically sent to the property owner above
+                      </div>
+                    </div>
+
                     {/* CC Recipient */}
                     <div>
                       <Label className="text-gray-300">CC Additional Recipient on GL Report (Optional)</Label>
@@ -6899,6 +6927,141 @@ export default function PMFinancialDashboard() {
                           value={ccRecipient.email}
                           onChange={e => setCcRecipient(prev => ({ ...prev, email: e.target.value }))}
                         />
+                      </div>
+                    </div>
+
+                    {/* GL Report Preview */}
+                    <div>
+                      <Label className="text-gray-300 mb-3 block">📊 GL Report Preview</Label>
+                      <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
+                        <div className="mb-3">
+                          <h4 className="text-sm font-semibold text-white mb-1">Monthly GL-Coded Expense Report</h4>
+                          <div className="text-xs text-gray-400">
+                            {selectedPropertyForMonthly.name} • {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                          </div>
+                        </div>
+                        
+                        {/* Trust Account Details */}
+                        <div className="mb-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded">
+                          <div className="text-sm text-blue-300 flex items-center gap-2 mb-2">
+                            <span className="text-blue-400">🏦</span>
+                            Trust Account Details
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-gray-300">
+                            <div>
+                              <span className="text-gray-400">Bank:</span>
+                              <span className="ml-2">{selectedPropertyForMonthly.trustAccount.bankName}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400">Account:</span>
+                              <span className="ml-2">{selectedPropertyForMonthly.trustAccount.accountNumber}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400">Routing:</span>
+                              <span className="ml-2">{selectedPropertyForMonthly.trustAccount.routingNumber}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="max-h-64 overflow-y-auto border border-gray-600 rounded">
+                          <table className="min-w-full text-xs">
+                            <thead className="sticky top-0 bg-gray-900 border-b border-gray-600">
+                              <tr>
+                                <th className="text-left py-2 px-3 text-gray-400">Date</th>
+                                <th className="text-left py-2 px-3 text-gray-400">Merchant</th>
+                                <th className="text-left py-2 px-3 text-gray-400">GL Code</th>
+                                <th className="text-left py-2 px-3 text-gray-400">Property Code</th>
+                                <th className="text-left py-2 px-3 text-gray-400">Billable?</th>
+                                <th className="text-left py-2 px-3 text-gray-400">Memo/Notes</th>
+                                <th className="text-left py-2 px-3 text-gray-400">Receipt</th>
+                                <th className="text-right py-2 px-3 text-gray-400">Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(() => {
+                                // Generate sample transactions for the selected month
+                                const sampleTransactions = [
+                                  {
+                                    date: '2025-01-15',
+                                    merchant: 'Home Depot',
+                                    amount: 150.00,
+                                    billable: true,
+                                    memo: 'HVAC repair parts',
+                                    receipt: '[Link]'
+                                  },
+                                  {
+                                    date: '2025-01-16',
+                                    merchant: 'Lowes',
+                                    amount: 75.50,
+                                    billable: true,
+                                    memo: 'Paint supplies',
+                                    receipt: '[Link]'
+                                  },
+                                  {
+                                    date: '2025-01-17',
+                                    merchant: 'Office Depot',
+                                    amount: 125.75,
+                                    billable: false,
+                                    memo: 'Office supplies',
+                                    receipt: '[Link]'
+                                  },
+                                  {
+                                    date: '2025-01-18',
+                                    merchant: 'Ace Hardware',
+                                    amount: 45.25,
+                                    billable: true,
+                                    memo: 'Plumbing tools',
+                                    receipt: '[Link]'
+                                  },
+                                  {
+                                    date: '2025-01-19',
+                                    merchant: 'Sherwin Williams',
+                                    amount: 89.99,
+                                    billable: true,
+                                    memo: 'Interior paint',
+                                    receipt: '[Link]'
+                                  }
+                                ];
+                                
+                                return sampleTransactions.map((txn, idx) => {
+                                  const glCode = txn.billable ? '7200 - Repairs & Maintenance' : '6100 - Office Expenses';
+                                  const propertyCode = selectedPropertyForMonthly.id.toUpperCase();
+                                  
+                                  return (
+                                    <tr key={idx} className="border-b border-gray-700 hover:bg-gray-700/30">
+                                      <td className="py-2 px-3 text-gray-300">{txn.date}</td>
+                                      <td className="py-2 px-3 text-gray-300">{txn.merchant}</td>
+                                      <td className="py-2 px-3 text-blue-300">{glCode}</td>
+                                      <td className="py-2 px-3 text-purple-300">{propertyCode}</td>
+                                      <td className="py-2 px-3">
+                                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs ${
+                                          txn.billable ? 'bg-green-700 text-green-100' : 'bg-gray-700 text-gray-200'
+                                        }`}>
+                                          {txn.billable ? 'Yes' : 'No'}
+                                        </span>
+                                      </td>
+                                      <td className="py-2 px-3 text-gray-300">{txn.memo}</td>
+                                      <td className="py-2 px-3">
+                                        <span className="text-blue-400 cursor-pointer hover:text-blue-300">{txn.receipt}</span>
+                                      </td>
+                                      <td className="py-2 px-3 text-right text-gray-300">${txn.amount.toFixed(2)}</td>
+                                    </tr>
+                                  );
+                                });
+                              })()}
+                            </tbody>
+                            <tfoot className="bg-gray-900 border-t border-gray-600">
+                              <tr>
+                                <td colSpan={7} className="py-2 px-3 text-right font-semibold text-gray-300">Total:</td>
+                                <td className="py-2 px-3 text-right font-semibold text-white">$486.49</td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                        
+                        <div className="mt-3 text-xs text-gray-400">
+                          * This is a preview of the GL report that will be generated and sent to the owner
+                        </div>
                       </div>
                     </div>
 
