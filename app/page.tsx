@@ -73,7 +73,9 @@ import {
   AlertTriangle,
   ChevronDown,
   Edit,
-  BookOpen
+  BookOpen,
+  Check,
+  X
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from 'next/navigation'
@@ -103,10 +105,52 @@ type Transaction = {
   receipt?: string
 }
 
+// Enhanced Card Types
+type CardType = 'virtual' | 'physical';
+type CardStatus = 'active' | 'inactive' | 'blocked' | 'pending';
+
+type EnhancedCard = {
+  id: string;
+  type: CardType;
+  number: string;
+  holder: string;
+  position: 'PM' | 'Technician' | 'Super' | 'Admin';
+  balance: number;
+  limit: number;
+  status: CardStatus;
+  assignedProperties: string[]; // Property IDs
+  vendorRestrictions: string[]; // Vendor names or categories
+  isExistingCard: boolean; // For connected Amex, etc.
+  brand: 'Amex' | 'Chase' | 'Visa' | 'Mastercard';
+  expiryDate: string;
+  lastUsed?: string;
+  monthlySpend: number;
+  assignedStaff: string[]; // Staff member IDs
+};
+
+// Enhanced Expense Request Types
+type ExpenseRequest = {
+  id: string;
+  technicianName: string;
+  expenseId: string;
+  question: string;
+  amount: number;
+  vendor: string;
+  date: string;
+  urgency: 'low' | 'normal' | 'high';
+  status: 'pending' | 'approved' | 'denied';
+  type: 'billable_question' | 'approval_required' | 'policy_clarification' | 'receipt_issue' | 'amount_verification';
+  createdAt: string;
+  aiSuggestion: string;
+  category: string;
+  property?: string;
+  workOrder?: string;
+};
+
 const transactionsList: Transaction[] = [
   {
     id: 'txn1',
-    date: '2024-03-15',
+    date: '2025-01-15',
     vendor: 'Home Depot',
     amount: 150.00,
     status: 'reconciled',
@@ -119,7 +163,7 @@ const transactionsList: Transaction[] = [
   },
   {
     id: 'txn2',
-    date: '2024-03-16',
+    date: '2025-01-16',
     vendor: 'Lowes',
     amount: 75.50,
     status: 'pending',
@@ -132,7 +176,7 @@ const transactionsList: Transaction[] = [
   },
   {
     id: 'txn3',
-    date: '2024-03-17',
+    date: '2025-01-17',
     vendor: 'Ace Hardware',
     amount: 45.25,
     status: 'reconciled',
@@ -145,7 +189,7 @@ const transactionsList: Transaction[] = [
   },
   {
     id: 'txn4',
-    date: '2024-03-18',
+    date: '2025-01-18',
     vendor: 'Office Depot',
     amount: 125.75,
     status: 'pending',
@@ -158,7 +202,7 @@ const transactionsList: Transaction[] = [
   },
   {
     id: 'txn5',
-    date: '2024-03-19',
+    date: '2025-01-19',
     vendor: 'Staples',
     amount: 89.99,
     status: 'reconciled',
@@ -170,6 +214,198 @@ const transactionsList: Transaction[] = [
     receipt: 'receipt5.pdf'
   }
 ]
+
+// Mock enhanced cards data
+const enhancedCards: EnhancedCard[] = [
+  {
+    id: 'card1',
+    type: 'virtual',
+    number: '**** 4532',
+    holder: 'Alice Johnson',
+    position: 'Technician',
+    balance: 2350,
+    limit: 5000,
+    status: 'active',
+    assignedProperties: ['stanford', 'sunnyvale'],
+    vendorRestrictions: ['Home Depot', 'Lowes', 'Ace Hardware'],
+    isExistingCard: false,
+    brand: 'Chase',
+    expiryDate: '12/26',
+    lastUsed: '2 hours ago',
+    monthlySpend: 1650,
+    assignedStaff: ['tech1']
+  },
+  {
+    id: 'card2',
+    type: 'physical',
+    number: '**** 7891',
+    holder: 'Bob Martinez',
+    position: 'PM',
+    balance: 1875,
+    limit: 3000,
+    status: 'active',
+    assignedProperties: ['downtown'],
+    vendorRestrictions: ['Office Depot', 'Staples', 'Amazon Business'],
+    isExistingCard: true, // Connected existing Amex
+    brand: 'Amex',
+    expiryDate: '08/27',
+    lastUsed: '1 day ago',
+    monthlySpend: 1125,
+    assignedStaff: ['tech2']
+  },
+  {
+    id: 'card3',
+    type: 'virtual',
+    number: '**** 2468',
+    holder: 'Carlos Lee',
+    position: 'Super',
+    balance: 4200,
+    limit: 7500,
+    status: 'active',
+    assignedProperties: ['highland', 'westside'],
+    vendorRestrictions: ['Home Depot', 'Lowes', 'Sherwin Williams', 'Benjamin Moore'],
+    isExistingCard: false,
+    brand: 'Visa',
+    expiryDate: '03/28',
+    lastUsed: '3 hours ago',
+    monthlySpend: 2850,
+    assignedStaff: ['tech3']
+  }
+];
+
+// Mock comprehensive expense requests data
+const mockExpenseRequests: ExpenseRequest[] = [
+  {
+    id: 'req1',
+    technicianName: 'Alice Johnson',
+    expenseId: 'txn1',
+    question: 'Is emergency plumbing repair billable to owner?',
+    amount: 450,
+    vendor: 'Quick Fix Plumbing',
+    date: '2024-01-20',
+    urgency: 'high',
+    status: 'pending',
+    type: 'billable_question',
+    createdAt: '2024-01-20T09:00:00',
+    aiSuggestion: 'Yes - Emergency repairs are typically billable to owner when related to property maintenance. Recommend approval with receipt requirement.',
+    category: 'Emergency Repair',
+    property: 'Stanford GSB',
+    workOrder: 'job1'
+  },
+  {
+    id: 'req2',
+    technicianName: 'Bob Martinez',
+    expenseId: 'txn3',
+    question: 'Do I need pre-approval for $750 office supplies?',
+    amount: 750,
+    vendor: 'Office Depot',
+    date: '2024-01-19',
+    urgency: 'normal',
+    status: 'pending',
+    type: 'approval_required',
+    createdAt: '2024-01-19T14:30:00',
+    aiSuggestion: 'Yes - Expenses over $500 require pre-approval per company policy. Request should include itemized list and business justification.',
+    category: 'Office Supplies',
+    property: 'Downtown Lofts'
+  },
+  {
+    id: 'req3',
+    technicianName: 'Diana Roberts',
+    expenseId: 'txn8',
+    question: 'Can I expense gas for emergency call-out?',
+    amount: 35,
+    vendor: 'Shell Gas Station',
+    date: '2024-01-18',
+    urgency: 'low',
+    status: 'approved',
+    type: 'policy_clarification',
+    createdAt: '2024-01-18T16:45:00',
+    aiSuggestion: 'Yes - Vehicle expenses for emergency work orders are reimbursable. Ensure receipt shows business purpose.',
+    category: 'Vehicle Expenses',
+    property: 'Sunnyvale 432'
+  },
+  {
+    id: 'req4',
+    technicianName: 'Mark Thompson',
+    expenseId: 'txn9',
+    question: 'Receipt is damaged - can I submit alternative proof?',
+    amount: 125,
+    vendor: 'Home Depot',
+    date: '2024-01-17',
+    urgency: 'normal',
+    status: 'pending',
+    type: 'receipt_issue',
+    createdAt: '2024-01-17T11:20:00',
+    aiSuggestion: 'Bank/credit card statement can serve as backup. Contact vendor for duplicate receipt or submit detailed purchase description.',
+    category: 'Documentation Issue',
+    property: 'Highland Park'
+  },
+  {
+    id: 'req5',
+    technicianName: 'Sarah Kim',
+    expenseId: 'txn10',
+    question: 'Is $1,200 HVAC part cost reasonable?',
+    amount: 1200,
+    vendor: 'HVAC Supply Co',
+    date: '2024-01-16',
+    urgency: 'high',
+    status: 'pending',
+    type: 'amount_verification',
+    createdAt: '2024-01-16T08:15:00',
+    aiSuggestion: 'Request additional quotes for comparison. HVAC parts can vary significantly - verify part number and necessity with property manager.',
+    category: 'HVAC Maintenance',
+    property: 'Stanford GSB',
+    workOrder: 'job4'
+  },
+  {
+    id: 'req6',
+    technicianName: 'Carlos Lee',
+    expenseId: 'txn11',
+    question: 'Should paint supplies be billable or operational?',
+    amount: 280,
+    vendor: 'Sherwin Williams',
+    date: '2024-01-15',
+    urgency: 'normal',
+    status: 'denied',
+    type: 'billable_question',
+    createdAt: '2024-01-15T13:45:00',
+    aiSuggestion: 'Routine maintenance painting is typically operational. Unit-specific repairs would be billable. Need more context on scope.',
+    category: 'Maintenance',
+    property: 'Westside Complex'
+  },
+  {
+    id: 'req7',
+    technicianName: 'Lisa Chang',
+    expenseId: 'txn12',
+    question: 'Can I expense overnight tools for urgent repair?',
+    amount: 95,
+    vendor: 'Amazon',
+    date: '2024-01-14',
+    urgency: 'high',
+    status: 'approved',
+    type: 'policy_clarification',
+    createdAt: '2024-01-14T19:30:00',
+    aiSuggestion: 'Emergency tool purchases are acceptable for urgent repairs. Ensure tools remain company property and document necessity.',
+    category: 'Tools & Equipment',
+    property: 'Downtown Lofts'
+  },
+  {
+    id: 'req8',
+    technicianName: 'Mike Rodriguez',
+    expenseId: 'txn13',
+    question: 'Multiple small receipts - combine or separate submissions?',
+    amount: 180,
+    vendor: 'Various',
+    date: '2024-01-13',
+    urgency: 'low',
+    status: 'pending',
+    type: 'policy_clarification',
+    createdAt: '2024-01-13T10:00:00',
+    aiSuggestion: 'Combine related purchases by work order. Submit separately if different properties or categories. Include clear itemization.',
+    category: 'Process Question',
+    property: 'Multiple Properties'
+  }
+];
 
 // Add type for milestone ownership
 type MilestoneOwner = 'PM' | 'Technician' | 'Central Office';
@@ -383,6 +619,55 @@ export default function PMFinancialDashboard() {
     memo: '',
     receipt: ''
   });
+
+  // Card dialog states
+  const [issueCardDialogOpen, setIssueCardDialogOpen] = useState(false);
+  const [connectCardDialogOpen, setConnectCardDialogOpen] = useState(false);
+  const [cardForm, setCardForm] = useState({
+    type: 'virtual' as CardType,
+    holder: '',
+    position: 'Technician' as EnhancedCard['position'],
+    limit: '',
+    assignedProperties: [] as string[],
+    vendorRestrictions: [] as string[],
+    isExistingCard: false,
+    brand: 'Chase' as EnhancedCard['brand'],
+    assignedStaff: [] as string[]
+  });
+
+  // Expense Requests state
+  const [expenseRequests, setExpenseRequests] = useState<ExpenseRequest[]>(mockExpenseRequests);
+  const [expensePolicyDialogOpen, setExpensePolicyDialogOpen] = useState(false);
+  const [policyRules, setPolicyRules] = useState([
+    {
+      id: 1,
+      category: 'Emergency Repairs',
+      rule: 'Emergency repairs over $300 are automatically billable to owner',
+      aiEnabled: true,
+      active: true
+    },
+    {
+      id: 2,
+      category: 'Pre-approval',
+      rule: 'Expenses over $500 require pre-approval',
+      aiEnabled: true,
+      active: true
+    },
+    {
+      id: 3,
+      category: 'Receipt Requirements',
+      rule: 'All expenses over $25 require receipt within 48 hours',
+      aiEnabled: true,
+      active: true
+    },
+    {
+      id: 4,
+      category: 'Vehicle Expenses',
+      rule: 'Mileage and gas for emergency calls are reimbursable',
+      aiEnabled: true,
+      active: true
+    }
+  ]);
 
   // Available activities for PM to add
   const availableActivities = [
@@ -848,9 +1133,9 @@ export default function PMFinancialDashboard() {
   ];
   // Mock transactions for technician
   const technicianTransactions = [
-    { id: 't1', date: '2024-01-15', vendor: 'Home Depot', amount: 120.5, status: 'pending', jobId: 'job1', billable: true, madeBy: 'Alice Johnson', cardHolder: 'Alice Johnson', memo: undefined, receipt: undefined },
-    { id: 't2', date: '2024-01-14', vendor: 'Lowe\'s', amount: 89.99, status: 'reconciled', jobId: 'job1', billable: false, madeBy: 'Alice Johnson', cardHolder: 'Alice Johnson', memo: undefined, receipt: undefined },
-    { id: 't3', date: '2024-01-13', vendor: 'Ace Hardware', amount: 45.00, status: 'pending', jobId: 'job1', billable: true, madeBy: 'Alice Johnson', cardHolder: 'Alice Johnson', memo: undefined, receipt: undefined },
+    { id: 't1', date: '2025-01-15', vendor: 'Home Depot', amount: 120.5, status: 'pending', jobId: 'job1', billable: true, madeBy: 'Alice Johnson', cardHolder: 'Alice Johnson', memo: undefined, receipt: undefined },
+    { id: 't2', date: '2025-01-14', vendor: 'Lowe\'s', amount: 89.99, status: 'reconciled', jobId: 'job1', billable: false, madeBy: 'Alice Johnson', cardHolder: 'Alice Johnson', memo: undefined, receipt: undefined },
+    { id: 't3', date: '2025-01-13', vendor: 'Ace Hardware', amount: 45.00, status: 'pending', jobId: 'job1', billable: true, madeBy: 'Alice Johnson', cardHolder: 'Alice Johnson', memo: undefined, receipt: undefined },
   ];
 
   const getStatusBadge = (status: string) => {
@@ -1115,6 +1400,7 @@ export default function PMFinancialDashboard() {
           { id: 'dashboard', label: 'Dashboard', icon: Folder },
           { id: 'workorders', label: 'Work Orders', icon: FileText },
           { id: 'activity', label: 'Activity Log', icon: Zap },
+          { id: 'cards', label: 'Cards', icon: CreditCard },
           { id: 'payments', label: 'Payments', icon: DollarSign },
           { id: 'policy', label: 'Expense Requests', icon: MessageSquare },
           { id: 'transactions', label: 'Transactions', icon: FileText },
@@ -1538,6 +1824,125 @@ export default function PMFinancialDashboard() {
   const technicianUncategorizedSpend = technicianUncategorized.reduce((sum, txn) => sum + txn.amount, 0);
 
   // Helper to calculate YTD spending for a property
+  // Card management functions
+  const handleIssueNewCard = () => {
+    const newCard: EnhancedCard = {
+      id: `card-${Date.now()}`,
+      type: cardForm.type,
+      number: `**** ${Math.floor(1000 + Math.random() * 9000)}`,
+      holder: cardForm.holder,
+      position: cardForm.position,
+      balance: Number(cardForm.limit) * 0.8, // Start with 80% available
+      limit: Number(cardForm.limit),
+      status: 'active',
+      assignedProperties: cardForm.assignedProperties,
+      vendorRestrictions: cardForm.vendorRestrictions,
+      isExistingCard: cardForm.isExistingCard,
+      brand: cardForm.brand,
+      expiryDate: '12/28',
+      lastUsed: 'Never',
+      monthlySpend: 0,
+      assignedStaff: cardForm.assignedStaff
+    };
+
+    // Add to enhanced cards (in a real app, this would call an API)
+    enhancedCards.push(newCard);
+    
+    // Reset form and close dialog
+    setCardForm({
+      type: 'virtual',
+      holder: '',
+      position: 'Technician',
+      limit: '',
+      assignedProperties: [],
+      vendorRestrictions: [],
+      isExistingCard: false,
+      brand: 'Chase',
+      assignedStaff: []
+    });
+    setIssueCardDialogOpen(false);
+  };
+
+  const handleConnectExistingCard = () => {
+    const connectedCard: EnhancedCard = {
+      id: `connected-card-${Date.now()}`,
+      type: cardForm.type,
+      number: `**** ${Math.floor(1000 + Math.random() * 9000)}`,
+      holder: cardForm.holder,
+      position: cardForm.position,
+      balance: Number(cardForm.limit) * 0.6, // Existing card might have usage
+      limit: Number(cardForm.limit),
+      status: 'active',
+      assignedProperties: cardForm.assignedProperties,
+      vendorRestrictions: cardForm.vendorRestrictions,
+      isExistingCard: true, // Mark as connected existing card
+      brand: cardForm.brand,
+      expiryDate: '06/27',
+      lastUsed: '5 days ago',
+      monthlySpend: Math.floor(Math.random() * 500),
+      assignedStaff: cardForm.assignedStaff
+    };
+
+    // Add to enhanced cards (in a real app, this would call an API)
+    enhancedCards.push(connectedCard);
+    
+    // Reset form and close dialog
+    setCardForm({
+      type: 'virtual',
+      holder: '',
+      position: 'Technician',
+      limit: '',
+      assignedProperties: [],
+      vendorRestrictions: [],
+      isExistingCard: false,
+      brand: 'Chase',
+      assignedStaff: []
+    });
+    setConnectCardDialogOpen(false);
+  };
+
+  // Expense request handling functions
+  const handleApproveExpenseRequest = (requestId: string) => {
+    setExpenseRequests(prev => prev.map(req => 
+      req.id === requestId ? { ...req, status: 'approved' as const } : req
+    ));
+  };
+
+  const handleDenyExpenseRequest = (requestId: string) => {
+    setExpenseRequests(prev => prev.map(req => 
+      req.id === requestId ? { ...req, status: 'denied' as const } : req
+    ));
+  };
+
+  const getUrgencyColor = (urgency: string) => {
+    switch (urgency) {
+      case 'high': return 'text-red-400 bg-red-900/20';
+      case 'normal': return 'text-yellow-400 bg-yellow-900/20';
+      case 'low': return 'text-green-400 bg-green-900/20';
+      default: return 'text-gray-400 bg-gray-900/20';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved': return 'text-green-400 bg-green-900/20';
+      case 'denied': return 'text-red-400 bg-red-900/20';
+      case 'pending': return 'text-yellow-400 bg-yellow-900/20';
+      default: return 'text-gray-400 bg-gray-900/20';
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'billable_question': return 'Billability';
+      case 'approval_required': return 'Pre-approval';
+      case 'policy_clarification': return 'Policy';
+      case 'receipt_issue': return 'Documentation';
+      case 'amount_verification': return 'Amount Check';
+      default: return 'General';
+    }
+  };
+
   const getPropertyYTDSpending = (propertyName: string) => {
     const currentYear = new Date().getFullYear();
     const propertyJobs = jobs.filter(job => job.property === propertyName);
@@ -4281,133 +4686,269 @@ export default function PMFinancialDashboard() {
                 </div>
               </>
             )}
-            {activeTab === "policy" && (
+            {activeTab === "cards" && role === 'centralOffice' && (
               <>
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-white">Expense Requests Dashboard</h3>
+                  <h3 className="text-lg font-semibold text-white">Enhanced Card Management</h3>
+                  <div className="flex gap-2">
+                    <Button 
+                      className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                      onClick={() => setIssueCardDialogOpen(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Issue New Card
+                    </Button>
+                    <Button 
+                      className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+                      onClick={() => setConnectCardDialogOpen(true)}
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      Connect Existing Card
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Enhanced Cards Display */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                  {enhancedCards.map((card) => (
+                    <Card key={card.id} className="bg-gray-800 border-gray-700">
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-white flex items-center gap-2">
+                              <CreditCard className="h-5 w-5" />
+                              {card.holder}
+                            </CardTitle>
+                            <CardDescription className="text-gray-400">
+                              {card.position} • {card.type} Card
+                            </CardDescription>
+                          </div>
+                          <Badge 
+                            className={`${
+                              card.status === 'active' ? 'bg-green-600' : 
+                              card.status === 'inactive' ? 'bg-gray-600' : 
+                              card.status === 'blocked' ? 'bg-red-600' : 'bg-yellow-600'
+                            } text-white`}
+                          >
+                            {card.status}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-4 rounded-lg">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-gray-400">{card.brand}</span>
+                            <span className="text-white font-mono">{card.number}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400">Expires</span>
+                            <span className="text-white">{card.expiryDate}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Available</span>
+                            <span className="text-green-400">${card.balance.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Limit</span>
+                            <span className="text-white">${card.limit.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">This Month</span>
+                            <span className="text-yellow-400">${card.monthlySpend.toLocaleString()}</span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="text-sm text-gray-400 mb-2">Assigned Properties:</div>
+                          <div className="flex flex-wrap gap-1">
+                            {card.assignedProperties.map((propId) => {
+                              const property = properties.find(p => p.id === propId);
+                              return (
+                                <Badge key={propId} variant="outline" className="text-xs border-blue-500 text-blue-300">
+                                  {property?.name || propId}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="text-sm text-gray-400 mb-2">Vendor Restrictions:</div>
+                          <div className="flex flex-wrap gap-1">
+                            {card.vendorRestrictions.slice(0, 3).map((vendor) => (
+                              <Badge key={vendor} variant="outline" className="text-xs border-purple-500 text-purple-300">
+                                {vendor}
+                              </Badge>
+                            ))}
+                            {card.vendorRestrictions.length > 3 && (
+                              <Badge variant="outline" className="text-xs border-gray-500 text-gray-400">
+                                +{card.vendorRestrictions.length - 3} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-400">Last Used:</span>
+                          <span className="text-gray-300">{card.lastUsed}</span>
+                        </div>
+
+                        {card.isExistingCard && (
+                          <Badge className="w-full justify-center bg-orange-600 text-white">
+                            Connected External Card
+                          </Badge>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            )}
+            {activeTab === "policy" && (
+              <>
+                {/* Expense Policy Section */}
+                <div className="mb-6 p-4 bg-gray-800 border border-gray-700 rounded-lg">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Expense Policy
+                    </h3>
+                    <Button 
+                      variant="outline" 
+                      className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
+                      onClick={() => setExpensePolicyDialogOpen(true)}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Expense Policy
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {policyRules.map(rule => (
+                      <div key={rule.id} className="p-3 bg-gray-900 rounded-lg border border-gray-600">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-blue-300">{rule.category}</span>
+                          <div className="flex items-center gap-2">
+                            {rule.aiEnabled && (
+                              <Badge className="bg-purple-600 text-white text-xs">AI</Badge>
+                            )}
+                            <Badge className={rule.active ? "bg-green-600 text-white text-xs" : "bg-gray-600 text-white text-xs"}>
+                              {rule.active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-300">{rule.rule}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-semibold text-white">Expense Clarification Requests</h3>
                   <div className="flex gap-2">
                     <Badge className="bg-orange-600 text-white">
-                      {helpRequests.filter(r => r.status === 'pending').length} Pending Reviews
+                      {expenseRequests.filter(r => r.status === 'pending').length} Pending
                     </Badge>
                     <Badge className="bg-green-600 text-white">
-                      {helpRequests.filter(r => r.status === 'answered').length} Answered
+                      {expenseRequests.filter(r => r.status === 'approved').length} Approved
+                    </Badge>
+                    <Badge className="bg-red-600 text-white">
+                      {expenseRequests.filter(r => r.status === 'denied').length} Denied
                     </Badge>
                   </div>
                 </div>
 
-                {/* Help Requests from Technicians and PMs */}
+                {/* Enhanced Expense Requests Table */}
                 <Card className="bg-gray-800 border-gray-700">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5" />
-                      Help Requests from Technicians and PMs
-                      {helpRequests.filter(r => r.status === 'pending').length > 0 && (
-                        <Badge className="bg-orange-600 text-white ml-2">
-                          {helpRequests.filter(r => r.status === 'pending').length} Pending
-                        </Badge>
-                      )}
-                    </CardTitle>
-                    <CardDescription className="text-gray-400">
-                      Questions about expense policies, billable vs non-billable items, and approval guidance
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {helpRequests.length === 0 ? (
-                      <div className="text-center py-8 text-gray-400">
-                        <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No help requests yet</p>
-                        <p className="text-sm">PMs and Technicians can submit questions using the "Ask Central Office" button</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {helpRequests.map((request) => (
-                          <div key={request.id} className="p-4 bg-gray-900 rounded-lg border border-gray-700">
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="text-sm font-medium text-white">{request.technicianName}</span>
-                                  <Badge className="bg-blue-600 text-white">
-                                    {request.technicianName.includes('Alice') ? 'Technician' : 'PM'}
-                                  </Badge>
-                                  <Badge 
-                                    className={`${
-                                      request.urgency === 'high' ? 'bg-red-600' : 
-                                      request.urgency === 'normal' ? 'bg-orange-600' : 'bg-blue-600'
-                                    } text-white`}
-                                  >
-                                    {request.urgency}
-                                  </Badge>
-                                  <Badge 
-                                    className={`${
-                                      request.status === 'pending' ? 'bg-yellow-600' : 
-                                      request.status === 'answered' ? 'bg-green-600' : 'bg-gray-600'
-                                    } text-white`}
-                                  >
-                                    {request.status}
-                                  </Badge>
-                                </div>
-                                <p className="text-sm text-gray-300 mb-2">{request.question}</p>
-                                {request.additionalDetails && (
-                                  <p className="text-xs text-gray-400 mb-2">{request.additionalDetails}</p>
-                                )}
-                                {request.expenseId && (
-                                  <div className="text-xs text-gray-400 mb-2">
-                                    Related Expense: {request.expenseId}
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-sm">
+                        <thead>
+                          <tr className="bg-gray-900 border-b border-gray-700">
+                            <th className="text-left py-3 px-4 font-semibold text-white">Technician</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Question</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Amount</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Vendor</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Type</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Urgency</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Status</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">AI Suggestion</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {expenseRequests.map((request) => (
+                            <tr key={request.id} className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700/50 transition-colors">
+                              <td className="py-3 px-4">
+                                <div className="text-white font-medium">{request.technicianName}</div>
+                                <div className="text-xs text-gray-400">{new Date(request.createdAt).toLocaleDateString()}</div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="text-gray-300 max-w-xs">{request.question}</div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="text-green-400 font-medium">${request.amount.toFixed(2)}</span>
+                              </td>
+                              <td className="py-3 px-4 text-gray-300">{request.vendor}</td>
+                              <td className="py-3 px-4 text-gray-300">{request.property || 'N/A'}</td>
+                              <td className="py-3 px-4">
+                                <Badge className="bg-blue-600 text-white text-xs">
+                                  {getTypeLabel(request.type)}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-4">
+                                <Badge className={`text-xs ${getUrgencyColor(request.urgency)}`}>
+                                  {request.urgency}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-4">
+                                <Badge className={`text-xs ${getStatusColor(request.status)}`}>
+                                  {request.status}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="max-w-xs text-xs text-gray-400 bg-purple-900/20 p-2 rounded border border-purple-500/30">
+                                  <div className="flex items-center gap-1 mb-1">
+                                    <span className="text-purple-300">🤖 AI:</span>
                                   </div>
-                                )}
-                                <div className="text-xs text-gray-500">
-                                  Submitted: {new Date(request.createdAt).toLocaleString()}
+                                  {request.aiSuggestion}
                                 </div>
-                              </div>
-                            </div>
-                            
-                            {request.status === 'pending' && (
-                              <div className="mt-4 space-y-3">
-                                <Button
-                                  size="sm"
-                                  className="bg-green-600 hover:bg-green-700 text-white"
-                                  onClick={() => {
-                                    setSelectedHelpRequest(request);
-                                    setResponseForm({
-                                      answer: '',
-                                      decisionTrackerAnswers: {
-                                        'Is this expense reasonable and necessary?': null,
-                                        'Should this be billable to the property/owner?': null,
-                                        'Is a receipt required?': null,
-                                        'Does this require pre-approval?': null,
-                                        'Is this an emergency repair?': null,
-                                        'Is this a capital improvement?': null,
-                                        'Should this be reimbursed?': null,
-                                        'Is this within budget limits?': null
-                                      }
-                                    });
-                                    setResponseDialogOpen(true);
-                                  }}
-                                >
-                                  Respond
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-gray-600 text-gray-300"
-                                  onClick={() => {
-                                    setHelpRequests(prev => 
-                                      prev.map(r => r.id === request.id ? { 
-                                        ...r, 
-                                        status: 'resolved' as const,
-                                        answeredAt: new Date().toISOString()
-                                      } : r)
-                                    );
-                                  }}
-                                >
-                                  Mark Resolved
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                              </td>
+                              <td className="py-3 px-4">
+                                {request.status === 'pending' ? (
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      className="bg-green-600 hover:bg-green-700 text-white"
+                                      onClick={() => handleApproveExpenseRequest(request.id)}
+                                    >
+                                      <Check className="h-3 w-3 mr-1" />
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="border-red-500 text-red-400 hover:bg-red-500/10"
+                                      onClick={() => handleDenyExpenseRequest(request.id)}
+                                    >
+                                      <X className="h-3 w-3 mr-1" />
+                                      Deny
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-gray-500">
+                                    {request.status === 'approved' ? 'Approved' : 'Denied'}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </CardContent>
                 </Card>
               </>
