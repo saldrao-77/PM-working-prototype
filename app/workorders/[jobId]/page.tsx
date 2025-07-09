@@ -153,11 +153,19 @@ export default function WorkOrderDetailPage() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const roleFromUrl = urlParams.get('role');
-    const roleFromStorage = localStorage.getItem('currentRole');
-    const detectedRole = roleFromUrl || roleFromStorage || 'pm';
-    setCurrentRole(detectedRole);
+    
+    // Store the role in localStorage to persist it
+    if (roleFromUrl) {
+      localStorage.setItem('currentRole', roleFromUrl);
+      setCurrentRole(roleFromUrl);
+    } else {
+      // Fallback to localStorage if URL param is missing
+      const roleFromStorage = localStorage.getItem('currentRole');
+      setCurrentRole(roleFromStorage || 'pm');
+    }
     
     // Update active tab based on role
+    const detectedRole = roleFromUrl || localStorage.getItem('currentRole') || 'pm';
     if (detectedRole === 'technician') {
       setActiveTab('details');
     } else {
@@ -233,7 +241,10 @@ export default function WorkOrderDetailPage() {
           <h1 className="text-2xl font-bold text-red-500 mb-4">Work Order Not Found</h1>
           <Button
             variant="ghost"
-            onClick={() => router.push('/?tab=workorders')}
+            onClick={() => {
+              const role = localStorage.getItem('currentRole') || 'pm';
+              router.push(`/?tab=workorders&role=${role}`);
+            }}
             className="text-gray-300 hover:text-white hover:bg-blue-600/20 border border-transparent hover:border-blue-500/30"
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
@@ -358,7 +369,11 @@ export default function WorkOrderDetailPage() {
             <div className="flex items-center space-x-2">
               <Button
                 variant="ghost"
-                onClick={() => router.push(`/?tab=workorders&role=${currentRole}`)}
+                onClick={() => {
+                  // Ensure we navigate to the correct dashboard based on current role
+                  const role = currentRole || localStorage.getItem('currentRole') || 'pm';
+                  router.push(`/?tab=workorders&role=${role}`);
+                }}
                 className="text-gray-300 hover:text-white hover:bg-blue-600/20 border border-transparent hover:border-blue-500/30"
               >
                 <ChevronLeft className="h-4 w-4 mr-2" />

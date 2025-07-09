@@ -393,11 +393,15 @@ export default function PMFinancialDashboard() {
     'Work Order Closed'
   ];
 
-  // State for reimbursement functionality
+  // State for enhanced reimbursement functionality
   const [reimbursementDialogOpen, setReimbursementDialogOpen] = useState(false);
   const [selectedReimbursementJob, setSelectedReimbursementJob] = useState<any>(null);
   const [reimbursementAmount, setReimbursementAmount] = useState(0);
   const [reimbursementNote, setReimbursementNote] = useState('');
+  const [reimbursementMethod, setReimbursementMethod] = useState('check'); // check, wire, ach
+  const [sendReportToOwner, setSendReportToOwner] = useState(true);
+  const [reimbursementDate, setReimbursementDate] = useState(new Date().toISOString().split('T')[0]);
+  const [ownerNotificationMethod, setOwnerNotificationMethod] = useState('email'); // email, phone, text, none
   
   // State for Policy tab
   const [aiPolicyContent, setAiPolicyContent] = useState(`# AI Expense Policy Guidelines
@@ -531,6 +535,10 @@ export default function PMFinancialDashboard() {
       pendingTransactions: 5,
       lastReport: "Jan 15, 2024",
       ownerEmail: "owner@stanford.edu",
+      ownerName: "Dr. Sarah Wilson",
+      ownerPhone: "650-723-2273",
+      ownerAddress: "Graduate School of Business, 655 Knight Way, Stanford, CA 94305",
+      ownerPreferredContact: "email", // email, phone, text
       staff: [
         { name: "Linda Evans", role: "Receptionist", phone: "555-101-2020", email: "linda.evans@stanford.edu" },
         { name: "Mark Lee", role: "Property Manager", phone: "555-303-4040", email: "mark.lee@stanford.edu" },
@@ -583,7 +591,11 @@ export default function PMFinancialDashboard() {
       reconciliationStatus: "balanced",
       pendingTransactions: 8,
       lastReport: "Jan 10, 2024",
-      ownerEmail: "owner@sunnyvale.com",
+      ownerEmail: "owner@sunnyvale.com", 
+      ownerName: "Michael Chen",
+      ownerPhone: "408-555-0123",
+      ownerAddress: "432 Sunnyvale Ave, Sunnyvale, CA 94086",
+      ownerPreferredContact: "phone", // email, phone, text
       staff: [
         { name: "Maria Gomez", role: "Receptionist", phone: "555-505-6060", email: "maria.gomez@sunnyvale.com" },
         { name: "James Wu", role: "Property Manager", phone: "555-707-8080", email: "james.wu@sunnyvale.com" },
@@ -637,6 +649,10 @@ export default function PMFinancialDashboard() {
       pendingTransactions: 3,
       lastReport: "Jan 8, 2024",
       ownerEmail: "owner@downtownlofts.com",
+      ownerName: "Alex Rodriguez",
+      ownerPhone: "415-555-7890",
+      ownerAddress: "123 Market St, San Francisco, CA 94103",
+      ownerPreferredContact: "text", // email, phone, text
       staff: [
         { name: "Sophie Tran", role: "Receptionist", phone: "555-909-1010", email: "sophie.tran@downtownlofts.com" },
         { name: "David Kim", role: "Property Manager", phone: "555-111-2121", email: "david.kim@downtownlofts.com" },
@@ -915,12 +931,29 @@ export default function PMFinancialDashboard() {
     setReimbursementDialogOpen(true);
   };
 
-  // Process reimbursement
+  // Enhanced reimbursement processing
   const processReimbursement = () => {
     if (!selectedReimbursementJob || reimbursementAmount <= 0) return;
     
+    // Get property information for owner contact
+    const property = properties.find(p => p.name === selectedReimbursementJob.property);
+    
     // Mock reimbursement processing
     console.log(`Processing reimbursement for ${selectedReimbursementJob.description}: $${reimbursementAmount}`);
+    console.log(`Method: ${reimbursementMethod}, Date: ${reimbursementDate}`);
+    
+    // Send owner notification if requested
+    if (ownerNotificationMethod !== 'none' && property) {
+      const contactMethod = ownerNotificationMethod === 'email' ? property.ownerEmail : 
+                           ownerNotificationMethod === 'phone' ? property.ownerPhone : 
+                           ownerNotificationMethod === 'text' ? property.ownerPhone : '';
+      console.log(`Sending ${ownerNotificationMethod} notification to ${property.ownerName} at ${contactMethod}`);
+    }
+    
+    // Generate and send report if requested
+    if (sendReportToOwner && property) {
+      console.log(`Generating and sending expense report to ${property.ownerName} (${property.ownerEmail})`);
+    }
     
     // Update transaction status to reconciled
     setTransactions(prev => prev.map(txn => 
@@ -929,11 +962,18 @@ export default function PMFinancialDashboard() {
         : txn
     ));
     
+    // Show success message
+    alert(`Reimbursement processed successfully!\n\nAmount: $${reimbursementAmount}\nMethod: ${reimbursementMethod}\n${sendReportToOwner ? 'Report sent to owner' : 'No report sent'}\n${ownerNotificationMethod !== 'none' ? `Owner notified via ${ownerNotificationMethod}` : 'No notification sent'}`);
+    
     // Close dialog and reset state
     setReimbursementDialogOpen(false);
     setSelectedReimbursementJob(null);
     setReimbursementAmount(0);
     setReimbursementNote('');
+    setReimbursementMethod('check');
+    setSendReportToOwner(true);
+    setReimbursementDate(new Date().toISOString().split('T')[0]);
+    setOwnerNotificationMethod('email');
   };
 
   // Toggle work order expansion in payments tab
@@ -1076,7 +1116,7 @@ export default function PMFinancialDashboard() {
           { id: 'workorders', label: 'Work Orders', icon: FileText },
           { id: 'activity', label: 'Activity Log', icon: Zap },
           { id: 'payments', label: 'Payments', icon: DollarSign },
-          { id: 'policy', label: 'Policy', icon: BookOpen },
+          { id: 'policy', label: 'Expense Requests', icon: MessageSquare },
           { id: 'transactions', label: 'Transactions', icon: FileText },
           { id: 'properties', label: 'Properties', icon: Home },
           { id: 'staff', label: 'Technicians', icon: User },
@@ -1521,7 +1561,11 @@ export default function PMFinancialDashboard() {
           size="sm"
           className={role === 'pm' ? 'bg-blue-600 text-white mr-2' : 'border-blue-600 text-blue-400 mr-2'}
           variant={role === 'pm' ? 'default' : 'outline'}
-          onClick={() => { setRole('pm'); setActiveTab('dashboard'); }}
+          onClick={() => { 
+            setRole('pm'); 
+            setActiveTab('dashboard'); 
+            localStorage.setItem('currentRole', 'pm');
+          }}
         >
           Property Manager
         </Button>
@@ -1529,7 +1573,11 @@ export default function PMFinancialDashboard() {
           size="sm"
           className={role === 'technician' ? 'bg-blue-600 text-white mr-2' : 'border-blue-600 text-blue-400 mr-2'}
           variant={role === 'technician' ? 'default' : 'outline'}
-          onClick={() => { setRole('technician'); setActiveTab('dashboard'); }}
+          onClick={() => { 
+            setRole('technician'); 
+            setActiveTab('dashboard'); 
+            localStorage.setItem('currentRole', 'technician');
+          }}
         >
           Technician
         </Button>
@@ -1537,7 +1585,11 @@ export default function PMFinancialDashboard() {
           size="sm"
           className={role === 'centralOffice' ? 'bg-blue-600 text-white' : 'border-blue-600 text-blue-400'}
           variant={role === 'centralOffice' ? 'default' : 'outline'}
-          onClick={() => { setRole('centralOffice'); setActiveTab('dashboard'); }}
+          onClick={() => { 
+            setRole('centralOffice'); 
+            setActiveTab('dashboard'); 
+            localStorage.setItem('currentRole', 'centralOffice');
+          }}
         >
           Central Office
         </Button>
@@ -1986,19 +2038,6 @@ export default function PMFinancialDashboard() {
                                             <Button
                                               size="icon"
                                               variant="ghost"
-                                              className="h-8 w-8 text-gray-300 hover:text-white hover:bg-blue-500/20"
-                                              onClick={e => { e.stopPropagation(); setEditJob({ ...job }); setEditJobDialogOpen(true); }}
-                                            >
-                                              <Settings className="h-4 w-4" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>Edit job</TooltipContent>
-                                        </Tooltip>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button
-                                              size="icon"
-                                              variant="ghost"
                                               className="h-8 w-8 text-gray-300 hover:text-red-300 hover:bg-red-500/20"
                                               onClick={e => { e.stopPropagation(); setJobToDelete(job); setDeleteDialogOpen(true); }}
                                             >
@@ -2412,50 +2451,231 @@ export default function PMFinancialDashboard() {
                   })}
                 </div>
 
-                {/* Reimbursement Dialog */}
+                {/* Enhanced Reimbursement Dialog */}
                 <Dialog open={reimbursementDialogOpen} onOpenChange={setReimbursementDialogOpen}>
-                  <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
+                  <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Process Reimbursement</DialogTitle>
+                      <DialogTitle className="text-xl">🏦 Process Reimbursement</DialogTitle>
                       <DialogDescription>
-                        Review and process reimbursement for this work order
+                        Complete reimbursement processing with owner notification and report generation
                       </DialogDescription>
                     </DialogHeader>
                     
-                    {selectedReimbursementJob && (
-                      <div className="space-y-4">
-                        <div className="bg-gray-800 p-4 rounded-lg">
-                          <div className="text-sm text-gray-400 mb-1">Work Order</div>
-                          <div className="font-medium text-white">{selectedReimbursementJob.description}</div>
-                          <div className="text-sm text-gray-400">#{selectedReimbursementJob.id}</div>
+                    {selectedReimbursementJob && (() => {
+                      const property = properties.find(p => p.name === selectedReimbursementJob.property);
+                      const workOrderTransactions = [...transactions, ...technicianTransactions].filter(txn => txn.jobId === selectedReimbursementJob.id);
+                      
+                      return (
+                        <div className="space-y-6">
+                          {/* Work Order & Property Information */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Card className="bg-gray-800 border-gray-700">
+                              <CardHeader className="pb-3">
+                                <CardTitle className="text-sm text-blue-400">Work Order Details</CardTitle>
+                              </CardHeader>
+                              <CardContent className="space-y-2">
+                                <div>
+                                  <div className="text-sm text-gray-400">Description</div>
+                                  <div className="font-medium text-white">{selectedReimbursementJob.description}</div>
+                                </div>
+                                <div>
+                                  <div className="text-sm text-gray-400">Work Order ID</div>
+                                  <div className="text-sm text-gray-300">#{selectedReimbursementJob.id}</div>
+                                </div>
+                                <div>
+                                  <div className="text-sm text-gray-400">Property</div>
+                                  <div className="text-sm text-gray-300">{selectedReimbursementJob.property}</div>
+                                </div>
+                                <div>
+                                  <div className="text-sm text-gray-400">Total Amount</div>
+                                  <div className="text-xl font-bold text-green-400">${reimbursementAmount.toFixed(2)}</div>
+                                </div>
+                              </CardContent>
+                            </Card>
+
+                            {/* Owner Contact Information */}
+                            {property && (
+                              <Card className="bg-gray-800 border-gray-700">
+                                <CardHeader className="pb-3">
+                                  <CardTitle className="text-sm text-orange-400">👤 Owner Contact Information</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-2">
+                                  <div>
+                                    <div className="text-sm text-gray-400">Name</div>
+                                    <div className="font-medium text-white">{property.ownerName}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-sm text-gray-400">Email</div>
+                                    <div className="text-sm text-blue-300">{property.ownerEmail}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-sm text-gray-400">Phone</div>
+                                    <div className="text-sm text-gray-300">{property.ownerPhone}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-sm text-gray-400">Address</div>
+                                    <div className="text-sm text-gray-300">{property.ownerAddress}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-sm text-gray-400">Preferred Contact</div>
+                                    <div className="text-sm text-yellow-300 capitalize">{property.ownerPreferredContact}</div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )}
+                          </div>
+
+                          {/* Transaction Details */}
+                          <Card className="bg-gray-800 border-gray-700">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm text-purple-400">💳 Transaction Breakdown</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="border-b border-gray-600">
+                                      <th className="text-left py-2 text-gray-400">Date</th>
+                                      <th className="text-left py-2 text-gray-400">Vendor</th>
+                                      <th className="text-left py-2 text-gray-400">Amount</th>
+                                      <th className="text-left py-2 text-gray-400">Made By</th>
+                                      <th className="text-left py-2 text-gray-400">Memo</th>
+                                      <th className="text-left py-2 text-gray-400">Billable</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {workOrderTransactions.map(txn => (
+                                      <tr key={txn.id} className="border-b border-gray-700/50">
+                                        <td className="py-2 text-gray-300">{txn.date}</td>
+                                        <td className="py-2 text-white">{txn.vendor}</td>
+                                        <td className="py-2 text-green-400">${txn.amount.toFixed(2)}</td>
+                                        <td className="py-2 text-gray-300">{txn.madeBy}</td>
+                                        <td className="py-2 text-gray-300">{txn.memo || '-'}</td>
+                                        <td className="py-2">
+                                          <Badge className={txn.billable ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}>
+                                            {txn.billable ? 'Yes' : 'No'}
+                                          </Badge>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* Reimbursement Configuration */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Payment Details */}
+                            <Card className="bg-gray-800 border-gray-700">
+                              <CardHeader className="pb-3">
+                                <CardTitle className="text-sm text-green-400">💰 Payment Details</CardTitle>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                <div>
+                                  <Label className="text-sm text-gray-400">Reimbursement Method</Label>
+                                  <Select value={reimbursementMethod} onValueChange={setReimbursementMethod}>
+                                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white mt-1">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                                      <SelectItem value="check">Check Payment</SelectItem>
+                                      <SelectItem value="wire">Wire Transfer</SelectItem>
+                                      <SelectItem value="ach">ACH Transfer</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                
+                                <div>
+                                  <Label className="text-sm text-gray-400">Payment Date</Label>
+                                  <Input
+                                    type="date"
+                                    value={reimbursementDate}
+                                    onChange={(e) => setReimbursementDate(e.target.value)}
+                                    className="bg-gray-700 border-gray-600 text-white mt-1"
+                                  />
+                                </div>
+
+                                <div>
+                                  <Label className="text-sm text-gray-400">Processing Notes</Label>
+                                  <Textarea
+                                    value={reimbursementNote}
+                                    onChange={(e) => setReimbursementNote(e.target.value)}
+                                    placeholder="Add any notes about this reimbursement..."
+                                    className="bg-gray-700 border-gray-600 text-white mt-1"
+                                    rows={3}
+                                  />
+                                </div>
+                              </CardContent>
+                            </Card>
+
+                            {/* Owner Notification */}
+                            <Card className="bg-gray-800 border-gray-700">
+                              <CardHeader className="pb-3">
+                                <CardTitle className="text-sm text-blue-400">📧 Owner Notification</CardTitle>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id="send-report"
+                                    checked={sendReportToOwner}
+                                    onChange={(e) => setSendReportToOwner(e.target.checked)}
+                                    className="rounded bg-gray-700 border-gray-600"
+                                  />
+                                  <Label htmlFor="send-report" className="text-sm text-gray-300">
+                                    📊 Generate & send expense report to owner
+                                  </Label>
+                                </div>
+
+                                <div>
+                                  <Label className="text-sm text-gray-400">Notification Method</Label>
+                                  <Select value={ownerNotificationMethod} onValueChange={setOwnerNotificationMethod}>
+                                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white mt-1">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                                      <SelectItem value="email">📧 Email</SelectItem>
+                                      <SelectItem value="phone">📞 Phone Call</SelectItem>
+                                      <SelectItem value="text">💬 Text Message</SelectItem>
+                                      <SelectItem value="none">🚫 No Notification</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  {property && ownerNotificationMethod !== 'none' && (
+                                    <div className="mt-2 text-xs text-gray-400">
+                                      Will contact: {ownerNotificationMethod === 'email' ? property.ownerEmail : property.ownerPhone}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {sendReportToOwner && (
+                                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+                                    <div className="text-sm text-blue-300 font-medium mb-1">Report Preview</div>
+                                    <div className="text-xs text-gray-400">
+                                      • Work Order: {selectedReimbursementJob.description}<br/>
+                                      • Total Expenses: ${reimbursementAmount.toFixed(2)}<br/>
+                                      • Transaction Count: {workOrderTransactions.length}<br/>
+                                      • Billable Amount: ${workOrderTransactions.filter(t => t.billable).reduce((sum, t) => sum + t.amount, 0).toFixed(2)}
+                                    </div>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          </div>
                         </div>
-                        
-                        <div className="bg-gray-800 p-4 rounded-lg">
-                          <div className="text-sm text-gray-400 mb-1">Reimbursement Amount</div>
-                          <div className="text-2xl font-bold text-white">${reimbursementAmount.toFixed(2)}</div>
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="reimbursement-note" className="text-sm text-gray-400">
-                            Notes (Optional)
-                          </Label>
-                          <Textarea
-                            id="reimbursement-note"
-                            value={reimbursementNote}
-                            onChange={(e) => setReimbursementNote(e.target.value)}
-                            placeholder="Add any notes about this reimbursement..."
-                            className="bg-gray-800 border-gray-600 text-white mt-1"
-                          />
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                     
-                    <DialogFooter>
+                    <DialogFooter className="flex gap-2">
                       <Button variant="outline" onClick={() => setReimbursementDialogOpen(false)}>
                         Cancel
                       </Button>
-                      <Button onClick={processReimbursement} className="bg-green-600 hover:bg-green-700">
-                        Process Reimbursement
+                      <Button 
+                        onClick={processReimbursement} 
+                        className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
+                      >
+                        <DollarSign className="h-4 w-4" />
+                        Process Reimbursement (${reimbursementAmount.toFixed(2)})
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -3699,6 +3919,7 @@ export default function PMFinancialDashboard() {
                   <table className="min-w-full text-sm">
                     <thead>
                       <tr className="bg-gray-900 border-b border-gray-700">
+                        <th className="text-left py-3 px-4 font-semibold text-white w-8"></th>
                         <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
                         <th className="text-left py-3 px-4 font-semibold text-white">Address</th>
                       </tr>
@@ -3711,38 +3932,87 @@ export default function PMFinancialDashboard() {
                             onClick={() => setExpandedPropertyEmployees(expandedPropertyEmployees === property.id ? null : property.id)}
                           >
                             <td className="py-3 px-4">
+                              <ChevronDown 
+                                className={`h-4 w-4 text-gray-400 transition-transform ${
+                                  expandedPropertyEmployees === property.id ? 'rotate-180' : ''
+                                }`} 
+                              />
+                            </td>
+                            <td className="py-3 px-4">
                               <div className="font-medium text-white">{property.name}</div>
                             </td>
                             <td className="py-3 px-4 text-gray-300">{property.address}</td>
                           </tr>
                           {expandedPropertyEmployees === property.id && (
-                            <tr className="bg-gray-900">
-                              <td colSpan={2} className="p-0">
-                                <div className="p-4">
-                                  <h5 className="text-sm font-semibold text-white mb-3">Staff at {property.name}</h5>
-                                  <table className="min-w-full text-sm">
-                                    <thead>
-                                      <tr className="bg-gray-800 border-b border-gray-700">
-                                        <th className="text-left py-2 px-3 font-semibold text-white">Name</th>
-                                        <th className="text-left py-2 px-3 font-semibold text-white">Role</th>
-                                        <th className="text-left py-2 px-3 font-semibold text-white">Phone</th>
-                                        <th className="text-left py-2 px-3 font-semibold text-white">Email</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {property.staff.map((employee, index) => (
-                                        <tr key={index} className="bg-gray-900 border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
-                                          <td className="py-2 px-3 text-gray-300">{employee.name}</td>
-                                          <td className="py-2 px-3 text-gray-300">{employee.role}</td>
-                                          <td className="py-2 px-3 text-gray-300">{employee.phone}</td>
-                                          <td className="py-2 px-3 text-gray-300">{employee.email}</td>
+                            <>
+                              {/* Owner Information Row */}
+                              <tr className="bg-gray-900/50 border-b border-gray-700">
+                                <td></td>
+                                <td colSpan={2} className="py-4 px-4">
+                                  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                                    <h5 className="text-sm font-semibold text-blue-300 mb-3 flex items-center gap-2">
+                                      <User className="h-4 w-4" />
+                                      Owner Information
+                                    </h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                      <div>
+                                        <span className="text-gray-400">Name:</span>
+                                        <span className="text-white ml-2 font-medium">{property.ownerName}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-400">Phone:</span>
+                                        <span className="text-white ml-2">{property.ownerPhone}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-400">Email:</span>
+                                        <span className="text-blue-300 ml-2">{property.ownerEmail}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-400">Preferred Contact:</span>
+                                        <span className="text-yellow-300 ml-2 capitalize">{property.ownerPreferredContact}</span>
+                                      </div>
+                                      <div className="md:col-span-2">
+                                        <span className="text-gray-400">Address:</span>
+                                        <span className="text-white ml-2">{property.ownerAddress}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                              
+                              {/* Staff Information Row */}
+                              <tr className="bg-gray-900">
+                                <td></td>
+                                <td colSpan={2} className="p-0">
+                                  <div className="p-4">
+                                    <h5 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                                      <User className="h-4 w-4" />
+                                      Staff at {property.name}
+                                    </h5>
+                                    <table className="min-w-full text-sm">
+                                      <thead>
+                                        <tr className="bg-gray-800 border-b border-gray-700">
+                                          <th className="text-left py-2 px-3 font-semibold text-white">Name</th>
+                                          <th className="text-left py-2 px-3 font-semibold text-white">Role</th>
+                                          <th className="text-left py-2 px-3 font-semibold text-white">Phone</th>
+                                          <th className="text-left py-2 px-3 font-semibold text-white">Email</th>
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-              </div>
-                              </td>
-                            </tr>
+                                      </thead>
+                                      <tbody>
+                                        {property.staff.map((employee, index) => (
+                                          <tr key={index} className="bg-gray-900 border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
+                                            <td className="py-2 px-3 text-gray-300">{employee.name}</td>
+                                            <td className="py-2 px-3 text-gray-300">{employee.role}</td>
+                                            <td className="py-2 px-3 text-gray-300">{employee.phone}</td>
+                                            <td className="py-2 px-3 text-gray-300">{employee.email}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                  </div>
+                                </td>
+                              </tr>
+                            </>
                           )}
                         </React.Fragment>
                       ))}
@@ -4014,307 +4284,132 @@ export default function PMFinancialDashboard() {
             {activeTab === "policy" && (
               <>
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-white">AI Expense Policy</h3>
+                  <h3 className="text-lg font-semibold text-white">Expense Requests Dashboard</h3>
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      className="bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 flex items-center gap-2"
-                      onClick={() => setPolicyEditMode(!policyEditMode)}
-                    >
-                      <Edit className="h-4 w-4" /> {policyEditMode ? 'Save Policy' : 'Edit Policy'}
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="bg-green-600 border-green-600 text-white hover:bg-green-700 hover:border-green-700 flex items-center gap-2"
-                      onClick={() => setNewQuestionDialogOpen(true)}
-                    >
-                      <Plus className="h-4 w-4" /> Add Question
-                    </Button>
+                    <Badge className="bg-orange-600 text-white">
+                      {helpRequests.filter(r => r.status === 'pending').length} Pending Reviews
+                    </Badge>
+                    <Badge className="bg-green-600 text-white">
+                      {helpRequests.filter(r => r.status === 'answered').length} Answered
+                    </Badge>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* AI Policy Content */}
-                  <Card className="bg-gray-800 border-gray-700">
-                    <CardHeader>
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <BookOpen className="h-5 w-5" />
-                        AI Policy Guidelines
-                      </CardTitle>
-                      <CardDescription className="text-gray-400">
-                        Centralized expense policy for AI-assisted decision making
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {policyEditMode ? (
-                        <Textarea
-                          value={aiPolicyContent}
-                          onChange={(e) => setAiPolicyContent(e.target.value)}
-                          className="min-h-[400px] bg-gray-900 border-gray-600 text-white"
-                          placeholder="Enter your AI expense policy guidelines..."
-                        />
-                      ) : (
-                        <div className="prose prose-invert max-w-none">
-                          <div className="whitespace-pre-wrap text-gray-300 leading-relaxed">
-                            {aiPolicyContent}
-                          </div>
-                        </div>
+                {/* Help Requests from Technicians and PMs */}
+                <Card className="bg-gray-800 border-gray-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5" />
+                      Help Requests from Technicians and PMs
+                      {helpRequests.filter(r => r.status === 'pending').length > 0 && (
+                        <Badge className="bg-orange-600 text-white ml-2">
+                          {helpRequests.filter(r => r.status === 'pending').length} Pending
+                        </Badge>
                       )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Expense Questions Tracker */}
-                  <Card className="bg-gray-800 border-gray-700">
-                    <CardHeader>
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5" />
-                        Expense Decision Tracker
-                      </CardTitle>
-                      <CardDescription className="text-gray-400">
-                        Quick decision matrix for expense approvals
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
+                    </CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Questions about expense policies, billable vs non-billable items, and approval guidance
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {helpRequests.length === 0 ? (
+                      <div className="text-center py-8 text-gray-400">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No help requests yet</p>
+                        <p className="text-sm">PMs and Technicians can submit questions using the "Ask Central Office" button</p>
+                      </div>
+                    ) : (
                       <div className="space-y-4">
-                        {expenseQuestions.map((question) => (
-                          <div key={question.id} className="p-4 bg-gray-900 rounded-lg border border-gray-700">
+                        {helpRequests.map((request) => (
+                          <div key={request.id} className="p-4 bg-gray-900 rounded-lg border border-gray-700">
                             <div className="flex items-start justify-between mb-3">
                               <div className="flex-1">
-                                <p className="text-sm font-medium text-white mb-1">{question.question}</p>
-                                <span className="inline-block px-2 py-1 text-xs bg-blue-600 text-blue-100 rounded">
-                                  {question.category}
-                                </span>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-sm font-medium text-white">{request.technicianName}</span>
+                                  <Badge className="bg-blue-600 text-white">
+                                    {request.technicianName.includes('Alice') ? 'Technician' : 'PM'}
+                                  </Badge>
+                                  <Badge 
+                                    className={`${
+                                      request.urgency === 'high' ? 'bg-red-600' : 
+                                      request.urgency === 'normal' ? 'bg-orange-600' : 'bg-blue-600'
+                                    } text-white`}
+                                  >
+                                    {request.urgency}
+                                  </Badge>
+                                  <Badge 
+                                    className={`${
+                                      request.status === 'pending' ? 'bg-yellow-600' : 
+                                      request.status === 'answered' ? 'bg-green-600' : 'bg-gray-600'
+                                    } text-white`}
+                                  >
+                                    {request.status}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-gray-300 mb-2">{request.question}</p>
+                                {request.additionalDetails && (
+                                  <p className="text-xs text-gray-400 mb-2">{request.additionalDetails}</p>
+                                )}
+                                {request.expenseId && (
+                                  <div className="text-xs text-gray-400 mb-2">
+                                    Related Expense: {request.expenseId}
+                                  </div>
+                                )}
+                                <div className="text-xs text-gray-500">
+                                  Submitted: {new Date(request.createdAt).toLocaleString()}
+                                </div>
                               </div>
                             </div>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant={question.answer === 'yes' ? 'default' : 'outline'}
-                                className={question.answer === 'yes' ? 'bg-green-600 hover:bg-green-700' : 'border-green-600 text-green-400 hover:bg-green-600/20'}
-                                onClick={() => setExpenseQuestions(prev => 
-                                  prev.map(q => q.id === question.id ? { ...q, answer: 'yes' as const } : q)
-                                )}
-                              >
-                                Yes
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant={question.answer === 'no' ? 'default' : 'outline'}
-                                className={question.answer === 'no' ? 'bg-red-600 hover:bg-red-700' : 'border-red-600 text-red-400 hover:bg-red-600/20'}
-                                onClick={() => setExpenseQuestions(prev => 
-                                  prev.map(q => q.id === question.id ? { ...q, answer: 'no' as const } : q)
-                                )}
-                              >
-                                No
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-gray-600 text-gray-400 hover:bg-gray-700"
-                                onClick={() => setExpenseQuestions(prev => 
-                                  prev.map(q => q.id === question.id ? { ...q, answer: null } : q)
-                                )}
-                              >
-                                Clear
-                              </Button>
-                            </div>
+                            
+                            {request.status === 'pending' && (
+                              <div className="mt-4 space-y-3">
+                                <Button
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                  onClick={() => {
+                                    setSelectedHelpRequest(request);
+                                    setResponseForm({
+                                      answer: '',
+                                      decisionTrackerAnswers: {
+                                        'Is this expense reasonable and necessary?': null,
+                                        'Should this be billable to the property/owner?': null,
+                                        'Is a receipt required?': null,
+                                        'Does this require pre-approval?': null,
+                                        'Is this an emergency repair?': null,
+                                        'Is this a capital improvement?': null,
+                                        'Should this be reimbursed?': null,
+                                        'Is this within budget limits?': null
+                                      }
+                                    });
+                                    setResponseDialogOpen(true);
+                                  }}
+                                >
+                                  Respond
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-gray-600 text-gray-300"
+                                  onClick={() => {
+                                    setHelpRequests(prev => 
+                                      prev.map(r => r.id === request.id ? { 
+                                        ...r, 
+                                        status: 'resolved' as const,
+                                        answeredAt: new Date().toISOString()
+                                      } : r)
+                                    );
+                                  }}
+                                >
+                                  Mark Resolved
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
-                      
-                      {/* Summary */}
-                      <div className="mt-6 p-4 bg-gray-900 rounded-lg border border-gray-700">
-                        <h4 className="text-sm font-semibold text-white mb-3">Decision Summary</h4>
-                        <div className="grid grid-cols-3 gap-4 text-center">
-                          <div>
-                            <div className="text-2xl font-bold text-green-400">
-                              {expenseQuestions.filter(q => q.answer === 'yes').length}
-                            </div>
-                            <div className="text-xs text-gray-400">Yes</div>
-                          </div>
-                          <div>
-                            <div className="text-2xl font-bold text-red-400">
-                              {expenseQuestions.filter(q => q.answer === 'no').length}
-                            </div>
-                            <div className="text-xs text-gray-400">No</div>
-                          </div>
-                          <div>
-                            <div className="text-2xl font-bold text-gray-400">
-                              {expenseQuestions.filter(q => q.answer === null).length}
-                            </div>
-                            <div className="text-xs text-gray-400">Pending</div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="mt-6">
-                  <Card className="bg-gray-800 border-gray-700">
-                    <CardHeader>
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <Zap className="h-5 w-5" />
-                        Quick Actions
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Button 
-                          variant="outline" 
-                          className="bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700"
-                          onClick={() => setExpenseQuestions(prev => prev.map(q => ({ ...q, answer: null })))}
-                        >
-                          Clear All Answers
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          className="bg-green-600 border-green-600 text-white hover:bg-green-700 hover:border-green-700"
-                          onClick={() => {
-                            const yesCount = expenseQuestions.filter(q => q.answer === 'yes').length;
-                            const noCount = expenseQuestions.filter(q => q.answer === 'no').length;
-                            const pendingCount = expenseQuestions.filter(q => q.answer === null).length;
-                            alert(`Decision Summary:\nYes: ${yesCount}\nNo: ${noCount}\nPending: ${pendingCount}`);
-                          }}
-                        >
-                          Export Summary
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          className="bg-purple-600 border-purple-600 text-white hover:bg-purple-700 hover:border-purple-700"
-                          onClick={() => {
-                            const allAnswered = expenseQuestions.every(q => q.answer !== null);
-                            if (allAnswered) {
-                              const yesCount = expenseQuestions.filter(q => q.answer === 'yes').length;
-                              const approvalRate = (yesCount / expenseQuestions.length * 100).toFixed(1);
-                              alert(`Expense Approval Rate: ${approvalRate}%`);
-                            } else {
-                              alert('Please answer all questions first');
-                            }
-                          }}
-                        >
-                          Calculate Approval Rate
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Help Requests from Technicians */}
-                <div className="mt-6">
-                  <Card className="bg-gray-800 border-gray-700">
-                    <CardHeader>
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <MessageSquare className="h-5 w-5" />
-                        Help Requests from Technicians
-                        {helpRequests.filter(r => r.status === 'pending').length > 0 && (
-                          <Badge className="bg-orange-600 text-white ml-2">
-                            {helpRequests.filter(r => r.status === 'pending').length} Pending
-                          </Badge>
-                        )}
-                      </CardTitle>
-                      <CardDescription className="text-gray-400">
-                        Questions and requests for guidance from technicians
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {helpRequests.length === 0 ? (
-                        <div className="text-center py-8 text-gray-400">
-                          <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                          <p>No help requests yet</p>
-                          <p className="text-sm">Technicians can submit questions using the "Ask for Help" button in their My Expenses tab</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {helpRequests.map((request) => (
-                            <div key={request.id} className="p-4 bg-gray-900 rounded-lg border border-gray-700">
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-sm font-medium text-white">{request.technicianName}</span>
-                                    <Badge 
-                                      className={`${
-                                        request.urgency === 'high' ? 'bg-red-600' : 
-                                        request.urgency === 'normal' ? 'bg-orange-600' : 'bg-blue-600'
-                                      } text-white`}
-                                    >
-                                      {request.urgency}
-                                    </Badge>
-                                    <Badge 
-                                      className={`${
-                                        request.status === 'pending' ? 'bg-yellow-600' : 
-                                        request.status === 'answered' ? 'bg-green-600' : 'bg-gray-600'
-                                      } text-white`}
-                                    >
-                                      {request.status}
-                                    </Badge>
-                                  </div>
-                                  <p className="text-sm text-gray-300 mb-2">{request.question}</p>
-                                  {request.additionalDetails && (
-                                    <p className="text-xs text-gray-400 mb-2">{request.additionalDetails}</p>
-                                  )}
-                                  {request.expenseId && (
-                                    <div className="text-xs text-gray-400 mb-2">
-                                      Related Expense: {request.expenseId}
-                                    </div>
-                                  )}
-                                  <div className="text-xs text-gray-500">
-                                    Submitted: {new Date(request.createdAt).toLocaleString()}
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {request.status === 'pending' && (
-                                <div className="mt-4 space-y-3">
-                                  <Button
-                                    size="sm"
-                                    className="bg-green-600 hover:bg-green-700 text-white"
-                                    onClick={() => {
-                                      setSelectedHelpRequest(request);
-                                      setResponseForm({
-                                        answer: '',
-                                        decisionTrackerAnswers: {
-                                          'Is this expense reasonable and necessary?': null,
-                                          'Should this be billable to the property/owner?': null,
-                                          'Is a receipt required?': null,
-                                          'Does this require pre-approval?': null,
-                                          'Is this an emergency repair?': null,
-                                          'Is this a capital improvement?': null,
-                                          'Should this be reimbursed?': null,
-                                          'Is this within budget limits?': null
-                                        }
-                                      });
-                                      setResponseDialogOpen(true);
-                                    }}
-                                  >
-                                    Respond with Decision Tracker
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="border-gray-600 text-gray-300"
-                                    onClick={() => {
-                                      setHelpRequests(prev => 
-                                        prev.map(r => r.id === request.id ? { 
-                                          ...r, 
-                                          status: 'resolved' as const,
-                                          answeredAt: new Date().toISOString()
-                                        } : r)
-                                      );
-                                    }}
-                                  >
-                                    Mark Resolved
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
+                    )}
+                  </CardContent>
+                </Card>
               </>
             )}
             {activeTab === "properties" && (
@@ -4326,6 +4421,7 @@ export default function PMFinancialDashboard() {
                   <table className="min-w-full text-sm">
                     <thead>
                       <tr className="bg-gray-900 border-b border-gray-700">
+                        <th className="text-left py-3 px-4 font-semibold text-white w-8"></th>
                         <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
                         <th className="text-left py-3 px-4 font-semibold text-white">Address</th>
                       </tr>
@@ -4338,38 +4434,87 @@ export default function PMFinancialDashboard() {
                             onClick={() => setExpandedPropertyEmployees(expandedPropertyEmployees === property.id ? null : property.id)}
                           >
                             <td className="py-3 px-4">
+                              <ChevronDown 
+                                className={`h-4 w-4 text-gray-400 transition-transform ${
+                                  expandedPropertyEmployees === property.id ? 'rotate-180' : ''
+                                }`} 
+                              />
+                            </td>
+                            <td className="py-3 px-4">
                               <div className="font-medium text-white">{property.name}</div>
                             </td>
                             <td className="py-3 px-4 text-gray-300">{property.address}</td>
                           </tr>
                           {expandedPropertyEmployees === property.id && (
-                            <tr className="bg-gray-900">
-                              <td colSpan={2} className="p-0">
-                                <div className="p-4">
-                                  <h5 className="text-sm font-semibold text-white mb-3">Staff at {property.name}</h5>
-                                  <table className="min-w-full text-sm">
-                                    <thead>
-                                      <tr className="bg-gray-800 border-b border-gray-700">
-                                        <th className="text-left py-2 px-3 font-semibold text-white">Name</th>
-                                        <th className="text-left py-2 px-3 font-semibold text-white">Role</th>
-                                        <th className="text-left py-2 px-3 font-semibold text-white">Phone</th>
-                                        <th className="text-left py-2 px-3 font-semibold text-white">Email</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {property.staff.map((employee, index) => (
-                                        <tr key={index} className="bg-gray-900 border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
-                                          <td className="py-2 px-3 text-gray-300">{employee.name}</td>
-                                          <td className="py-2 px-3 text-gray-300">{employee.role}</td>
-                                          <td className="py-2 px-3 text-gray-300">{employee.phone}</td>
-                                          <td className="py-2 px-3 text-gray-300">{employee.email}</td>
+                            <>
+                              {/* Owner Information Row */}
+                              <tr className="bg-gray-900/50 border-b border-gray-700">
+                                <td></td>
+                                <td colSpan={2} className="py-4 px-4">
+                                  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                                    <h5 className="text-sm font-semibold text-blue-300 mb-3 flex items-center gap-2">
+                                      <User className="h-4 w-4" />
+                                      Owner Information
+                                    </h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                      <div>
+                                        <span className="text-gray-400">Name:</span>
+                                        <span className="text-white ml-2 font-medium">{property.ownerName}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-400">Phone:</span>
+                                        <span className="text-white ml-2">{property.ownerPhone}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-400">Email:</span>
+                                        <span className="text-blue-300 ml-2">{property.ownerEmail}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-400">Preferred Contact:</span>
+                                        <span className="text-yellow-300 ml-2 capitalize">{property.ownerPreferredContact}</span>
+                                      </div>
+                                      <div className="md:col-span-2">
+                                        <span className="text-gray-400">Address:</span>
+                                        <span className="text-white ml-2">{property.ownerAddress}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                              
+                              {/* Staff Information Row */}
+                              <tr className="bg-gray-900">
+                                <td></td>
+                                <td colSpan={2} className="p-0">
+                                  <div className="p-4">
+                                    <h5 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                                      <User className="h-4 w-4" />
+                                      Staff at {property.name}
+                                    </h5>
+                                    <table className="min-w-full text-sm">
+                                      <thead>
+                                        <tr className="bg-gray-800 border-b border-gray-700">
+                                          <th className="text-left py-2 px-3 font-semibold text-white">Name</th>
+                                          <th className="text-left py-2 px-3 font-semibold text-white">Role</th>
+                                          <th className="text-left py-2 px-3 font-semibold text-white">Phone</th>
+                                          <th className="text-left py-2 px-3 font-semibold text-white">Email</th>
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-              </div>
-                              </td>
-                            </tr>
+                                      </thead>
+                                      <tbody>
+                                        {property.staff.map((employee, index) => (
+                                          <tr key={index} className="bg-gray-900 border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
+                                            <td className="py-2 px-3 text-gray-300">{employee.name}</td>
+                                            <td className="py-2 px-3 text-gray-300">{employee.role}</td>
+                                            <td className="py-2 px-3 text-gray-300">{employee.phone}</td>
+                                            <td className="py-2 px-3 text-gray-300">{employee.email}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                  </div>
+                                </td>
+                              </tr>
+                            </>
                           )}
                         </React.Fragment>
                       ))}
