@@ -133,4 +133,133 @@ export const activityMilestones = [
 export const jobNotes: { [jobId: string]: { author: string, content: string, timestamp: string }[] } = {};
 
 // Mock activity files (empty for now)
-export const activityFiles: { [key: string]: File[] } = {}; 
+export const activityFiles: { [key: string]: File[] } = {};
+
+// Mock RFP/Bid data
+export type RFPBid = {
+  id: string;
+  jobId: string;
+  vendorName: string;
+  vendorContact: string;
+  vendorEmail: string;
+  vendorPhone: string;
+  bidAmount: number;
+  submittedDate: string;
+  estimatedDuration: string;
+  scope: string;
+  materials: string;
+  labor: string;
+  pmComments: string;
+  status: 'submitted' | 'under_review' | 'selected' | 'rejected';
+  attachments: string[];
+  warranty: string;
+  startDate: string;
+  completionDate: string;
+};
+
+export const rfpBids: { [jobId: string]: RFPBid[] } = {
+  'job1': [
+    {
+      id: 'bid1',
+      jobId: 'job1',
+      vendorName: 'HVAC Pro Services',
+      vendorContact: 'John Martinez',
+      vendorEmail: 'john@hvacpro.com',
+      vendorPhone: '(555) 123-4567',
+      bidAmount: 2200,
+      submittedDate: '2024-01-22',
+      estimatedDuration: '2 days',
+      scope: 'Complete HVAC system maintenance including filter replacement, duct cleaning, and system diagnostics',
+      materials: 'New filters, cleaning supplies, replacement parts as needed',
+      labor: '16 hours - 2 technicians for 2 days',
+      pmComments: 'Good reputation, competitive price. Need to verify insurance.',
+      status: 'under_review',
+      attachments: ['hvac_maintenance_plan.pdf', 'insurance_cert.pdf'],
+      warranty: '1 year on parts, 6 months on labor',
+      startDate: '2024-02-01',
+      completionDate: '2024-02-03'
+    },
+    {
+      id: 'bid2',
+      jobId: 'job1',
+      vendorName: 'Climate Control Experts',
+      vendorContact: 'Sarah Williams',
+      vendorEmail: 'sarah@climateexperts.com',
+      vendorPhone: '(555) 987-6543',
+      bidAmount: 2800,
+      submittedDate: '2024-01-23',
+      estimatedDuration: '1.5 days',
+      scope: 'Comprehensive HVAC maintenance with energy efficiency assessment',
+      materials: 'Premium filters, eco-friendly cleaning agents, energy monitoring equipment',
+      labor: '12 hours - 2 certified technicians',
+      pmComments: 'Higher price but includes energy assessment. Premium service provider.',
+      status: 'submitted',
+      attachments: ['detailed_proposal.pdf', 'energy_assessment_sample.pdf'],
+      warranty: '2 years on parts, 1 year on labor',
+      startDate: '2024-01-28',
+      completionDate: '2024-01-30'
+    },
+    {
+      id: 'bid3',
+      jobId: 'job1',
+      vendorName: 'Budget HVAC Solutions',
+      vendorContact: 'Mike Thompson',
+      vendorEmail: 'mike@budgethvac.com',
+      vendorPhone: '(555) 456-7890',
+      bidAmount: 1800,
+      submittedDate: '2024-01-21',
+      estimatedDuration: '3 days',
+      scope: 'Basic HVAC maintenance and cleaning',
+      materials: 'Standard filters, basic cleaning supplies',
+      labor: '24 hours - 1 technician for 3 days',
+      pmComments: 'Lowest bid but longer timeline. Need to check references.',
+      status: 'rejected',
+      attachments: ['basic_proposal.pdf'],
+      warranty: '90 days on parts and labor',
+      startDate: '2024-02-05',
+      completionDate: '2024-02-08'
+    }
+  ],
+  'job4': [
+    {
+      id: 'bid4',
+      jobId: 'job4',
+      vendorName: 'Premium Countertops Inc',
+      vendorContact: 'Lisa Chen',
+      vendorEmail: 'lisa@premiumcountertops.com',
+      vendorPhone: '(555) 234-5678',
+      bidAmount: 4800,
+      submittedDate: '2024-01-16',
+      estimatedDuration: '3 days',
+      scope: 'Remove existing countertops, install new quartz countertops with undermount sink',
+      materials: 'Premium quartz slabs, undermount sink, new faucet, installation hardware',
+      labor: '24 hours - 2 experienced installers',
+      pmComments: 'Excellent portfolio, includes sink upgrade. Slightly over budget.',
+      status: 'selected',
+      attachments: ['countertop_samples.pdf', 'installation_timeline.pdf'],
+      warranty: '10 years on quartz, 2 years on installation',
+      startDate: '2024-02-10',
+      completionDate: '2024-02-13'
+    },
+    {
+      id: 'bid5',
+      jobId: 'job4',
+      vendorName: 'Kitchen Renovations Plus',
+      vendorContact: 'David Rodriguez',
+      vendorEmail: 'david@kitchenreno.com',
+      vendorPhone: '(555) 345-6789',
+      bidAmount: 5200,
+      submittedDate: '2024-01-17',
+      estimatedDuration: '2 days',
+      scope: 'Complete countertop replacement with premium quartz and backsplash update',
+      materials: 'Premium quartz, new backsplash tiles, upgraded fixtures',
+      labor: '16 hours - 3 skilled craftsmen',
+      pmComments: 'Includes backsplash which is nice but pushes over budget significantly.',
+      status: 'under_review',
+      attachments: ['full_kitchen_proposal.pdf', 'backsplash_options.pdf'],
+      warranty: '15 years on materials, 5 years on installation',
+      startDate: '2024-02-15',
+      completionDate: '2024-02-17'
+    }
+  ]
+}; 

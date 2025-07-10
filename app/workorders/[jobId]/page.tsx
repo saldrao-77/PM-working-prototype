@@ -33,10 +33,11 @@ import {
   Plus,
   Download,
   Send,
-  Sparkles
+  Sparkles,
+  Receipt
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { jobsList, activityMilestones, jobNotes, activityFiles } from "@/app/mockData";
+import { jobsList, activityMilestones, jobNotes, activityFiles, rfpBids, type RFPBid } from "@/app/mockData";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 // Mock transactions for this work order
@@ -149,6 +150,27 @@ export default function WorkOrderDetailPage() {
   // Add state for work order submission
   const [workOrderSubmitted, setWorkOrderSubmitted] = useState(false);
 
+  // Add state for RFP/Bids functionality
+  const [rfpBidsData, setRfpBidsData] = useState<RFPBid[]>(rfpBids[jobId] || []);
+  const [rfpDialogOpen, setRfpDialogOpen] = useState(false);
+  const [editingBid, setEditingBid] = useState<RFPBid | null>(null);
+  const [rfpForm, setRfpForm] = useState({
+    vendorName: '',
+    vendorContact: '',
+    vendorEmail: '',
+    vendorPhone: '',
+    bidAmount: '',
+    estimatedDuration: '',
+    scope: '',
+    materials: '',
+    labor: '',
+    pmComments: '',
+    status: 'submitted' as const,
+    warranty: '',
+    startDate: '',
+    completionDate: ''
+  });
+
   // Detect current role from URL parameters or localStorage
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -182,6 +204,13 @@ export default function WorkOrderDetailPage() {
       }));
     }
   }, [job, jobNotes, localJobNotes]);
+
+  // Initialize RFP bids data when job changes
+  useEffect(() => {
+    if (job) {
+      setRfpBidsData(rfpBids[job.id] || []);
+    }
+  }, [job]);
 
   const addNote = (content: string) => {
     if (!job || !content.trim()) return;
@@ -499,6 +528,8 @@ export default function WorkOrderDetailPage() {
                   ...(isTechnician ? [] : [{ id: 'timeline', label: 'Approval Status', icon: Clock }]),
                   { id: 'details', label: 'Activities', icon: FileText },
                   { id: 'expenses', label: 'Expenses', icon: DollarSign },
+                  // Only show RFP/Bids tab for PM role
+                  ...(currentRole === 'pm' ? [{ id: 'rfp', label: 'RFP/Bids', icon: Receipt }] : []),
                   { id: 'notes', label: 'Notes', icon: StickyNote },
                   { id: 'photos', label: 'Photos', icon: Eye }
                 ].map((tab) => (
@@ -886,6 +917,147 @@ export default function WorkOrderDetailPage() {
                               </tr>
                             ));
                           })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {activeTab === 'rfp' && currentRole === 'pm' && (
+                <Card className="bg-gray-900 border-gray-700">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-white">RFP/Bids</CardTitle>
+                    <Button 
+                      className="bg-blue-600 hover:bg-blue-700" 
+                      onClick={() => {
+                        setEditingBid(null);
+                        setRfpForm({
+                          vendorName: '',
+                          vendorContact: '',
+                          vendorEmail: '',
+                          vendorPhone: '',
+                          bidAmount: '',
+                          estimatedDuration: '',
+                          scope: '',
+                          materials: '',
+                          labor: '',
+                          pmComments: '',
+                          status: 'submitted',
+                          warranty: '',
+                          startDate: '',
+                          completionDate: ''
+                        });
+                        setRfpDialogOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Bid
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-sm">
+                        <thead>
+                          <tr className="bg-gray-800 border-b border-gray-700">
+                            <th className="text-left py-3 px-4 font-semibold text-white">Vendor</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Contact</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Bid Amount</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Duration</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Status</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">PM Comments</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rfpBidsData.length === 0 ? (
+                            <tr>
+                              <td colSpan={7} className="py-8 text-center text-gray-400">
+                                <Receipt className="h-12 w-12 mx-auto mb-4 text-gray-600" />
+                                <p>No bids submitted for this work order yet.</p>
+                              </td>
+                            </tr>
+                          ) : (
+                            rfpBidsData.map((bid) => (
+                              <tr key={bid.id} className="bg-gray-900 border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
+                                <td className="py-3 px-4">
+                                  <div className="text-gray-300">
+                                    <div className="font-medium">{bid.vendorName}</div>
+                                    <div className="text-xs text-gray-400">{bid.vendorEmail}</div>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="text-gray-300">
+                                    <div className="text-sm">{bid.vendorContact}</div>
+                                    <div className="text-xs text-gray-400">{bid.vendorPhone}</div>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="text-gray-300 font-medium">${bid.bidAmount.toLocaleString()}</div>
+                                </td>
+                                <td className="py-3 px-4 text-gray-300">{bid.estimatedDuration}</td>
+                                <td className="py-3 px-4">
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${
+                                    bid.status === 'selected' ? 'bg-green-700 text-green-100' :
+                                    bid.status === 'under_review' ? 'bg-yellow-700 text-yellow-100' :
+                                    bid.status === 'rejected' ? 'bg-red-700 text-red-100' :
+                                    'bg-blue-700 text-blue-100'
+                                  }`}>
+                                    {bid.status === 'under_review' ? 'Under Review' :
+                                     bid.status === 'selected' ? 'Selected' :
+                                     bid.status === 'rejected' ? 'Rejected' :
+                                     'Submitted'}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-gray-300 max-w-xs">
+                                  <div className="truncate" title={bid.pmComments}>
+                                    {bid.pmComments || '-'}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-blue-400 hover:text-blue-300 p-1 h-auto"
+                                      onClick={() => {
+                                        setEditingBid(bid);
+                                        setRfpForm({
+                                          vendorName: bid.vendorName,
+                                          vendorContact: bid.vendorContact,
+                                          vendorEmail: bid.vendorEmail,
+                                          vendorPhone: bid.vendorPhone,
+                                          bidAmount: bid.bidAmount.toString(),
+                                          estimatedDuration: bid.estimatedDuration,
+                                          scope: bid.scope,
+                                          materials: bid.materials,
+                                          labor: bid.labor,
+                                          pmComments: bid.pmComments,
+                                          status: bid.status,
+                                          warranty: bid.warranty,
+                                          startDate: bid.startDate,
+                                          completionDate: bid.completionDate
+                                        });
+                                        setRfpDialogOpen(true);
+                                      }}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-red-400 hover:text-red-300 p-1 h-auto"
+                                      onClick={() => {
+                                        setRfpBidsData(prev => prev.filter(b => b.id !== bid.id));
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
                         </tbody>
                       </table>
                     </div>
@@ -1344,6 +1516,242 @@ export default function WorkOrderDetailPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* RFP/Bid Dialog */}
+      <Dialog open={rfpDialogOpen} onOpenChange={setRfpDialogOpen}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingBid ? 'Edit Bid' : 'Add New Bid'}</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {editingBid ? 'Update the bid details' : 'Enter the details for the new bid'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Vendor Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">Vendor Information</h3>
+              <div>
+                <Label className="text-gray-300">Vendor Name</Label>
+                <Input 
+                  className="bg-gray-800 border-gray-600 text-white" 
+                  value={rfpForm.vendorName} 
+                  onChange={e => setRfpForm(f => ({ ...f, vendorName: e.target.value }))} 
+                  placeholder="Company name" 
+                />
+              </div>
+              <div>
+                <Label className="text-gray-300">Contact Person</Label>
+                <Input 
+                  className="bg-gray-800 border-gray-600 text-white" 
+                  value={rfpForm.vendorContact} 
+                  onChange={e => setRfpForm(f => ({ ...f, vendorContact: e.target.value }))} 
+                  placeholder="Contact person name" 
+                />
+              </div>
+              <div>
+                <Label className="text-gray-300">Email</Label>
+                <Input 
+                  className="bg-gray-800 border-gray-600 text-white" 
+                  type="email"
+                  value={rfpForm.vendorEmail} 
+                  onChange={e => setRfpForm(f => ({ ...f, vendorEmail: e.target.value }))} 
+                  placeholder="email@company.com" 
+                />
+              </div>
+              <div>
+                <Label className="text-gray-300">Phone</Label>
+                <Input 
+                  className="bg-gray-800 border-gray-600 text-white" 
+                  value={rfpForm.vendorPhone} 
+                  onChange={e => setRfpForm(f => ({ ...f, vendorPhone: e.target.value }))} 
+                  placeholder="(555) 123-4567" 
+                />
+              </div>
+            </div>
+
+            {/* Bid Details */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">Bid Details</h3>
+              <div>
+                <Label className="text-gray-300">Bid Amount</Label>
+                <Input 
+                  className="bg-gray-800 border-gray-600 text-white" 
+                  type="number"
+                  value={rfpForm.bidAmount} 
+                  onChange={e => setRfpForm(f => ({ ...f, bidAmount: e.target.value }))} 
+                  placeholder="0.00" 
+                />
+              </div>
+              <div>
+                <Label className="text-gray-300">Estimated Duration</Label>
+                <Input 
+                  className="bg-gray-800 border-gray-600 text-white" 
+                  value={rfpForm.estimatedDuration} 
+                  onChange={e => setRfpForm(f => ({ ...f, estimatedDuration: e.target.value }))} 
+                  placeholder="e.g., 2 days, 1 week" 
+                />
+              </div>
+              <div>
+                <Label className="text-gray-300">Status</Label>
+                <Select value={rfpForm.status} onValueChange={v => setRfpForm(f => ({ ...f, status: v as any }))}>
+                  <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                    <SelectItem value="submitted">Submitted</SelectItem>
+                    <SelectItem value="under_review">Under Review</SelectItem>
+                    <SelectItem value="selected">Selected</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-gray-300">Warranty</Label>
+                <Input 
+                  className="bg-gray-800 border-gray-600 text-white" 
+                  value={rfpForm.warranty} 
+                  onChange={e => setRfpForm(f => ({ ...f, warranty: e.target.value }))} 
+                  placeholder="e.g., 1 year on parts, 6 months on labor" 
+                />
+              </div>
+            </div>
+
+            {/* Project Details */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">Project Details</h3>
+              <div>
+                <Label className="text-gray-300">Scope of Work</Label>
+                <Textarea 
+                  className="bg-gray-800 border-gray-600 text-white resize-none" 
+                  value={rfpForm.scope} 
+                  onChange={e => setRfpForm(f => ({ ...f, scope: e.target.value }))} 
+                  placeholder="Describe the scope of work..."
+                  rows={3}
+                />
+              </div>
+              <div>
+                <Label className="text-gray-300">Materials</Label>
+                <Textarea 
+                  className="bg-gray-800 border-gray-600 text-white resize-none" 
+                  value={rfpForm.materials} 
+                  onChange={e => setRfpForm(f => ({ ...f, materials: e.target.value }))} 
+                  placeholder="List materials to be used..."
+                  rows={3}
+                />
+              </div>
+              <div>
+                <Label className="text-gray-300">Labor</Label>
+                <Textarea 
+                  className="bg-gray-800 border-gray-600 text-white resize-none" 
+                  value={rfpForm.labor} 
+                  onChange={e => setRfpForm(f => ({ ...f, labor: e.target.value }))} 
+                  placeholder="Describe labor requirements..."
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            {/* Timeline & Comments */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">Timeline & Comments</h3>
+              <div>
+                <Label className="text-gray-300">Start Date</Label>
+                <Input 
+                  className="bg-gray-800 border-gray-600 text-white" 
+                  type="date"
+                  value={rfpForm.startDate} 
+                  onChange={e => setRfpForm(f => ({ ...f, startDate: e.target.value }))} 
+                />
+              </div>
+              <div>
+                <Label className="text-gray-300">Completion Date</Label>
+                <Input 
+                  className="bg-gray-800 border-gray-600 text-white" 
+                  type="date"
+                  value={rfpForm.completionDate} 
+                  onChange={e => setRfpForm(f => ({ ...f, completionDate: e.target.value }))} 
+                />
+              </div>
+              <div>
+                <Label className="text-gray-300">PM Comments</Label>
+                <Textarea 
+                  className="bg-gray-800 border-gray-600 text-white resize-none" 
+                  value={rfpForm.pmComments} 
+                  onChange={e => setRfpForm(f => ({ ...f, pmComments: e.target.value }))} 
+                  placeholder="Add your comments about this bid..."
+                  rows={4}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="mt-6">
+            <Button 
+              variant="outline" 
+              onClick={() => setRfpDialogOpen(false)} 
+              className="border-gray-600 text-gray-300"
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700" 
+              disabled={!rfpForm.vendorName || !rfpForm.vendorContact || !rfpForm.bidAmount} 
+              onClick={() => {
+                if (editingBid) {
+                  // Update existing bid
+                  setRfpBidsData(prev => prev.map(bid => 
+                    bid.id === editingBid.id 
+                      ? {
+                          ...bid,
+                          vendorName: rfpForm.vendorName,
+                          vendorContact: rfpForm.vendorContact,
+                          vendorEmail: rfpForm.vendorEmail,
+                          vendorPhone: rfpForm.vendorPhone,
+                          bidAmount: parseFloat(rfpForm.bidAmount),
+                          estimatedDuration: rfpForm.estimatedDuration,
+                          scope: rfpForm.scope,
+                          materials: rfpForm.materials,
+                          labor: rfpForm.labor,
+                          pmComments: rfpForm.pmComments,
+                          status: rfpForm.status,
+                          warranty: rfpForm.warranty,
+                          startDate: rfpForm.startDate,
+                          completionDate: rfpForm.completionDate
+                        }
+                      : bid
+                  ));
+                } else {
+                  // Add new bid
+                  const newBid: RFPBid = {
+                    id: `bid-${Date.now()}`,
+                    jobId: jobId,
+                    vendorName: rfpForm.vendorName,
+                    vendorContact: rfpForm.vendorContact,
+                    vendorEmail: rfpForm.vendorEmail,
+                    vendorPhone: rfpForm.vendorPhone,
+                    bidAmount: parseFloat(rfpForm.bidAmount),
+                    submittedDate: new Date().toISOString().split('T')[0],
+                    estimatedDuration: rfpForm.estimatedDuration,
+                    scope: rfpForm.scope,
+                    materials: rfpForm.materials,
+                    labor: rfpForm.labor,
+                    pmComments: rfpForm.pmComments,
+                    status: rfpForm.status,
+                    attachments: [],
+                    warranty: rfpForm.warranty,
+                    startDate: rfpForm.startDate,
+                    completionDate: rfpForm.completionDate
+                  };
+                  setRfpBidsData(prev => [...prev, newBid]);
+                }
+                setRfpDialogOpen(false);
+                setEditingBid(null);
+              }}
+            >
+              {editingBid ? 'Update Bid' : 'Add Bid'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
