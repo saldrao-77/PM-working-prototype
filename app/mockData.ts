@@ -155,6 +155,7 @@ export type RFPBid = {
   warranty: string;
   startDate: string;
   completionDate: string;
+  bidLink: string;
 };
 
 export const rfpBids: { [jobId: string]: RFPBid[] } = {
@@ -177,7 +178,8 @@ export const rfpBids: { [jobId: string]: RFPBid[] } = {
       attachments: ['hvac_maintenance_plan.pdf', 'insurance_cert.pdf'],
       warranty: '1 year on parts, 6 months on labor',
       startDate: '2024-02-01',
-      completionDate: '2024-02-03'
+      completionDate: '2024-02-03',
+      bidLink: 'https://hvacpro.com/bids/job1-maintenance-proposal.pdf'
     },
     {
       id: 'bid2',
@@ -197,7 +199,8 @@ export const rfpBids: { [jobId: string]: RFPBid[] } = {
       attachments: ['detailed_proposal.pdf', 'energy_assessment_sample.pdf'],
       warranty: '2 years on parts, 1 year on labor',
       startDate: '2024-01-28',
-      completionDate: '2024-01-30'
+      completionDate: '2024-01-30',
+      bidLink: 'https://climateexperts.com/proposals/stanford-hvac-bid-2024.pdf'
     },
     {
       id: 'bid3',
@@ -217,7 +220,8 @@ export const rfpBids: { [jobId: string]: RFPBid[] } = {
       attachments: ['basic_proposal.pdf'],
       warranty: '90 days on parts and labor',
       startDate: '2024-02-05',
-      completionDate: '2024-02-08'
+      completionDate: '2024-02-08',
+      bidLink: 'https://budgethvac.com/bids/stanford-basic-maintenance.pdf'
     }
   ],
   'job4': [
@@ -239,7 +243,8 @@ export const rfpBids: { [jobId: string]: RFPBid[] } = {
       attachments: ['countertop_samples.pdf', 'installation_timeline.pdf'],
       warranty: '10 years on quartz, 2 years on installation',
       startDate: '2024-02-10',
-      completionDate: '2024-02-13'
+      completionDate: '2024-02-13',
+      bidLink: 'https://premiumcountertops.com/proposals/kitchen-renovation-stanford.pdf'
     },
     {
       id: 'bid5',
@@ -259,7 +264,8 @@ export const rfpBids: { [jobId: string]: RFPBid[] } = {
       attachments: ['full_kitchen_proposal.pdf', 'backsplash_options.pdf'],
       warranty: '15 years on materials, 5 years on installation',
       startDate: '2024-02-15',
-      completionDate: '2024-02-17'
+      completionDate: '2024-02-17',
+      bidLink: 'https://kitchenreno.com/bids/stanford-premium-kitchen-renovation.pdf'
     }
   ]
 }; 

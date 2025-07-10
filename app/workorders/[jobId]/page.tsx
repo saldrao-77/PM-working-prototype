@@ -34,7 +34,8 @@ import {
   Download,
   Send,
   Sparkles,
-  Receipt
+  Receipt,
+  ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { jobsList, activityMilestones, jobNotes, activityFiles, rfpBids, type RFPBid } from "@/app/mockData";
@@ -154,7 +155,23 @@ export default function WorkOrderDetailPage() {
   const [rfpBidsData, setRfpBidsData] = useState<RFPBid[]>(rfpBids[jobId] || []);
   const [rfpDialogOpen, setRfpDialogOpen] = useState(false);
   const [editingBid, setEditingBid] = useState<RFPBid | null>(null);
-  const [rfpForm, setRfpForm] = useState({
+  const [rfpForm, setRfpForm] = useState<{
+    vendorName: string;
+    vendorContact: string;
+    vendorEmail: string;
+    vendorPhone: string;
+    bidAmount: string;
+    estimatedDuration: string;
+    scope: string;
+    materials: string;
+    labor: string;
+    pmComments: string;
+    status: 'submitted' | 'under_review' | 'selected' | 'rejected';
+    warranty: string;
+    startDate: string;
+    completionDate: string;
+    bidLink: string;
+  }>({
     vendorName: '',
     vendorContact: '',
     vendorEmail: '',
@@ -165,10 +182,11 @@ export default function WorkOrderDetailPage() {
     materials: '',
     labor: '',
     pmComments: '',
-    status: 'submitted' as const,
+    status: 'submitted',
     warranty: '',
     startDate: '',
-    completionDate: ''
+    completionDate: '',
+    bidLink: ''
   });
 
   // Detect current role from URL parameters or localStorage
@@ -381,6 +399,14 @@ export default function WorkOrderDetailPage() {
     setWorkOrderSubmitted(true);
     // In a real app, you'd send a notification to the PM and update the work order status
     alert('Work Order submitted successfully! The Property Manager has been notified.');
+  };
+
+  // Handle vendor selection - select one vendor and reject all others
+  const handleSelectVendor = (selectedBidId: string) => {
+    setRfpBidsData(prev => prev.map(bid => ({
+      ...bid,
+      status: bid.id === selectedBidId ? 'selected' : 'rejected'
+    })));
   };
 
   return (
@@ -946,7 +972,8 @@ export default function WorkOrderDetailPage() {
                           status: 'submitted',
                           warranty: '',
                           startDate: '',
-                          completionDate: ''
+                          completionDate: '',
+                          bidLink: ''
                         });
                         setRfpDialogOpen(true);
                       }}
@@ -965,6 +992,7 @@ export default function WorkOrderDetailPage() {
                             <th className="text-left py-3 px-4 font-semibold text-white">Bid Amount</th>
                             <th className="text-left py-3 px-4 font-semibold text-white">Duration</th>
                             <th className="text-left py-3 px-4 font-semibold text-white">Status</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Link</th>
                             <th className="text-left py-3 px-4 font-semibold text-white">PM Comments</th>
                             <th className="text-left py-3 px-4 font-semibold text-white">Actions</th>
                           </tr>
@@ -972,14 +1000,16 @@ export default function WorkOrderDetailPage() {
                         <tbody>
                           {rfpBidsData.length === 0 ? (
                             <tr>
-                              <td colSpan={7} className="py-8 text-center text-gray-400">
+                              <td colSpan={8} className="py-8 text-center text-gray-400">
                                 <Receipt className="h-12 w-12 mx-auto mb-4 text-gray-600" />
                                 <p>No bids submitted for this work order yet.</p>
                               </td>
                             </tr>
                           ) : (
                             rfpBidsData.map((bid) => (
-                              <tr key={bid.id} className="bg-gray-900 border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
+                              <tr key={bid.id} className={`border-b border-gray-800 hover:bg-gray-800/50 transition-colors ${
+                                bid.status === 'selected' ? 'bg-green-900/20' : 'bg-gray-900'
+                              }`}>
                                 <td className="py-3 px-4">
                                   <div className="text-gray-300">
                                     <div className="font-medium">{bid.vendorName}</div>
@@ -1009,6 +1039,21 @@ export default function WorkOrderDetailPage() {
                                      'Submitted'}
                                   </span>
                                 </td>
+                                <td className="py-3 px-4">
+                                  {bid.bidLink ? (
+                                    <a
+                                      href={bid.bidLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                      <span className="text-sm">View Bid</span>
+                                    </a>
+                                  ) : (
+                                    <span className="text-gray-500 text-sm">-</span>
+                                  )}
+                                </td>
                                 <td className="py-3 px-4 text-gray-300 max-w-xs">
                                   <div className="truncate" title={bid.pmComments}>
                                     {bid.pmComments || '-'}
@@ -1016,6 +1061,21 @@ export default function WorkOrderDetailPage() {
                                 </td>
                                 <td className="py-3 px-4">
                                   <div className="flex items-center gap-2">
+                                    {/* Select Vendor Button */}
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className={`p-1 h-auto ${
+                                        bid.status === 'selected' 
+                                          ? 'text-green-400 hover:text-green-300' 
+                                          : 'text-purple-400 hover:text-purple-300'
+                                      }`}
+                                      onClick={() => handleSelectVendor(bid.id)}
+                                      title={bid.status === 'selected' ? 'Currently Selected' : 'Select this vendor'}
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                    </Button>
+                                    {/* Edit Button */}
                                     <Button
                                       size="sm"
                                       variant="ghost"
@@ -1036,13 +1096,15 @@ export default function WorkOrderDetailPage() {
                                           status: bid.status,
                                           warranty: bid.warranty,
                                           startDate: bid.startDate,
-                                          completionDate: bid.completionDate
+                                          completionDate: bid.completionDate,
+                                          bidLink: bid.bidLink
                                         });
                                         setRfpDialogOpen(true);
                                       }}
                                     >
                                       <Edit className="h-4 w-4" />
                                     </Button>
+                                    {/* Delete Button */}
                                     <Button
                                       size="sm"
                                       variant="ghost"
@@ -1616,6 +1678,16 @@ export default function WorkOrderDetailPage() {
                   placeholder="e.g., 1 year on parts, 6 months on labor" 
                 />
               </div>
+              <div>
+                <Label className="text-gray-300">Bid Link</Label>
+                <Input 
+                  className="bg-gray-800 border-gray-600 text-white" 
+                  type="url"
+                  value={rfpForm.bidLink} 
+                  onChange={e => setRfpForm(f => ({ ...f, bidLink: e.target.value }))} 
+                  placeholder="https://vendor.com/bid-document.pdf" 
+                />
+              </div>
             </div>
 
             {/* Project Details */}
@@ -1717,7 +1789,8 @@ export default function WorkOrderDetailPage() {
                           status: rfpForm.status,
                           warranty: rfpForm.warranty,
                           startDate: rfpForm.startDate,
-                          completionDate: rfpForm.completionDate
+                          completionDate: rfpForm.completionDate,
+                          bidLink: rfpForm.bidLink
                         }
                       : bid
                   ));
@@ -1741,7 +1814,8 @@ export default function WorkOrderDetailPage() {
                     attachments: [],
                     warranty: rfpForm.warranty,
                     startDate: rfpForm.startDate,
-                    completionDate: rfpForm.completionDate
+                    completionDate: rfpForm.completionDate,
+                    bidLink: rfpForm.bidLink
                   };
                   setRfpBidsData(prev => [...prev, newBid]);
                 }
