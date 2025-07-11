@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -609,6 +609,8 @@ export default function WorkOrderDetailPage() {
                   { id: 'expenses', label: 'Expenses', icon: DollarSign },
                   // Only show RFP/Bids tab for PM role
                   ...(currentRole === 'pm' ? [{ id: 'rfp', label: 'RFP/Bids', icon: Receipt }] : []),
+                  // Only show RFP/Bids Control tab for Central Office role
+                  ...(currentRole === 'centralOffice' ? [{ id: 'rfp-control', label: 'RFP/Bids Control', icon: Receipt }] : []),
                   { id: 'notes', label: 'Notes', icon: StickyNote },
                   { id: 'photos', label: 'Photos', icon: Eye }
                 ].map((tab) => (
@@ -1283,6 +1285,200 @@ export default function WorkOrderDetailPage() {
                           )}
                         </tbody>
                       </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {activeTab === 'rfp-control' && currentRole === 'centralOffice' && (
+                <Card className="bg-gray-900 border-gray-700">
+                  <CardHeader>
+                    <CardTitle className="text-white">RFP/Bids Control</CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Central Office has complete control over bid selection and rejection. You can override PM selections.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-sm">
+                        <thead>
+                          <tr className="bg-gray-800 border-b border-gray-700">
+                            <th className="text-left py-3 px-4 font-semibold text-white">Vendor</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Contact</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Bid Amount</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Duration</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">Link</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">PM Comments</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white">CO Decision</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rfpBidsData.length === 0 ? (
+                            <tr>
+                              <td colSpan={7} className="py-8 text-center text-gray-400">
+                                <Receipt className="h-12 w-12 mx-auto mb-4 text-gray-600" />
+                                <p>No bids submitted for this work order yet.</p>
+                              </td>
+                            </tr>
+                          ) : (
+                                                         rfpBidsData.map((bid) => (
+                               <tr key={bid.id} className={`border-b transition-colors ${
+                                 bid.status === 'selected' ? 'bg-green-900/30 hover:bg-green-900/40 border-green-700' : 
+                                 bid.status === 'rejected' ? 'bg-red-900/40 hover:bg-red-900/50 border-red-600' : 'bg-gray-900 hover:bg-gray-800/50 border-gray-800'
+                               }`}>
+                                <td className="py-3 px-4">
+                                  <div className={`${bid.status === 'rejected' ? 'text-red-300' : 'text-gray-300'}`}>
+                                    <div className="font-medium flex items-center gap-2">
+                                      {bid.status === 'rejected' && <XCircle className="h-4 w-4 text-red-400" />}
+                                      <span className={bid.status === 'rejected' ? 'line-through opacity-75' : ''}>{bid.vendorName}</span>
+                                    </div>
+                                    <div className={`text-xs ${bid.status === 'rejected' ? 'text-red-400' : 'text-gray-400'}`}>{bid.vendorEmail}</div>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                                                     <div className={`${bid.status === 'rejected' ? 'text-red-300' : 'text-gray-300'}`}>
+                                     <div className="text-sm">{bid.vendorContact}</div>
+                                     <div className={`text-xs ${bid.status === 'rejected' ? 'text-red-400' : 'text-gray-400'}`}>{bid.vendorPhone}</div>
+                                   </div>
+                                 </td>
+                                 <td className="py-3 px-4">
+                                                                      <div className={`font-medium ${bid.status === 'rejected' ? 'text-red-300 line-through opacity-75' : 'text-gray-300'}`}>${bid.bidAmount.toLocaleString()}</div>
+                                 </td>
+                                 <td className={`py-3 px-4 ${bid.status === 'rejected' ? 'text-red-300' : 'text-gray-300'}`}>{bid.estimatedDuration}</td>
+                                 <td className="py-3 px-4">
+                                  {bid.bidLink ? (
+                                    <a
+                                      href={bid.bidLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                      <span className="text-sm">View Bid</span>
+                                    </a>
+                                  ) : (
+                                    <span className="text-gray-500 text-sm">-</span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4 text-gray-300 max-w-xs">
+                                  <div className="truncate" title={bid.pmComments}>
+                                    {bid.pmComments || '-'}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-2">
+                                    {/* Select Button */}
+                                    <Button
+                                      size="sm"
+                                      className={`${
+                                        bid.status === 'selected' 
+                                          ? 'bg-green-600 hover:bg-green-700 text-white' 
+                                          : 'bg-green-600/20 hover:bg-green-600 text-green-400 hover:text-white border border-green-600'
+                                      }`}
+                                      onClick={() => {
+                                        // Central Office can override - set this as selected and others as not selected
+                                        setRfpBidsData(prev => prev.map(b => ({
+                                          ...b,
+                                          status: b.id === bid.id ? 'selected' : 
+                                                 (b.status === 'selected' ? 'submitted' : b.status)
+                                        })));
+                                      }}
+                                    >
+                                      <CheckCircle className="h-4 w-4 mr-1" />
+                                      {bid.status === 'selected' ? 'Selected' : 'Select'}
+                                    </Button>
+                                    {/* Reject Button */}
+                                    <Button
+                                      size="sm"
+                                      className={`${
+                                        bid.status === 'rejected' 
+                                          ? 'bg-red-600 hover:bg-red-700 text-white' 
+                                          : 'bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-600'
+                                      }`}
+                                      onClick={() => {
+                                        setRfpBidsData(prev => prev.map(b => 
+                                          b.id === bid.id ? { ...b, status: 'rejected' } : b
+                                        ));
+                                      }}
+                                    >
+                                      <XCircle className="h-4 w-4 mr-1" />
+                                      {bid.status === 'rejected' ? 'Rejected' : 'Reject'}
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    {/* Central Office Summary */}
+                    <div className="mt-6 pt-4 border-t border-gray-700">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="bg-gray-800 p-4 rounded-lg">
+                          <div className="text-sm text-gray-400">Total Bids</div>
+                          <div className="text-2xl font-bold text-white">{rfpBidsData.length}</div>
+                        </div>
+                        <div className="bg-gray-800 p-4 rounded-lg">
+                          <div className="text-sm text-gray-400">CO Selected</div>
+                          <div className="text-2xl font-bold text-green-400">
+                            {rfpBidsData.filter(b => b.status === 'selected').length}
+                          </div>
+                        </div>
+                        <div className="bg-gray-800 p-4 rounded-lg">
+                          <div className="text-sm text-gray-400">CO Rejected</div>
+                          <div className="text-2xl font-bold text-red-400">
+                            {rfpBidsData.filter(b => b.status === 'rejected').length}
+                          </div>
+                        </div>
+                        <div className="bg-gray-800 p-4 rounded-lg">
+                          <div className="text-sm text-gray-400">Pending Review</div>
+                          <div className="text-2xl font-bold text-yellow-400">
+                            {rfpBidsData.filter(b => b.status === 'submitted' || b.status === 'under_review').length}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Central Office Actions */}
+                      <div className="mt-4 p-4 bg-gray-800 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="text-white font-medium">Central Office Authority</h4>
+                            <p className="text-sm text-gray-400">
+                              You have complete control over bid selection. You can override PM selections and make final decisions.
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-yellow-600 text-yellow-400 hover:bg-yellow-600/10"
+                              onClick={() => {
+                                // Reset all bids to submitted status
+                                setRfpBidsData(prev => prev.map(b => ({ ...b, status: 'submitted' })));
+                              }}
+                            >
+                              Reset All
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="bg-blue-600 hover:bg-blue-700"
+                              onClick={() => {
+                                // Finalize selections - in a real app this would notify PM and proceed with selected vendor
+                                const selectedBids = rfpBidsData.filter(b => b.status === 'selected');
+                                if (selectedBids.length === 0) {
+                                  alert('Please select at least one bid before finalizing.');
+                                } else {
+                                  alert(`Finalized selection: ${selectedBids.map(b => b.vendorName).join(', ')}`);
+                                }
+                              }}
+                            >
+                              Finalize Selection
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

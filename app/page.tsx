@@ -4848,7 +4848,7 @@ export default function PMFinancialDashboard() {
                               <div className="flex items-center gap-2">
                                 <IconComponent className="h-5 w-5 text-blue-400" />
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-white truncate">{doc.filename}</div>
+                                  <div className="text-sm font-medium text-white break-words">{doc.filename}</div>
                                   <div className="text-xs text-gray-400">{documentTypeLabels[doc.documentType]}</div>
                                 </div>
                               </div>
@@ -4859,32 +4859,32 @@ export default function PMFinancialDashboard() {
                             </div>
                             
                             <div className="space-y-2 text-xs">
-                              <div className="flex justify-between">
-                                <span className="text-gray-400">Uploaded:</span>
-                                <span className="text-gray-300">{doc.uploadDate}</span>
+                              <div className="flex justify-between items-start">
+                                <span className="text-gray-400 shrink-0">Uploaded:</span>
+                                <span className="text-gray-300 text-right">{doc.uploadDate}</span>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-400">By:</span>
-                                <span className="text-gray-300">{doc.uploadedBy}</span>
+                              <div className="flex justify-between items-start">
+                                <span className="text-gray-400 shrink-0">By:</span>
+                                <span className="text-gray-300 text-right break-words ml-2">{doc.uploadedBy}</span>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-400">Property:</span>
-                                <span className="text-gray-300">{doc.propertyName}</span>
+                              <div className="flex justify-between items-start">
+                                <span className="text-gray-400 shrink-0">Property:</span>
+                                <span className="text-gray-300 text-right break-words ml-2">{doc.propertyName}</span>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-400">Size:</span>
-                                <span className="text-gray-300">{formatFileSize(doc.fileSize)}</span>
+                              <div className="flex justify-between items-start">
+                                <span className="text-gray-400 shrink-0">Size:</span>
+                                <span className="text-gray-300 text-right">{formatFileSize(doc.fileSize)}</span>
                               </div>
                               {doc.amount && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-400">Amount:</span>
-                                  <span className="text-green-400">${doc.amount.toLocaleString()}</span>
+                                <div className="flex justify-between items-start">
+                                  <span className="text-gray-400 shrink-0">Amount:</span>
+                                  <span className="text-green-400 text-right">${doc.amount.toLocaleString()}</span>
                                 </div>
                               )}
                               {doc.expiryDate && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-400">Expires:</span>
-                                  <span className={`${doc.status === 'expired' ? 'text-red-400' : 'text-yellow-400'}`}>
+                                <div className="flex justify-between items-start">
+                                  <span className="text-gray-400 shrink-0">Expires:</span>
+                                  <span className={`text-right ${doc.status === 'expired' ? 'text-red-400' : 'text-yellow-400'}`}>
                                     {doc.expiryDate}
                                   </span>
                                 </div>
@@ -4956,14 +4956,14 @@ export default function PMFinancialDashboard() {
                                 }}
                               />
                             </th>
-                            <th className="text-left py-3 px-4 font-semibold text-white">Document</th>
-                            <th className="text-left py-3 px-4 font-semibold text-white">Type</th>
-                            <th className="text-left py-3 px-4 font-semibold text-white">Upload Date</th>
-                            <th className="text-left py-3 px-4 font-semibold text-white">Uploaded By</th>
-                            <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
-                            <th className="text-left py-3 px-4 font-semibold text-white">Size</th>
-                            <th className="text-left py-3 px-4 font-semibold text-white">Amount</th>
-                            <th className="text-left py-3 px-4 font-semibold text-white">Actions</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white min-w-[200px]">Document</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white min-w-[120px]">Type</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white min-w-[100px]">Upload Date</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white min-w-[120px]">Uploaded By</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white min-w-[120px]">Property</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white min-w-[80px]">Size</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white min-w-[100px]">Amount</th>
+                            <th className="text-left py-3 px-4 font-semibold text-white min-w-[100px]">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -4989,21 +4989,29 @@ export default function PMFinancialDashboard() {
                                   />
                                 </td>
                                 <td className="py-3 px-4">
-                                  <div className="flex items-center gap-2">
-                                    <IconComponent className="h-4 w-4 text-blue-400" />
-                                    <div>
-                                      <div className="font-medium text-white">{doc.filename}</div>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <IconComponent className="h-4 w-4 text-blue-400 shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                      <div className="font-medium text-white break-words">{doc.filename}</div>
                                       {doc.description && (
-                                        <div className="text-xs text-gray-400">{doc.description}</div>
+                                        <div className="text-xs text-gray-400 break-words">{doc.description}</div>
                                       )}
                                     </div>
-                                    {doc.status === 'expired' && <AlertTriangle className="h-4 w-4 text-red-400" />}
+                                    {doc.status === 'expired' && <AlertTriangle className="h-4 w-4 text-red-400 shrink-0" />}
                                   </div>
                                 </td>
-                                <td className="py-3 px-4 text-gray-300">{documentTypeLabels[doc.documentType]}</td>
+                                <td className="py-3 px-4 text-gray-300">
+                                  <div className="break-words">
+                                    {documentTypeLabels[doc.documentType]}
+                                  </div>
+                                </td>
                                 <td className="py-3 px-4 text-gray-300">{doc.uploadDate}</td>
-                                <td className="py-3 px-4 text-gray-300">{doc.uploadedBy}</td>
-                                <td className="py-3 px-4 text-gray-300">{doc.propertyName}</td>
+                                <td className="py-3 px-4 text-gray-300">
+                                  <div className="break-words">{doc.uploadedBy}</div>
+                                </td>
+                                <td className="py-3 px-4 text-gray-300">
+                                  <div className="break-words">{doc.propertyName}</div>
+                                </td>
                                 <td className="py-3 px-4 text-gray-300">{formatFileSize(doc.fileSize)}</td>
                                 <td className="py-3 px-4 text-gray-300">
                                   {doc.amount ? `$${doc.amount.toLocaleString()}` : '-'}
@@ -7571,6 +7579,156 @@ export default function PMFinancialDashboard() {
                     variant="outline"
                     className="border-gray-600 text-gray-300"
                     onClick={() => setMonthlyReimbursementDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Collateral Upload Demo Dialog */}
+            <Dialog open={collateralUploadDialogOpen} onOpenChange={setCollateralUploadDialogOpen}>
+              <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl max-h-[80vh] overflow-y-auto m-4">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Upload className="h-5 w-5 text-blue-400" />
+                    Upload Collateral Documents
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-400">
+                    Upload documents to the collateral hub for this property.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-6">
+                  {/* Demo Notice */}
+                  <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertTriangle className="h-4 w-4 text-yellow-400" />
+                      <span className="text-sm font-semibold text-yellow-300">Demo Mode</span>
+                    </div>
+                    <p className="text-sm text-yellow-200">
+                      This is a demonstration of the file upload interface. No files will actually be uploaded in this demo.
+                    </p>
+                  </div>
+
+                  {/* Upload Area */}
+                  <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
+                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-white mb-2">Drop files here or click to browse</h3>
+                    <p className="text-sm text-gray-400 mb-4">
+                      Supported formats: PDF, JPG, PNG, DOC, DOCX, XLS, XLSX (Max 10MB per file)
+                    </p>
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Select Files
+                    </Button>
+                  </div>
+
+                  {/* Document Details Form */}
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-gray-300">Custom Filename</Label>
+                      <Input
+                        className="bg-gray-800 border-gray-600 text-white"
+                        placeholder="Enter custom filename (e.g., HVAC_Service_Agreement_2024)"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-gray-300">Document Type</Label>
+                      <Select>
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue placeholder="Select document type" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                          <SelectItem value="contract">Contract</SelectItem>
+                          <SelectItem value="invoice">Invoice</SelectItem>
+                          <SelectItem value="receipt">Receipt</SelectItem>
+                          <SelectItem value="insurance">Insurance Certificate</SelectItem>
+                          <SelectItem value="warranty">Warranty</SelectItem>
+                          <SelectItem value="permit">Permit</SelectItem>
+                          <SelectItem value="inspection">Inspection Report</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label className="text-gray-300">Property</Label>
+                      <Select>
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue placeholder="Select property" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                          <SelectItem value="stanford-gsb">Stanford GSB</SelectItem>
+                          <SelectItem value="sunnyvale-432">Sunnyvale 432</SelectItem>
+                          <SelectItem value="menlo-park">Menlo Park Complex</SelectItem>
+                          <SelectItem value="palo-alto">Palo Alto Office</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label className="text-gray-300">Description (Optional)</Label>
+                      <Textarea
+                        className="bg-gray-800 border-gray-600 text-white"
+                        placeholder="Add a description for this document..."
+                        rows={3}
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-gray-300">Tags (Optional)</Label>
+                      <Input
+                        className="bg-gray-800 border-gray-600 text-white"
+                        placeholder="Enter tags separated by commas (e.g., HVAC, Annual, Service)"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-gray-300">Amount (If applicable)</Label>
+                      <Input
+                        type="number"
+                        className="bg-gray-800 border-gray-600 text-white"
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-gray-300">Expiry Date (If applicable)</Label>
+                      <Input
+                        type="date"
+                        className="bg-gray-800 border-gray-600 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Upload Progress (Demo) */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-300">Demo File 1.pdf</span>
+                      <span className="text-green-400">Ready to upload</span>
+                    </div>
+
+                  </div>
+                </div>
+
+                <DialogFooter className="mt-6">
+                  <Button
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => {
+                      // Demo success message
+                      alert('Demo: Files would be uploaded successfully!');
+                      setCollateralUploadDialogOpen(false);
+                    }}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Files (Demo)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-gray-600 text-gray-300"
+                    onClick={() => setCollateralUploadDialogOpen(false)}
                   >
                     Cancel
                   </Button>
