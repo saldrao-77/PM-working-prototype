@@ -268,4 +268,242 @@ export const rfpBids: { [jobId: string]: RFPBid[] } = {
       bidLink: 'https://kitchenreno.com/bids/stanford-premium-kitchen-renovation.pdf'
     }
   ]
-}; 
+};
+
+// Collateral Hub Document Types
+export type DocumentType =
+  | 'vendor_contract'
+  | 'warranty'
+  | 'insurance_certificate'
+  | 'bid_response'
+  | 'receipt'
+  | 'invoice'
+  | 'communication_log'
+  | 'compliance_doc'
+  | 'other';
+
+export type CollateralDocument = {
+  id: string;
+  filename: string;
+  documentType: DocumentType;
+  uploadDate: string;
+  uploadedBy: string;
+  propertyId: string;
+  propertyName: string;
+  glExpenseId?: string;
+  tags: string[];
+  fileSize: number;
+  fileUrl: string;
+  thumbnailUrl?: string;
+  description?: string;
+  expiryDate?: string;
+  linkedJobId?: string;
+  linkedVendor?: string;
+  amount?: number;
+  status?: 'active' | 'expired' | 'pending' | 'archived';
+};
+
+// Mock Collateral Documents
+export const collateralDocuments: CollateralDocument[] = [
+  {
+    id: 'doc1',
+    filename: 'HVAC_Service_Agreement_2024.pdf',
+    documentType: 'vendor_contract',
+    uploadDate: '2024-01-15',
+    uploadedBy: 'John Smith',
+    propertyId: 'prop1',
+    propertyName: 'Stanford GSB',
+    tags: ['HVAC', 'Service Agreement', 'Annual'],
+    fileSize: 2048000,
+    fileUrl: '/documents/hvac_service_agreement.pdf',
+    thumbnailUrl: '/thumbnails/hvac_service_agreement.jpg',
+    description: 'Annual HVAC maintenance service agreement',
+    expiryDate: '2024-12-31',
+    linkedVendor: 'HVAC Pro Services',
+    status: 'active'
+  },
+  {
+    id: 'doc2',
+    filename: 'Property_Insurance_Certificate_2024.pdf',
+    documentType: 'insurance_certificate',
+    uploadDate: '2024-01-10',
+    uploadedBy: 'Sarah Chen',
+    propertyId: 'prop1',
+    propertyName: 'Stanford GSB',
+    tags: ['Insurance', 'Property', 'Liability'],
+    fileSize: 1024000,
+    fileUrl: '/documents/property_insurance_cert.pdf',
+    thumbnailUrl: '/thumbnails/property_insurance_cert.jpg',
+    description: 'Property and liability insurance certificate',
+    expiryDate: '2024-12-31',
+    status: 'active'
+  },
+  {
+    id: 'doc3',
+    filename: 'Kitchen_Renovation_Bid_Response.pdf',
+    documentType: 'bid_response',
+    uploadDate: '2024-01-20',
+    uploadedBy: 'Mike Chen',
+    propertyId: 'prop1',
+    propertyName: 'Stanford GSB',
+    glExpenseId: 'exp_001',
+    tags: ['Kitchen', 'Renovation', 'Bid'],
+    fileSize: 3072000,
+    fileUrl: '/documents/kitchen_renovation_bid.pdf',
+    thumbnailUrl: '/thumbnails/kitchen_renovation_bid.jpg',
+    description: 'Kitchen renovation bid response from contractor',
+    linkedJobId: 'job4',
+    linkedVendor: 'Premium Contractors LLC',
+    amount: 5000,
+    status: 'active'
+  },
+  {
+    id: 'doc4',
+    filename: 'Home_Depot_Receipt_Jan_2024.pdf',
+    documentType: 'receipt',
+    uploadDate: '2024-01-18',
+    uploadedBy: 'Alice Johnson',
+    propertyId: 'prop1',
+    propertyName: 'Stanford GSB',
+    glExpenseId: 'exp_002',
+    tags: ['Home Depot', 'Receipt', 'HVAC Parts'],
+    fileSize: 512000,
+    fileUrl: '/documents/home_depot_receipt.pdf',
+    thumbnailUrl: '/thumbnails/home_depot_receipt.jpg',
+    description: 'HVAC parts purchase receipt',
+    linkedJobId: 'job1',
+    amount: 425.00,
+    status: 'active'
+  },
+  {
+    id: 'doc5',
+    filename: 'Plumbing_Warranty_Certificate.pdf',
+    documentType: 'warranty',
+    uploadDate: '2024-01-12',
+    uploadedBy: 'Bob Wilson',
+    propertyId: 'prop2',
+    propertyName: 'Sunnyvale 432',
+    tags: ['Plumbing', 'Warranty', 'Emergency Repair'],
+    fileSize: 768000,
+    fileUrl: '/documents/plumbing_warranty.pdf',
+    thumbnailUrl: '/thumbnails/plumbing_warranty.jpg',
+    description: 'Emergency plumbing repair warranty certificate',
+    expiryDate: '2025-01-12',
+    linkedJobId: 'job2',
+    linkedVendor: 'Quick Fix Plumbing',
+    status: 'active'
+  },
+  {
+    id: 'doc6',
+    filename: 'Electrical_Panel_Invoice_2024.pdf',
+    documentType: 'invoice',
+    uploadDate: '2024-01-14',
+    uploadedBy: 'Central Office',
+    propertyId: 'prop2',
+    propertyName: 'Sunnyvale 432',
+    glExpenseId: 'exp_003',
+    tags: ['Electrical', 'Invoice', 'Panel Upgrade'],
+    fileSize: 1536000,
+    fileUrl: '/documents/electrical_invoice.pdf',
+    thumbnailUrl: '/thumbnails/electrical_invoice.jpg',
+    description: 'Electrical panel upgrade invoice',
+    linkedJobId: 'job5',
+    linkedVendor: 'Elite Electrical Services',
+    amount: 3500,
+    status: 'active'
+  },
+  {
+    id: 'doc7',
+    filename: 'Workers_Comp_Insurance_2024.pdf',
+    documentType: 'insurance_certificate',
+    uploadDate: '2024-01-08',
+    uploadedBy: 'Sarah Chen',
+    propertyId: 'prop1',
+    propertyName: 'Stanford GSB',
+    tags: ['Workers Comp', 'Insurance', 'Contractors'],
+    fileSize: 896000,
+    fileUrl: '/documents/workers_comp_insurance.pdf',
+    thumbnailUrl: '/thumbnails/workers_comp_insurance.jpg',
+    description: 'Workers compensation insurance certificate',
+    expiryDate: '2024-12-31',
+    status: 'active'
+  },
+  {
+    id: 'doc8',
+    filename: 'Owner_Communication_Log_Jan2024.pdf',
+    documentType: 'communication_log',
+    uploadDate: '2024-01-25',
+    uploadedBy: 'John Smith',
+    propertyId: 'prop1',
+    propertyName: 'Stanford GSB',
+    tags: ['Communication', 'Owner', 'Log'],
+    fileSize: 640000,
+    fileUrl: '/documents/owner_communication_log.pdf',
+    thumbnailUrl: '/thumbnails/owner_communication_log.jpg',
+    description: 'Monthly owner communication log',
+    status: 'active'
+  },
+  {
+    id: 'doc9',
+    filename: 'Expired_HVAC_Warranty_2023.pdf',
+    documentType: 'warranty',
+    uploadDate: '2023-12-01',
+    uploadedBy: 'Mike Chen',
+    propertyId: 'prop2',
+    propertyName: 'Sunnyvale 432',
+    tags: ['HVAC', 'Warranty', 'Expired'],
+    fileSize: 1024000,
+    fileUrl: '/documents/expired_hvac_warranty.pdf',
+    thumbnailUrl: '/thumbnails/expired_hvac_warranty.jpg',
+    description: 'HVAC equipment warranty (expired)',
+    expiryDate: '2023-12-31',
+    linkedVendor: 'Old HVAC Company',
+    status: 'expired'
+  },
+  {
+    id: 'doc10',
+    filename: 'Compliance_Report_Q4_2023.pdf',
+    documentType: 'compliance_doc',
+    uploadDate: '2024-01-05',
+    uploadedBy: 'Central Office',
+    propertyId: 'prop1',
+    propertyName: 'Stanford GSB',
+    tags: ['Compliance', 'Q4', 'Report'],
+    fileSize: 2560000,
+    fileUrl: '/documents/compliance_report_q4.pdf',
+    thumbnailUrl: '/thumbnails/compliance_report_q4.jpg',
+    description: 'Quarterly compliance report',
+    status: 'active'
+  }
+];
+
+// Document type labels for UI
+export const documentTypeLabels: Record<DocumentType, string> = {
+  vendor_contract: 'Vendor Contract',
+  warranty: 'Warranty',
+  insurance_certificate: 'Insurance Certificate',
+  bid_response: 'Bid Response',
+  receipt: 'Receipt',
+  invoice: 'Invoice',
+  communication_log: 'Communication Log',
+  compliance_doc: 'Compliance Document',
+  other: 'Other'
+};
+
+// Property options for filters
+export const propertyOptions = [
+  { id: 'prop1', name: 'Stanford GSB' },
+  { id: 'prop2', name: 'Sunnyvale 432' },
+  { id: 'prop3', name: 'Downtown Lofts' },
+  { id: 'prop4', name: 'Redwood Shores' }
+];
+
+// Staff options for filters
+export const staffOptions = [
+  { id: 'staff1', name: 'John Smith' },
+  { id: 'staff2', name: 'Sarah Chen' },
+  { id: 'staff3', name: 'Mike Chen' },
+  { id: 'staff4', name: 'Alice Johnson' },
+  { id: 'staff5', name: 'Bob Wilson' },
+  { id: 'staff6', name: 'Central Office' }
+]; 
