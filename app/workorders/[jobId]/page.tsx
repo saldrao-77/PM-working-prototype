@@ -151,6 +151,58 @@ export default function WorkOrderDetailPage() {
   // Add state for work order submission
   const [workOrderSubmitted, setWorkOrderSubmitted] = useState(false);
 
+  // Add state for messaging functionality
+  const [messages, setMessages] = useState<{
+    id: string;
+    sender: 'PM' | 'CO' | 'Owner';
+    senderName: string;
+    content: string;
+    timestamp: string;
+    type: 'message' | 'status_update' | 'approval_request';
+  }[]>([
+    {
+      id: '1',
+      sender: 'PM',
+      senderName: 'Property Manager',
+      content: 'Hi! I wanted to update you on the HVAC repair work order. We\'ve received quotes from 3 contractors and are ready to proceed with the work.',
+      timestamp: '2025-01-15T10:30:00Z',
+      type: 'message'
+    },
+    {
+      id: '2',
+      sender: 'Owner',
+      senderName: 'Property Owner',
+      content: 'Thanks for the update! Could you please send me the quotes for review? I want to make sure we\'re getting the best value.',
+      timestamp: '2025-01-15T14:45:00Z',
+      type: 'message'
+    },
+    {
+      id: '3',
+      sender: 'PM',
+      senderName: 'Property Manager',
+      content: 'Absolutely! I\'ve attached the three quotes. The middle option from ABC HVAC seems to offer the best balance of quality and price.',
+      timestamp: '2025-01-15T16:20:00Z',
+      type: 'message'
+    },
+    {
+      id: '4',
+      sender: 'CO',
+      senderName: 'Central Office',
+      content: 'Work order approved and contractor has been notified. Expected completion date is January 20th.',
+      timestamp: '2025-01-16T09:15:00Z',
+      type: 'status_update'
+    },
+    {
+      id: '5',
+      sender: 'Owner',
+      senderName: 'Property Owner',
+      content: 'Perfect! Please keep me updated on the progress. Let me know if any unexpected issues arise.',
+      timestamp: '2025-01-16T11:30:00Z',
+      type: 'message'
+    }
+  ]);
+  const [newMessage, setNewMessage] = useState('');
+
   // Add state for RFP/Bids functionality
   const [rfpBidsData, setRfpBidsData] = useState<RFPBid[]>(rfpBids[jobId] || []);
   const [rfpDialogOpen, setRfpDialogOpen] = useState(false);
@@ -552,6 +604,7 @@ export default function WorkOrderDetailPage() {
                 {[
                   // Only show Approval Status tab for non-technicians
                   ...(isTechnician ? [] : [{ id: 'timeline', label: 'Approval Status', icon: Clock }]),
+                  { id: 'messaging', label: 'Messaging', icon: MessageSquare },
                   { id: 'details', label: 'Activities', icon: FileText },
                   { id: 'expenses', label: 'Expenses', icon: DollarSign },
                   // Only show RFP/Bids tab for PM role
@@ -785,6 +838,114 @@ export default function WorkOrderDetailPage() {
                         </div>
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {activeTab === 'messaging' && (
+                <Card className="bg-gray-900 border-gray-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5" />
+                      Messaging
+                    </CardTitle>
+                    <p className="text-sm text-gray-400">
+                      Communicate with property owners and central office about this work order
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    {/* Messages List */}
+                    <div className="space-y-4 max-h-96 overflow-y-auto mb-4">
+                      {messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`flex gap-3 ${
+                            message.sender === 'PM' && currentRole === 'pm'
+                              ? 'justify-end'
+                              : message.sender === 'CO' && currentRole === 'centralOffice'
+                              ? 'justify-end'
+                              : 'justify-start'
+                          }`}
+                        >
+                                                     <div
+                             className={`max-w-[70%] rounded-lg px-4 py-3 ${
+                               message.type === 'status_update'
+                                 ? 'bg-blue-600/20 border border-blue-500/30 text-blue-100'
+                                 : message.sender === 'PM' && currentRole === 'pm'
+                                 ? 'bg-blue-600 text-white'
+                                 : message.sender === 'CO' && currentRole === 'centralOffice'
+                                 ? 'bg-blue-600 text-white'
+                                 : message.sender === 'Owner'
+                                 ? 'bg-green-600/20 border border-green-500/30 text-green-100'
+                                 : message.sender === 'CO'
+                                 ? 'bg-purple-600 text-white'
+                                 : 'bg-gray-700 text-gray-200'
+                             }`}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-medium">
+                                {message.senderName}
+                              </span>
+                              {message.type === 'status_update' && (
+                                <Badge className="bg-blue-500/20 text-blue-300 text-xs">
+                                  Status Update
+                                </Badge>
+                              )}
+                              {message.type === 'approval_request' && (
+                                <Badge className="bg-orange-500/20 text-orange-300 text-xs">
+                                  Approval Request
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm leading-relaxed">{message.content}</p>
+                            <p className="text-xs opacity-70 mt-2">
+                              {new Date(message.timestamp).toLocaleDateString()} at{' '}
+                              {new Date(message.timestamp).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Send Message Form */}
+                    <div className="border-t border-gray-700 pt-4">
+                      <div className="flex gap-2">
+                        <Textarea
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          placeholder={`Send a message about this work order...`}
+                          className="flex-1 bg-gray-800 border-gray-600 text-white resize-none"
+                          rows={3}
+                        />
+                        <Button
+                          onClick={() => {
+                            if (newMessage.trim()) {
+                              const message = {
+                                id: Date.now().toString(),
+                                sender: (currentRole === 'pm' ? 'PM' : 'CO') as 'PM' | 'CO',
+                                senderName: currentRole === 'pm' ? 'Property Manager' : 'Central Office',
+                                content: newMessage,
+                                timestamp: new Date().toISOString(),
+                                type: 'message' as const,
+                              };
+                              setMessages([...messages, message]);
+                              setNewMessage('');
+                            }
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700 text-white self-end"
+                          disabled={!newMessage.trim()}
+                        >
+                          <Send className="h-4 w-4 mr-2" />
+                          Send
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-2">
+                        Messages are sent to the property owner and relevant team members
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               )}

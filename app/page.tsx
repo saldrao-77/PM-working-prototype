@@ -87,7 +87,8 @@ import {
   FileWarning,
   Archive,
   Calendar as CalendarIcon,
-  ExternalLink as LinkIcon
+  ExternalLink as LinkIcon,
+  Flag
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from 'next/navigation'
@@ -2418,7 +2419,7 @@ export default function PMFinancialDashboard() {
         >
           Central Office
         </Button>
-            </div>
+      </div>
       <div className="flex flex-1">
         {/* Left Sidebar */}
         <div className="w-64 bg-gray-900 border-r border-gray-800 p-4">
@@ -3324,52 +3325,107 @@ export default function PMFinancialDashboard() {
                                       <div className="text-xs text-blue-400">Auto-synced with AppFolio</div>
                                     </div>
                                     <div className="overflow-x-auto">
-                                      <table className="w-full text-sm min-w-[800px]">
-                                        <thead>
-                                          <tr className="border-b border-gray-600">
-                                            <th className="text-left py-2 text-gray-400">Date</th>
-                                            <th className="text-left py-2 text-gray-400">Merchant</th>
-                                            <th className="text-left py-2 text-gray-400">GL Code</th>
-                                            <th className="text-left py-2 text-gray-400">Property Code</th>
-                                            <th className="text-left py-2 text-gray-400">Billable?</th>
-                                            <th className="text-left py-2 text-gray-400">Memo / Notes</th>
-                                            <th className="text-left py-2 text-gray-400">Receipt</th>
-                                            <th className="text-right py-2 text-gray-400">Amount</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {group.transactions.map((txn) => {
-                                            const job = jobs.find(j => j.id === txn.jobId);
-                                            const glCode = txn.billable ? '7200 - Repairs & Maintenance' : '6100 - Office Expenses';
-                                            const propertyCode = property.id.toUpperCase();
-                                            
-                                            return (
-                                              <tr key={txn.id} className="border-b border-gray-600/50">
-                                                <td className="py-2 text-gray-300">{txn.date}</td>
-                                                <td className="py-2 text-gray-300">{txn.vendor}</td>
-                                                <td className="py-2 text-blue-300">{glCode}</td>
-                                                <td className="py-2 text-blue-300">{propertyCode}</td>
-                                                <td className="py-2">
-                                                  <Badge className={txn.billable ? "bg-green-600 text-white text-xs" : "bg-gray-600 text-white text-xs"}>
-                                                    {txn.billable ? 'Yes' : 'No'}
-                                                  </Badge>
-                                                </td>
-                                                <td className="py-2 text-gray-300">{txn.memo || job?.description || 'N/A'}</td>
-                                                <td className="py-2">
-                                                  {txn.receipt ? (
-                                                    <Button size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300 p-0 h-auto">
-                                                      [View]
-                                                    </Button>
-                                                  ) : (
-                                                    <span className="text-gray-500">Missing</span>
-                                                  )}
-                                                </td>
-                                                <td className="py-2 text-right text-gray-300">${txn.amount.toFixed(2)}</td>
-                                              </tr>
-                                            );
-                                          })}
-                                        </tbody>
-                                      </table>
+                                      <TooltipProvider>
+                                        <table className="w-full text-sm min-w-[800px]">
+                                          <thead>
+                                            <tr className="border-b border-gray-600">
+                                              <th className="text-left py-2 text-gray-400">Date</th>
+                                              <th className="text-left py-2 text-gray-400">Merchant</th>
+                                              <th className="text-left py-2 text-gray-400">GL Code</th>
+                                              <th className="text-left py-2 text-gray-400">Property Code</th>
+                                              <th className="text-left py-2 text-gray-400">Billable?</th>
+                                              <th className="text-left py-2 text-gray-400">
+                                                <Tooltip>
+                                                  <TooltipTrigger asChild>
+                                                    <span className="cursor-help">
+                                                      Flag spend
+                                                    </span>
+                                                  </TooltipTrigger>
+                                                  <TooltipContent>
+                                                    <div>
+                                                      <div className="text-sm font-semibold">Auto-flagged spend that triggered owner's approval threshold</div>
+                                                      <div className="text-xs text-gray-400">
+                                                        Expenses over $500 require pre-approval
+                                                      </div>
+                                                    </div>
+                                                  </TooltipContent>
+                                                </Tooltip>
+                                              </th>
+                                              <th className="text-left py-2 text-gray-400">Memo / Notes</th>
+                                              <th className="text-left py-2 text-gray-400">Receipt</th>
+                                              <th className="text-right py-2 text-gray-400">Amount</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {group.transactions.map((txn, idx) => {
+                                              const job = jobs.find(j => j.id === txn.jobId);
+                                              const glCode = txn.billable ? '7200 - Repairs & Maintenance' : '6100 - Office Expenses';
+                                              const propertyCode = property.id.toUpperCase();
+                                              
+                                              // Demo flagging logic - flag specific items for demo purposes
+                                              const shouldBeFlagged = txn.amount >= 120 || txn.vendor === 'Home Depot' || (txn.memo && txn.memo.includes('HVAC'));
+                                              
+                                              return (
+                                                <tr key={idx} className="border-b border-gray-600/50">
+                                                  <td className="py-2 px-3 text-gray-300">{txn.date}</td>
+                                                  <td className="py-2 px-3 text-gray-300">{txn.vendor}</td>
+                                                  <td className="py-2 px-3 text-blue-300">{glCode}</td>
+                                                  <td className="py-2 px-3 text-blue-300">{propertyCode}</td>
+                                                  <td className="py-2 px-3">
+                                                    <Badge className={txn.billable ? "bg-green-600 text-white text-xs" : "bg-gray-600 text-white text-xs"}>
+                                                      {txn.billable ? 'Yes' : 'No'}
+                                                    </Badge>
+                                                  </td>
+                                                  <td className="py-2 px-3">
+                                                    <Tooltip>
+                                                      <TooltipTrigger asChild>
+                                                        <span className="cursor-help">
+                                                          {shouldBeFlagged ? (
+                                                            <Badge className="bg-orange-700 text-orange-100 text-xs flex items-center gap-1">
+                                                              <AlertTriangle className="h-4 w-4" />
+                                                              Flagged
+                                                            </Badge>
+                                                          ) : (
+                                                            <Badge className="bg-gray-700 text-gray-300 text-xs flex items-center gap-1">
+                                                              <CheckCircle className="h-4 w-4" />
+                                                              Clear
+                                                            </Badge>
+                                                          )}
+                                                        </span>
+                                                      </TooltipTrigger>
+                                                      <TooltipContent>
+                                                        {shouldBeFlagged ? (
+                                                          <div>
+                                                            <div className="text-sm font-semibold">Amount exceeds $500 threshold - requires owner approval</div>
+                                                            <div className="text-xs text-gray-400">
+                                                              {txn.amount >= 120 ? 'Amount exceeds $120 threshold' : ''}
+                                                              {txn.vendor === 'Home Depot' ? 'High-spend vendor flagged' : ''}
+                                                              {txn.memo && txn.memo.includes('HVAC') ? 'HVAC expenses require approval' : ''}
+                                                            </div>
+                                                          </div>
+                                                        ) : (
+                                                          <div className="text-sm">No flags - approved for processing</div>
+                                                        )}
+                                                      </TooltipContent>
+                                                    </Tooltip>
+                                                  </td>
+                                                  <td className="py-2 px-3 text-gray-300">{txn.memo || job?.description || 'N/A'}</td>
+                                                  <td className="py-2 px-3">
+                                                    {txn.receipt ? (
+                                                      <Button size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300 p-0 h-auto">
+                                                        [View]
+                                                      </Button>
+                                                    ) : (
+                                                      <span className="text-gray-500">Missing</span>
+                                                    )}
+                                                  </td>
+                                                  <td className="py-2 px-3 text-right text-gray-300">${txn.amount.toFixed(2)}</td>
+                                                </tr>
+                                              );
+                                            })}
+                                          </tbody>
+                                        </table>
+                                      </TooltipProvider>
                                     </div>
                                     <div className="mt-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded">
                                       <div className="text-sm text-blue-300 flex items-center gap-2">
@@ -3387,236 +3443,6 @@ export default function PMFinancialDashboard() {
                     );
                   })}
                 </div>
-
-                {/* Enhanced Reimbursement Dialog */}
-                <Dialog open={reimbursementDialogOpen} onOpenChange={setReimbursementDialogOpen}>
-                  <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="text-xl">🏦 Process Reimbursement</DialogTitle>
-                      <DialogDescription>
-                        Complete reimbursement processing with owner notification and report generation
-                      </DialogDescription>
-                    </DialogHeader>
-                    
-                    {selectedReimbursementJob && (() => {
-                      const property = properties.find(p => p.name === selectedReimbursementJob.property);
-                      const workOrderTransactions = [...transactions, ...technicianTransactions].filter(txn => txn.jobId === selectedReimbursementJob.id);
-                      
-                      return (
-                        <div className="space-y-6">
-                          {/* Work Order & Property Information */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Card className="bg-gray-800 border-gray-700">
-                              <CardHeader className="pb-3">
-                                <CardTitle className="text-sm text-blue-400">Work Order Details</CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-2">
-                                <div>
-                                  <div className="text-sm text-gray-400">Description</div>
-                                  <div className="font-medium text-white">{selectedReimbursementJob.description}</div>
-                                </div>
-                                <div>
-                                  <div className="text-sm text-gray-400">Work Order ID</div>
-                                  <div className="text-sm text-gray-300">#{selectedReimbursementJob.id}</div>
-                                </div>
-                                <div>
-                                  <div className="text-sm text-gray-400">Property</div>
-                                  <div className="text-sm text-gray-300">{selectedReimbursementJob.property}</div>
-                                </div>
-                                <div>
-                                  <div className="text-sm text-gray-400">Total Amount</div>
-                                  <div className="text-xl font-bold text-green-400">${reimbursementAmount.toFixed(2)}</div>
-                                </div>
-                              </CardContent>
-                            </Card>
-
-                            {/* Owner Contact Information */}
-                            {property && (
-                              <Card className="bg-gray-800 border-gray-700">
-                                <CardHeader className="pb-3">
-                                  <CardTitle className="text-sm text-orange-400">👤 Owner Contact Information</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-2">
-                                  <div>
-                                    <div className="text-sm text-gray-400">Name</div>
-                                    <div className="font-medium text-white">{property.ownerName}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-sm text-gray-400">Email</div>
-                                    <div className="text-sm text-blue-300">{property.ownerEmail}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-sm text-gray-400">Phone</div>
-                                    <div className="text-sm text-gray-300">{property.ownerPhone}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-sm text-gray-400">Address</div>
-                                    <div className="text-sm text-gray-300">{property.ownerAddress}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-sm text-gray-400">Preferred Contact</div>
-                                    <div className="text-sm text-yellow-300 capitalize">{property.ownerPreferredContact}</div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            )}
-                          </div>
-
-                          {/* Transaction Details */}
-                          <Card className="bg-gray-800 border-gray-700">
-                            <CardHeader className="pb-3">
-                              <CardTitle className="text-sm text-purple-400">💳 Transaction Breakdown</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                  <thead>
-                                    <tr className="border-b border-gray-600">
-                                      <th className="text-left py-2 text-gray-400">Date</th>
-                                      <th className="text-left py-2 text-gray-400">Vendor</th>
-                                      <th className="text-left py-2 text-gray-400">Amount</th>
-                                      <th className="text-left py-2 text-gray-400">Made By</th>
-                                      <th className="text-left py-2 text-gray-400">Memo</th>
-                                      <th className="text-left py-2 text-gray-400">Billable</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {workOrderTransactions.map(txn => (
-                                      <tr key={txn.id} className="border-b border-gray-700/50">
-                                        <td className="py-2 text-gray-300">{txn.date}</td>
-                                        <td className="py-2 text-white">{txn.vendor}</td>
-                                        <td className="py-2 text-green-400">${txn.amount.toFixed(2)}</td>
-                                        <td className="py-2 text-gray-300">{txn.madeBy}</td>
-                                        <td className="py-2 text-gray-300">{txn.memo || '-'}</td>
-                                        <td className="py-2">
-                                          <Badge className={txn.billable ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}>
-                                            {txn.billable ? 'Yes' : 'No'}
-                                          </Badge>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </CardContent>
-                          </Card>
-
-                          {/* Reimbursement Configuration */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Payment Details */}
-                            <Card className="bg-gray-800 border-gray-700">
-                              <CardHeader className="pb-3">
-                                <CardTitle className="text-sm text-green-400">💰 Payment Details</CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-4">
-                                <div>
-                                  <Label className="text-sm text-gray-400">Reimbursement Method</Label>
-                                  <Select value={reimbursementMethod} onValueChange={setReimbursementMethod}>
-                                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white mt-1">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                                      <SelectItem value="check">Check Payment</SelectItem>
-                                      <SelectItem value="wire">Wire Transfer</SelectItem>
-                                      <SelectItem value="ach">ACH Transfer</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                
-                                <div>
-                                  <Label className="text-sm text-gray-400">Payment Date</Label>
-                                  <Input
-                                    type="date"
-                                    value={reimbursementDate}
-                                    onChange={(e) => setReimbursementDate(e.target.value)}
-                                    className="bg-gray-700 border-gray-600 text-white mt-1"
-                                  />
-                                </div>
-
-                                <div>
-                                  <Label className="text-sm text-gray-400">Processing Notes</Label>
-                                  <Textarea
-                                    value={reimbursementNote}
-                                    onChange={(e) => setReimbursementNote(e.target.value)}
-                                    placeholder="Add any notes about this reimbursement..."
-                                    className="bg-gray-700 border-gray-600 text-white mt-1"
-                                    rows={3}
-                                  />
-                                </div>
-                              </CardContent>
-                            </Card>
-
-                            {/* Owner Notification */}
-                            <Card className="bg-gray-800 border-gray-700">
-                              <CardHeader className="pb-3">
-                                <CardTitle className="text-sm text-blue-400">📧 Owner Notification</CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-4">
-                                <div className="flex items-center space-x-2">
-                                  <input
-                                    type="checkbox"
-                                    id="send-report"
-                                    checked={sendReportToOwner}
-                                    onChange={(e) => setSendReportToOwner(e.target.checked)}
-                                    className="rounded bg-gray-700 border-gray-600"
-                                  />
-                                  <Label htmlFor="send-report" className="text-sm text-gray-300">
-                                    📊 Generate & send expense report to owner
-                                  </Label>
-                                </div>
-
-                                <div>
-                                  <Label className="text-sm text-gray-400">Notification Method</Label>
-                                  <Select value={ownerNotificationMethod} onValueChange={setOwnerNotificationMethod}>
-                                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white mt-1">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                                      <SelectItem value="email">📧 Email</SelectItem>
-                                      <SelectItem value="phone">📞 Phone Call</SelectItem>
-                                      <SelectItem value="text">💬 Text Message</SelectItem>
-                                      <SelectItem value="none">🚫 No Notification</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  {property && ownerNotificationMethod !== 'none' && (
-                                    <div className="mt-2 text-xs text-gray-400">
-                                      Will contact: {ownerNotificationMethod === 'email' ? property.ownerEmail : property.ownerPhone}
-                                    </div>
-                                  )}
-                                </div>
-
-                                {sendReportToOwner && (
-                                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-                                    <div className="text-sm text-blue-300 font-medium mb-1">Report Preview</div>
-                                    <div className="text-xs text-gray-400">
-                                      • Work Order: {selectedReimbursementJob.description}<br/>
-                                      • Total Expenses: ${reimbursementAmount.toFixed(2)}<br/>
-                                      • Transaction Count: {workOrderTransactions.length}<br/>
-                                      • Billable Amount: ${workOrderTransactions.filter(t => t.billable).reduce((sum, t) => sum + t.amount, 0).toFixed(2)}
-                                    </div>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                    
-                    <DialogFooter className="flex gap-2">
-                      <Button variant="outline" onClick={() => setReimbursementDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button 
-                        onClick={processReimbursement} 
-                        className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
-                      >
-                        <DollarSign className="h-4 w-4" />
-                        Process Reimbursement (${reimbursementAmount.toFixed(2)})
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
 
                 {/* Monthly Report Dialog */}
                 <Dialog open={monthlyReportDialogOpen} onOpenChange={setMonthlyReportDialogOpen}>
@@ -3801,15 +3627,15 @@ export default function PMFinancialDashboard() {
                           <div className="flex justify-between text-xs mb-2">
                             <span>Exp: 12/26</span>
                             <span>Limit: ${limit.toLocaleString()}</span>
-                              </div>
+                                </div>
                           <div className="flex justify-between items-end text-xs mb-1">
                             <span>Available: <span className="font-semibold">${available.toLocaleString()}</span></span>
                             <span className="text-white/70">John Smith</span>
-                              </div>
+                                </div>
                           <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden mt-1">
                             <div className="h-full rounded-full bg-green-400 transition-all" style={{ width: `${percent}%` }} />
-                              </div>
-                              </div>
+                                </div>
+                                </div>
                       );
                     })}
                               </div>
@@ -4697,8 +4523,8 @@ export default function PMFinancialDashboard() {
                         <SelectItem value="pending">Pending</SelectItem>
                       </SelectContent>
                     </Select>
-        </div>
-                <div>
+                  </div>
+                  <div>
                     <Label className="text-gray-300">Billable</Label>
                     <Select value={txnFilterBillable} onValueChange={setTxnFilterBillable}>
                       <SelectTrigger className="bg-gray-800 border-gray-600 text-white w-32">
@@ -4710,21 +4536,21 @@ export default function PMFinancialDashboard() {
                         <SelectItem value="nonbillable">Non-Billable</SelectItem>
                       </SelectContent>
                     </Select>
-                </div>
-                <div>
+                  </div>
+                  <div>
                     <Label className="text-gray-300">Property</Label>
                     <Select value={txnFilterProperty} onValueChange={setTxnFilterProperty}>
                       <SelectTrigger className="bg-gray-800 border-gray-600 text-white w-40">
                         <SelectValue>{txnFilterProperty === 'all' ? 'All' : (properties.find(p => p.id === txnFilterProperty)?.name || '')}</SelectValue>
-                    </SelectTrigger>
+                      </SelectTrigger>
                       <SelectContent className="bg-gray-900 border-gray-700 text-white">
                         <SelectItem value="all">All</SelectItem>
                         {properties.map(property => (
                           <SelectItem key={property.id} value={property.id}>{property.name}</SelectItem>
                         ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div>
                     <Label className="text-gray-300">Work Order</Label>
                     <Select value={txnFilterJob} onValueChange={setTxnFilterJob}>
@@ -4738,8 +4564,8 @@ export default function PMFinancialDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
-              </div>
-                    <div>
+                  </div>
+                  <div>
                     <Label className="text-gray-300">Made By</Label>
                     <Select value={txnFilterMadeBy} onValueChange={setTxnFilterMadeBy}>
                       <SelectTrigger className="bg-gray-800 border-gray-600 text-white w-40">
@@ -4752,16 +4578,16 @@ export default function PMFinancialDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
-                    </div>
+                  </div>
                   <div>
                     <Label className="text-gray-300">Date From</Label>
                     <Input type="date" className="bg-gray-800 border-gray-600 text-white w-36" value={txnFilterDateFrom} onChange={e => setTxnFilterDateFrom(e.target.value)} />
                   </div>
-                    <div>
+                  <div>
                     <Label className="text-gray-300">Date To</Label>
                     <Input type="date" className="bg-gray-800 border-gray-600 text-white w-36" value={txnFilterDateTo} onChange={e => setTxnFilterDateTo(e.target.value)} />
-                    </div>
                   </div>
+                </div>
                 <div className="flex flex-col h-[400px] rounded-lg">
                   <div className="flex-1 overflow-x-auto overflow-y-auto">
                     <table className="min-w-full text-sm">
@@ -4843,8 +4669,8 @@ export default function PMFinancialDashboard() {
                         })}
                       </tbody>
                     </table>
-                    </div>
                   </div>
+                </div>
               </>
             )}
             {activeTab === "collateral" && (role === 'pm' || role === 'centralOffice') && (
@@ -4881,23 +4707,23 @@ export default function PMFinancialDashboard() {
                 {/* Filters and Search */}
                 <div className="mb-6 space-y-4">
                   <div className="flex flex-wrap gap-4 items-end">
-                                         <div className="flex-1 min-w-[200px]">
-                       <Label className="text-gray-300">Search</Label>
-                       <div className="relative">
-                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                         {collateralIsSearching && (
-                           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
-                           </div>
-                         )}
-                         <Input 
-                           placeholder="Search by filename, tags, or vendor..."
-                           className="bg-gray-800 border-gray-600 text-white pl-10 pr-10"
-                           value={collateralSearchQuery}
-                           onChange={(e) => setCollateralSearchQuery(e.target.value)}
-                         />
-                       </div>
-                     </div>
+                    <div className="flex-1 min-w-[200px]">
+                      <Label className="text-gray-300">Search</Label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        {collateralIsSearching && (
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+                          </div>
+                        )}
+                        <Input 
+                          placeholder="Search by filename, tags, or vendor..."
+                          className="bg-gray-800 border-gray-600 text-white pl-10 pr-10"
+                          value={collateralSearchQuery}
+                          onChange={(e) => setCollateralSearchQuery(e.target.value)}
+                        />
+                      </div>
+                    </div>
                     <div>
                       <Label className="text-gray-300">Property</Label>
                       <Select value={collateralFilterProperty} onValueChange={setCollateralFilterProperty}>
@@ -4989,18 +4815,18 @@ export default function PMFinancialDashboard() {
                   </div>
                 </div>
 
-                                 {/* Document Display */}
-                 {collateralIsSearching && (
-                   <div className="mb-4 text-center">
-                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-900/20 border border-blue-500/30 rounded-lg text-blue-300 text-sm">
-                       <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-400"></div>
-                       Searching...
-                     </div>
-                   </div>
-                 )}
-                 {collateralViewMode === 'card' ? (
-                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                     {filteredCollateralDocs.map((doc) => {
+                {/* Document Display */}
+                {collateralIsSearching && (
+                  <div className="mb-4 text-center">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-900/20 border border-blue-500/30 rounded-lg text-blue-300 text-sm">
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-400"></div>
+                      Searching...
+                    </div>
+                  </div>
+                )}
+                {collateralViewMode === 'card' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredCollateralDocs.map((doc) => {
                       const IconComponent = getDocumentTypeIcon(doc.documentType);
                       const isSelected = collateralSelectedDocs.includes(doc.id);
                       return (
@@ -5211,24 +5037,24 @@ export default function PMFinancialDashboard() {
                   </div>
                 )}
 
-                                 {filteredCollateralDocs.length === 0 && !collateralIsSearching && (
-                   <div className="text-center py-12">
-                     <FileArchive className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                     <h3 className="text-lg font-medium text-gray-300 mb-2">No documents found</h3>
-                     <p className="text-gray-400 mb-4">
-                       {collateralDebouncedSearchQuery || collateralFilterProperty !== 'all' || collateralFilterDocType !== 'all' 
-                         ? 'Try adjusting your search criteria or filters'
-                         : 'Upload your first document to get started'}
-                     </p>
-                     <Button 
-                       className="bg-blue-600 hover:bg-blue-700 text-white"
-                       onClick={() => setCollateralUploadDialogOpen(true)}
-                     >
-                       <Upload className="h-4 w-4 mr-2" />
-                       Upload Files
-                     </Button>
-                   </div>
-                 )}
+                {filteredCollateralDocs.length === 0 && !collateralIsSearching && (
+                  <div className="text-center py-12">
+                    <FileArchive className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-300 mb-2">No documents found</h3>
+                    <p className="text-gray-400 mb-4">
+                      {collateralDebouncedSearchQuery || collateralFilterProperty !== 'all' || collateralFilterDocType !== 'all' 
+                        ? 'Try adjusting your search criteria or filters'
+                        : 'Upload your first document to get started'}
+                    </p>
+                    <Button 
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={() => setCollateralUploadDialogOpen(true)}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Files
+                    </Button>
+                  </div>
+                )}
               </>
             )}
             {activeTab === "properties" && (
@@ -5330,7 +5156,7 @@ export default function PMFinancialDashboard() {
                                         ))}
                                       </tbody>
                                     </table>
-                  </div>
+                                  </div>
                                 </td>
                               </tr>
                             </>
@@ -5339,89 +5165,14 @@ export default function PMFinancialDashboard() {
                       ))}
                     </tbody>
                   </table>
-                    </div>
+                </div>
               </>
             )}
             {activeTab === "staff" && (
               <>
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-lg font-semibold text-white">Technicians</h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="bg-gray-900 border-b border-gray-700">
-                        <th className="text-left py-3 px-4 font-semibold text-white">Name</th>
-                        <th className="text-left py-3 px-4 font-semibold text-white">Phone</th>
-                        <th className="text-left py-3 px-4 font-semibold text-white">Email</th>
-                        <th className="text-left py-3 px-4 font-semibold text-white">Work Orders Assigned</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {staff.map((technician) => {
-                        const assignedJobs = jobs.filter(job => job.technician === technician.name);
-                        return (
-                          <React.Fragment key={technician.id}>
-                            <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700/50 transition-colors">
-                              <td className="py-3 px-4">
-                                <div className="font-medium text-white">{technician.name}</div>
-                              </td>
-                              <td className="py-3 px-4 text-gray-300">{technician.phone}</td>
-                              <td className="py-3 px-4 text-gray-300">{technician.email}</td>
-                              <td className="py-3 px-4 text-gray-300">
-                                <button
-                                  className={`text-left hover:text-blue-400 transition-colors ${
-                                    assignedJobs.length > 0 ? 'text-blue-400 cursor-pointer' : 'text-gray-500 cursor-default'
-                                  }`}
-                                  onClick={() => assignedJobs.length > 0 && setViewTechnicianWorkOrders(viewTechnicianWorkOrders === technician.id ? null : technician.id)}
-                                  disabled={assignedJobs.length === 0}
-                                >
-                                  {assignedJobs.length} work order{assignedJobs.length !== 1 ? 's' : ''}
-                                </button>
-                              </td>
-                            </tr>
-                            {viewTechnicianWorkOrders === technician.id && assignedJobs.length > 0 && (
-                              <tr className="bg-gray-900">
-                                <td colSpan={4} className="p-0">
-                                  <div className="p-4">
-                                    <h5 className="text-sm font-semibold text-white mb-3">Work Orders for {technician.name}</h5>
-                                    <table className="min-w-full text-sm">
-                                      <thead>
-                                        <tr className="bg-gray-800 border-b border-gray-700">
-                                          <th className="text-left py-2 px-3 font-semibold text-white">Property</th>
-                                          <th className="text-left py-2 px-3 font-semibold text-white">Description</th>
-                                          <th className="text-left py-2 px-3 font-semibold text-white">Status</th>
-                                          <th className="text-left py-2 px-3 font-semibold text-white">Priority</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {assignedJobs.map((job) => (
-                                          <tr key={job.id} className="bg-gray-900 border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
-                                            <td className="py-2 px-3 text-gray-300">{job.property}</td>
-                                            <td className="py-2 px-3 text-gray-300">{job.description}</td>
-                                            <td className="py-2 px-3 text-gray-300">{job.techStatus}</td>
-                                            <td className="py-2 px-3 text-gray-300">{job.priority}</td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
-            </div>
-                                </td>
-                              </tr>
-                            )}
-                          </React.Fragment>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-            {activeTab === "profile" && (
-              <>
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-white">My Profile</h3>
-                </div>
+    </div>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Personal Information Card */}
@@ -7636,59 +7387,75 @@ export default function PMFinancialDashboard() {
                         </div>
 
                         <div className="max-h-64 overflow-y-auto border border-gray-600 rounded">
-                          <table className="min-w-full text-xs">
-                            <thead className="sticky top-0 bg-gray-900 border-b border-gray-600">
-                              <tr>
-                                <th className="text-left py-2 px-3 text-gray-400">Date</th>
-                                <th className="text-left py-2 px-3 text-gray-400">Merchant</th>
-                                <th className="text-left py-2 px-3 text-gray-400">GL Code</th>
-                                <th className="text-left py-2 px-3 text-gray-400">Property Code</th>
-                                <th className="text-left py-2 px-3 text-gray-400">Billable?</th>
-                                <th className="text-left py-2 px-3 text-gray-400">Memo/Notes</th>
-                                <th className="text-left py-2 px-3 text-gray-400">Receipt</th>
-                                <th className="text-right py-2 px-3 text-gray-400">Amount</th>
-                              </tr>
-                            </thead>
+                          <TooltipProvider>
+                            <table className="min-w-full text-xs">
+                              <thead className="sticky top-0 bg-gray-900 border-b border-gray-600">
+                                <tr>
+                                  <th className="text-left py-2 px-3 text-gray-400">Date</th>
+                                  <th className="text-left py-2 px-3 text-gray-400">Merchant</th>
+                                  <th className="text-left py-2 px-3 text-gray-400">GL Code</th>
+                                  <th className="text-left py-2 px-3 text-gray-400">Property Code</th>
+                                  <th className="text-left py-2 px-3 text-gray-400">Billable?</th>
+                                  <th className="text-left py-2 px-3 text-gray-400">
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <span className="cursor-help">Flag spend</span>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <div>
+                                          <div className="text-sm font-semibold">Auto-flagged spend that triggered owner's approval threshold</div>
+                                          <div className="text-xs text-gray-400">
+                                            Expenses over $500 require pre-approval
+                                          </div>
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </th>
+                                  <th className="text-left py-2 px-3 text-gray-400">Memo/Notes</th>
+                                  <th className="text-left py-2 px-3 text-gray-400">Receipt</th>
+                                  <th className="text-right py-2 px-3 text-gray-400">Amount</th>
+                                </tr>
+                              </thead>
                             <tbody>
                               {(() => {
                                 // Generate sample transactions for the selected month
                                 const sampleTransactions = [
                                   {
                                     date: '2025-01-15',
-                                    merchant: 'Home Depot',
-                                    amount: 150.00,
+                                    vendor: 'Home Depot',
+                                    amount: 750.00,
                                     billable: true,
-                                    memo: 'HVAC repair parts',
+                                    memo: 'Owner-approved, HVAC repair parts',
                                     receipt: '[Link]'
                                   },
                                   {
                                     date: '2025-01-16',
-                                    merchant: 'Lowes',
-                                    amount: 75.50,
+                                    vendor: 'Lowes',
+                                    amount: 275.50,
                                     billable: true,
                                     memo: 'Paint supplies',
                                     receipt: '[Link]'
                                   },
                                   {
                                     date: '2025-01-17',
-                                    merchant: 'Office Depot',
-                                    amount: 125.75,
+                                    vendor: 'Office Depot',
+                                    amount: 625.75,
                                     billable: false,
-                                    memo: 'Office supplies',
+                                    memo: 'Owner-approved, Office supplies',
                                     receipt: '[Link]'
                                   },
                                   {
                                     date: '2025-01-18',
-                                    merchant: 'Ace Hardware',
-                                    amount: 45.25,
+                                    vendor: 'Ace Hardware',
+                                    amount: 345.25,
                                     billable: true,
                                     memo: 'Plumbing tools',
                                     receipt: '[Link]'
                                   },
                                   {
                                     date: '2025-01-19',
-                                    merchant: 'Sherwin Williams',
-                                    amount: 89.99,
+                                    vendor: 'Sherwin Williams',
+                                    amount: 189.99,
                                     billable: true,
                                     memo: 'Interior paint',
                                     receipt: '[Link]'
@@ -7699,10 +7466,13 @@ export default function PMFinancialDashboard() {
                                   const glCode = txn.billable ? '7200 - Repairs & Maintenance' : '6100 - Office Expenses';
                                   const propertyCode = selectedPropertyForMonthly.id.toUpperCase();
                                   
+                                  // Demo flagging logic - flag specific items for demo purposes
+                                  const shouldBeFlagged = txn.amount >= 500 || txn.vendor === 'Home Depot' || (txn.memo && txn.memo.includes('HVAC'));
+                                  
                                   return (
                                     <tr key={idx} className="border-b border-gray-700 hover:bg-gray-700/30">
                                       <td className="py-2 px-3 text-gray-300">{txn.date}</td>
-                                      <td className="py-2 px-3 text-gray-300">{txn.merchant}</td>
+                                      <td className="py-2 px-3 text-gray-300">{txn.vendor}</td>
                                       <td className="py-2 px-3 text-blue-300">{glCode}</td>
                                       <td className="py-2 px-3 text-purple-300">{propertyCode}</td>
                                       <td className="py-2 px-3">
@@ -7711,6 +7481,41 @@ export default function PMFinancialDashboard() {
                                         }`}>
                                           {txn.billable ? 'Yes' : 'No'}
                                         </span>
+                                      </td>
+                                      <td className="py-2 px-3">
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <span className="cursor-help">
+                                                {shouldBeFlagged ? (
+                                                  <Badge className="bg-orange-700 text-orange-100 text-xs flex items-center gap-1">
+                                                    <Flag className="h-4 w-4" />
+                                                    Flagged
+                                                  </Badge>
+                                                ) : (
+                                                  <Badge className="bg-gray-700 text-gray-300 text-xs flex items-center gap-1">
+                                                    <CheckCircle className="h-4 w-4" />
+                                                    Clear
+                                                  </Badge>
+                                                )}
+                                              </span>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              {shouldBeFlagged ? (
+                                                <div>
+                                                  <div className="text-sm font-semibold">Auto-flagged spend that triggered owner's threshold for approval</div>
+                                                  <div className="text-xs text-gray-400">
+                                                    {txn.amount >= 500 ? 'Amount exceeds $500 threshold' : ''}
+                                                    {txn.vendor === 'Home Depot' ? 'High-spend vendor flagged' : ''}
+                                                    {txn.memo && txn.memo.includes('HVAC') ? 'HVAC expenses require approval' : ''}
+                                                  </div>
+                                                </div>
+                                              ) : (
+                                                <div className="text-sm">No flags - approved for processing</div>
+                                              )}
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
                                       </td>
                                       <td className="py-2 px-3 text-gray-300">{txn.memo}</td>
                                       <td className="py-2 px-3">
@@ -7724,11 +7529,12 @@ export default function PMFinancialDashboard() {
                             </tbody>
                             <tfoot className="bg-gray-900 border-t border-gray-600">
                               <tr>
-                                <td colSpan={7} className="py-2 px-3 text-right font-semibold text-gray-300">Total:</td>
-                                <td className="py-2 px-3 text-right font-semibold text-white">$486.49</td>
+                                <td colSpan={8} className="py-2 px-3 text-right font-semibold text-gray-300">Total:</td>
+                                <td className="py-2 px-3 text-right font-semibold text-white">$2,186.49</td>
                               </tr>
                             </tfoot>
-                          </table>
+                            </table>
+                          </TooltipProvider>
                         </div>
                         
                         <div className="mt-3 text-xs text-gray-400">
