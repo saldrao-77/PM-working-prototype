@@ -877,6 +877,16 @@ export default function PMFinancialDashboard() {
   const [collateralFilterDateTo, setCollateralFilterDateTo] = useState('');
   const [collateralUploadDialogOpen, setCollateralUploadDialogOpen] = useState(false);
   const [collateralPreviewDialogOpen, setCollateralPreviewDialogOpen] = useState(false);
+  
+  // AI Search State
+  const [aiSearchQuery, setAiSearchQuery] = useState('');
+  const [aiSearchResults, setAiSearchResults] = useState<any>(null);
+  const [aiSearchLoading, setAiSearchLoading] = useState(false);
+  const [aiSearchSuggestions, setAiSearchSuggestions] = useState<string[]>([]);
+  const [showAiSuggestions, setShowAiSuggestions] = useState(false);
+  const [askAiModalOpen, setAskAiModalOpen] = useState(false);
+  const [aiChatMessages, setAiChatMessages] = useState<Array<{role: 'user' | 'assistant', content: string, documents?: any[]}>>([]);
+  const [aiChatInput, setAiChatInput] = useState('');
   const [selectedCollateralDoc, setSelectedCollateralDoc] = useState<CollateralDocument | null>(null);
   const [collateralAIAssistOpen, setCollateralAIAssistOpen] = useState(false);
   const [collateralAIQuery, setCollateralAIQuery] = useState('');
@@ -2377,6 +2387,603 @@ export default function PMFinancialDashboard() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
+
+  // AI Search functionality
+  const getAiSearchSuggestions = (query: string) => {
+    const roleSuggestions = {
+      pm: [
+        // HVAC & Heating/Cooling
+        "How much did we spend on HVAC repairs this year?",
+        "Find all HVAC maintenance contracts",
+        "Show me heating system invoices from last winter",
+        "What HVAC vendors do we use most frequently?",
+        "Find air conditioning repair receipts over $500",
+        "Show me all furnace replacement quotes",
+        "Find HVAC emergency repair calls",
+        "What properties need HVAC filter replacements?",
+        "Show me duct cleaning service records",
+        "Find thermostat installation receipts",
+        "What HVAC warranties are expiring soon?",
+        "Show me cooling system maintenance logs",
+        
+        // Plumbing
+        "Find all plumbing repair receipts",
+        "Show me water damage insurance claims",
+        "What plumbing emergencies happened this month?",
+        "Find pipe replacement invoices",
+        "Show me toilet repair receipts",
+        "Find water heater maintenance records",
+        "What plumbing vendors charge the most?",
+        "Show me leak detection service calls",
+        "Find drain cleaning receipts",
+        "Show me faucet replacement invoices",
+        "Find water pressure issue reports",
+        "What plumbing warranties do we have?",
+        
+        // Electrical
+        "Find all electrical repair invoices",
+        "Show me panel upgrade receipts",
+        "What electrical permits do we have?",
+        "Find outlet installation costs",
+        "Show me lighting repair receipts",
+        "Find electrical inspection reports",
+        "What electrical emergencies occurred?",
+        "Show me wiring replacement quotes",
+        "Find circuit breaker repair costs",
+        "Show me electrical safety certificates",
+        "Find generator maintenance records",
+        "What electrical contractors do we use?",
+        
+        // Roofing
+        "Find all roofing repair receipts",
+        "Show me roof replacement quotes",
+        "What roofing warranties are active?",
+        "Find gutter cleaning service records",
+        "Show me leak repair invoices",
+        "Find roofing inspection reports",
+        "What roofing materials did we purchase?",
+        "Show me shingle replacement costs",
+        "Find roof maintenance contracts",
+        "Show me storm damage assessments",
+        "Find chimney repair receipts",
+        "What roofing vendors do we recommend?",
+        
+        // Flooring
+        "Find all flooring replacement receipts",
+        "Show me carpet cleaning service records",
+        "What flooring warranties are valid?",
+        "Find hardwood floor refinishing costs",
+        "Show me tile repair invoices",
+        "Find flooring installation quotes",
+        "What flooring vendors do we use?",
+        "Show me subfloor repair receipts",
+        "Find laminate flooring purchases",
+        "Show me floor polishing service records",
+        "Find vinyl flooring installation costs",
+        "What flooring inspections were done?",
+        
+        // Painting & Drywall
+        "Find all painting service receipts",
+        "Show me drywall repair invoices",
+        "What paint supplies did we purchase?",
+        "Find exterior painting quotes",
+        "Show me interior painting costs",
+        "Find drywall installation receipts",
+        "What painting contractors do we use?",
+        "Show me wallpaper removal costs",
+        "Find texture repair invoices",
+        "Show me primer and paint purchases",
+        "Find painting equipment rental receipts",
+        "What painting warranties are active?",
+        
+        // Appliances
+        "Find all appliance repair receipts",
+        "Show me refrigerator replacement costs",
+        "What appliance warranties are valid?",
+        "Find dishwasher installation invoices",
+        "Show me washer and dryer repair costs",
+        "Find oven and stove maintenance records",
+        "What appliance vendors do we use?",
+        "Show me microwave replacement receipts",
+        "Find garbage disposal repair costs",
+        "Show me appliance delivery receipts",
+        "Find extended warranty purchases",
+        "What appliances need replacement soon?",
+        
+        // Landscaping & Grounds
+        "Find all landscaping service receipts",
+        "Show me lawn care maintenance costs",
+        "What landscaping contracts are active?",
+        "Find tree removal service invoices",
+        "Show me irrigation system repair costs",
+        "Find fertilizer and pesticide purchases",
+        "What landscaping equipment did we buy?",
+        "Show me snow removal service receipts",
+        "Find sprinkler system maintenance records",
+        "Show me mulch and soil purchases",
+        "Find landscaping design costs",
+        "What seasonal maintenance was done?",
+        
+        // Security & Safety
+        "Find all security system receipts",
+        "Show me fire alarm inspection reports",
+        "What security equipment did we install?",
+        "Find smoke detector replacement costs",
+        "Show me security camera installation invoices",
+        "Find access control system receipts",
+        "What safety inspections were completed?",
+        "Show me emergency lighting maintenance",
+        "Find security monitoring service costs",
+        "Show me lock replacement receipts",
+        "Find fire extinguisher service records",
+        "What security upgrades were made?",
+        
+        // Cleaning & Maintenance
+        "Find all cleaning service receipts",
+        "Show me janitorial supply purchases",
+        "What cleaning contracts are active?",
+        "Find carpet cleaning service costs",
+        "Show me window cleaning receipts",
+        "Find pressure washing service invoices",
+        "What cleaning equipment did we buy?",
+        "Show me floor waxing service records",
+        "Find sanitization service costs",
+        "Show me cleaning supply deliveries",
+        "Find deep cleaning service receipts",
+        "What maintenance schedules are due?",
+        
+        // Property-Specific Queries
+        "Find all receipts for Stanford GSB property",
+        "Show me Sunnyvale 432 maintenance costs",
+        "What repairs were done at Menlo Park?",
+        "Find all Palo Alto Office expenses",
+        "Show me Stanford GSB inspection reports",
+        "What vendors service Sunnyvale 432?",
+        "Find Menlo Park utility bills",
+        "Show me Palo Alto Office insurance docs",
+        "What maintenance is scheduled for Stanford GSB?",
+        "Find all multi-property service contracts",
+        
+        // Financial & Cost Analysis
+        "What were the most expensive repairs last quarter?",
+        "Find receipts where we were overcharged",
+        "Show me all expenses over $1000",
+        "What maintenance costs exceeded budget?",
+        "Find all emergency repair costs",
+        "Show me year-over-year cost comparisons",
+        "What vendors have the highest invoices?",
+        "Find all tax-deductible expenses",
+        "Show me monthly spending trends",
+        "What repairs had cost overruns?",
+        "Find all warranty claim savings",
+        "Show me preventive vs reactive maintenance costs",
+        
+        // Vendor & Contractor Management
+        "Find all Home Depot receipts",
+        "Show me Lowe's purchase history",
+        "What contractors do we use most?",
+        "Find all vendor contact information",
+        "Show me contractor performance reviews",
+        "What vendors offer the best rates?",
+        "Find all vendor insurance certificates",
+        "Show me contractor licensing documents",
+        "What vendors have payment terms?",
+        "Find all preferred vendor agreements",
+        "Show me vendor response time reports",
+        "What contractors specialize in emergencies?",
+        
+        // Insurance & Claims
+        "Find all insurance certificates",
+        "Show me property insurance claims",
+        "What insurance policies are expiring?",
+        "Find liability insurance documents",
+        "Show me workers comp certificates",
+        "Find all insurance claim receipts",
+        "What insurance coverage do we have?",
+        "Show me insurance premium payments",
+        "Find all damage assessment reports",
+        "Show me insurance adjuster communications",
+        "What claims are still pending?",
+        "Find all insurance policy renewals",
+        
+        // Compliance & Inspections
+        "Show me inspection reports that mention mold",
+        "Find all safety inspection certificates",
+        "What compliance documents are due?",
+        "Show me fire safety inspection reports",
+        "Find all building permit applications",
+        "What health department inspections occurred?",
+        "Show me elevator inspection certificates",
+        "Find all environmental compliance docs",
+        "What code violations need addressing?",
+        "Show me occupancy permit renewals",
+        "Find all accessibility compliance reports",
+        "What inspections are scheduled this month?",
+        
+        // Contracts & Agreements
+        "Find contracts expiring in the next 30 days",
+        "Show me all service agreements",
+        "What maintenance contracts are active?",
+        "Find all vendor agreements",
+        "Show me lease agreement amendments",
+        "Find all warranty documents",
+        "What contracts need renewal soon?",
+        "Show me all purchase agreements",
+        "Find contractor licensing agreements",
+        "Show me all service level agreements",
+        "What contracts have auto-renewal clauses?",
+        "Find all non-disclosure agreements",
+        
+        // Utilities & Services
+        "Find all utility bills this year",
+        "Show me electricity usage reports",
+        "What utility vendors do we use?",
+        "Find all water and sewer bills",
+        "Show me gas utility expenses",
+        "Find internet and cable service costs",
+        "What utility deposits did we pay?",
+        "Show me utility connection fees",
+        "Find all utility meter readings",
+        "Show me energy efficiency reports",
+        "What utility rebates did we receive?",
+        "Find all utility service agreements",
+        
+        // Emergency & Urgent Repairs
+        "Show me all emergency repair receipts",
+        "Find after-hours service call costs",
+        "What emergency repairs happened last month?",
+        "Show me weekend emergency expenses",
+        "Find all urgent maintenance requests",
+        "What emergency vendors do we use?",
+        "Show me holiday emergency repair costs",
+        "Find all emergency contact information",
+        "What emergencies required multiple visits?",
+        "Show me emergency repair response times",
+        "Find all emergency equipment rentals",
+        "What emergency repairs exceeded estimates?",
+        
+        // Seasonal & Weather-Related
+        "Find all winter weather damage costs",
+        "Show me summer cooling system repairs",
+        "What storm damage occurred this year?",
+        "Find all freeze damage repair receipts",
+        "Show me seasonal maintenance schedules",
+        "Find all weather-related insurance claims",
+        "What seasonal equipment rentals occurred?",
+        "Show me ice dam removal costs",
+        "Find all spring maintenance receipts",
+        "Show me fall preparation service costs",
+        "What weather monitoring equipment do we have?",
+        "Find all seasonal vendor agreements"
+      ],
+      centralOffice: [
+        // Approvals & Review
+        "Show me all pending approvals",
+        "Find high-value transactions needing review",
+        "What expenses require CO approval?",
+        "Show me all flagged transactions",
+        "Find all contracts requiring CO approval",
+        "What large purchases need authorization?",
+        "Show me all budget variance reports",
+        "Find all emergency spending approvals",
+        "What vendor agreements need CO review?",
+        "Show me all policy exception requests",
+        "Find all capital expenditure approvals",
+        "What insurance claims need CO review?",
+        
+        // Property Performance & Analytics
+        "What properties have the highest maintenance costs?",
+        "Show me property performance rankings",
+        "Find all underperforming properties",
+        "What properties exceed budget most often?",
+        "Show me property ROI comparisons",
+        "Find all property efficiency reports",
+        "What properties need capital improvements?",
+        "Show me tenant satisfaction by property",
+        "Find all property vacancy reports",
+        "What properties have recurring issues?",
+        "Show me property maintenance trends",
+        "Find all property valuation reports",
+        
+        // Compliance & Risk Management
+        "Show me all compliance documents",
+        "Find all regulatory violation reports",
+        "What compliance audits are due?",
+        "Show me all safety incident reports",
+        "Find all environmental compliance issues",
+        "What legal notices have we received?",
+        "Show me all insurance policy reviews",
+        "Find all risk assessment reports",
+        "What compliance training is required?",
+        "Show me all regulatory correspondence",
+        "Find all permit violation notices",
+        "What compliance certifications expire soon?",
+        
+        // Financial Oversight
+        "Show me monthly spending by property",
+        "Find all budget vs actual reports",
+        "What expense categories are over budget?",
+        "Show me all financial variance reports",
+        "Find all cost center performance data",
+        "What properties have declining margins?",
+        "Show me all cash flow projections",
+        "Find all accounts payable aging reports",
+        "What vendors have payment disputes?",
+        "Show me all financial audit findings",
+        "Find all expense allocation reports",
+        "What financial controls need strengthening?",
+        
+        // Vendor & Contract Oversight
+        "Find all vendor performance reviews",
+        "Show me vendor spending by category",
+        "What vendors exceed spending limits?",
+        "Find all vendor contract renewals",
+        "Show me vendor insurance compliance",
+        "What vendors have quality issues?",
+        "Find all vendor dispute resolutions",
+        "Show me vendor payment terms analysis",
+        "What vendors offer volume discounts?",
+        "Find all vendor risk assessments",
+        "Show me vendor diversity reports",
+        "What vendor agreements need renegotiation?",
+        
+        // AI & System Analytics
+        "What expenses were flagged by AI?",
+        "Show me AI-detected anomalies",
+        "Find all system-generated alerts",
+        "What patterns has AI identified?",
+        "Show me predictive maintenance recommendations",
+        "Find all automated expense categorizations",
+        "What AI insights are available?",
+        "Show me machine learning predictions",
+        "Find all data quality issues",
+        "What system optimizations are suggested?",
+        "Show me AI performance metrics",
+        "Find all automated workflow results",
+        
+        // Document & Data Management
+        "Find all documents uploaded this week",
+        "Show me document compliance status",
+        "What documents are missing or incomplete?",
+        "Find all document retention schedules",
+        "Show me document access logs",
+        "What documents need digital conversion?",
+        "Find all document approval workflows",
+        "Show me document version control issues",
+        "What documents have security restrictions?",
+        "Find all document backup statuses",
+        "Show me document search analytics",
+        "What documents are frequently accessed?",
+        
+        // Operational Efficiency
+        "What are the most common repair types?",
+        "Show me operational efficiency metrics",
+        "Find all process improvement opportunities",
+        "What workflows need optimization?",
+        "Show me resource utilization reports",
+        "Find all bottleneck analyses",
+        "What best practices should be standardized?",
+        "Show me cross-property comparisons",
+        "Find all efficiency benchmark reports",
+        "What automation opportunities exist?",
+        "Show me staff productivity metrics",
+        "Find all operational cost savings",
+        
+        // Strategic Planning
+        "Show me 5-year maintenance projections",
+        "Find all capital planning documents",
+        "What strategic initiatives are active?",
+        "Show me market analysis reports",
+        "Find all competitive analysis data",
+        "What expansion opportunities exist?",
+        "Show me portfolio optimization studies",
+        "Find all investment analysis reports",
+        "What strategic partnerships are available?",
+        "Show me long-term budget forecasts",
+        "Find all scenario planning documents",
+        "What strategic risks need mitigation?",
+        
+        // Quality Assurance
+        "Show me all quality control reports",
+        "Find all customer satisfaction surveys",
+        "What quality issues are recurring?",
+        "Show me service level agreement compliance",
+        "Find all quality improvement initiatives",
+        "What quality metrics are declining?",
+        "Show me all quality audit results",
+        "Find all corrective action plans",
+        "What quality training is needed?",
+        "Show me quality benchmark comparisons",
+        "Find all quality certification documents",
+        "What quality standards need updating?",
+        
+        // Emergency Management
+        "Show me all emergency response plans",
+        "Find all emergency contact directories",
+        "What emergency procedures need updating?",
+        "Show me emergency preparedness reports",
+        "Find all disaster recovery plans",
+        "What emergency equipment needs inspection?",
+        "Show me emergency communication logs",
+        "Find all emergency training records",
+        "What emergency scenarios need planning?",
+        "Show me emergency response metrics",
+        "Find all emergency vendor agreements",
+        "What emergency protocols need revision?",
+        
+        // Technology & Innovation
+        "Show me all technology upgrade plans",
+        "Find all digital transformation initiatives",
+        "What technology investments are planned?",
+        "Show me system integration reports",
+        "Find all software licensing agreements",
+        "What technology training is required?",
+        "Show me cybersecurity assessment reports",
+        "Find all data migration plans",
+        "What technology partnerships exist?",
+        "Show me innovation pilot programs",
+        "Find all technology performance metrics",
+        "What emerging technologies should we consider?"
+      ]
+    };
+
+    const currentSuggestions = roleSuggestions[role as keyof typeof roleSuggestions] || roleSuggestions.pm;
+    
+    if (!query.trim()) {
+      return currentSuggestions.slice(0, 5);
+    }
+    
+    return currentSuggestions.filter(suggestion => 
+      suggestion.toLowerCase().includes(query.toLowerCase())
+    ).slice(0, 5);
+  };
+
+  const handleAiSearch = async (query: string) => {
+    if (!query.trim()) return;
+    
+    setAiSearchLoading(true);
+    setShowAiSuggestions(false);
+    
+    // Simulate AI search processing
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Mock AI search results based on query
+    const mockResults = generateMockAiResults(query);
+    setAiSearchResults(mockResults);
+    setAiSearchLoading(false);
+  };
+
+  const generateMockAiResults = (query: string) => {
+    const queryLower = query.toLowerCase();
+    
+    // Mock AI reasoning and document matching
+    if (queryLower.includes('hvac') || queryLower.includes('heating') || queryLower.includes('cooling')) {
+      return {
+        summary: "Found 8 HVAC-related documents totaling $12,450 in expenses across 3 properties. The most recent service was a $3,200 repair at Stanford GSB on December 15th.",
+        documents: collateralDocuments.filter(doc => 
+          doc.filename.toLowerCase().includes('hvac') || 
+          doc.tags.some(tag => tag.toLowerCase().includes('hvac'))
+        ).slice(0, 4),
+        insights: [
+          "Stanford GSB has the highest HVAC maintenance costs ($8,200 YTD)",
+          "Most common issue: Filter replacements and duct cleaning",
+          "Average cost per HVAC service: $1,556"
+        ]
+      };
+    }
+    
+    if (queryLower.includes('mold') || queryLower.includes('inspection')) {
+      return {
+        summary: "Found 3 inspection reports mentioning mold concerns. Two properties require immediate attention based on recent findings.",
+        documents: collateralDocuments.filter(doc => 
+          doc.documentType === 'compliance_doc' || 
+          doc.tags.some(tag => tag.toLowerCase().includes('mold'))
+        ).slice(0, 3),
+        insights: [
+          "Sunnyvale 432 - Mold detected in basement (requires remediation)",
+          "Stanford GSB - Minor mold concerns in bathroom (resolved)",
+          "Menlo Park - Preventive inspection scheduled for next month"
+        ]
+      };
+    }
+    
+    if (queryLower.includes('overcharged') || queryLower.includes('expensive') || queryLower.includes('cost')) {
+      return {
+        summary: "Identified 5 potentially overcharged transactions totaling $2,340. Analysis shows 3 vendors with pricing above market average.",
+        documents: collateralDocuments.filter(doc => 
+          doc.amount && doc.amount > 1000
+        ).slice(0, 5),
+        insights: [
+          "Home Depot charges 15% above average for similar services",
+          "Plumbing services at Stanford GSB were 23% higher than typical",
+          "Consider negotiating bulk rates with frequent vendors"
+        ]
+      };
+    }
+    
+    // Default search results
+    return {
+      summary: `Found ${Math.floor(Math.random() * 12) + 3} documents related to "${query}". Results include receipts, contracts, and inspection reports.`,
+      documents: collateralDocuments.slice(0, Math.floor(Math.random() * 6) + 2),
+      insights: [
+        "Most documents are from the last 6 months",
+        "Average document value: $1,234",
+        "All required compliance documents are current"
+      ]
+    };
+  };
+
+  const handleAskAi = async (message: string) => {
+    if (!message.trim()) return;
+    
+    const newUserMessage = { role: 'user' as const, content: message };
+    setAiChatMessages(prev => [...prev, newUserMessage]);
+    setAiChatInput('');
+    
+    // Simulate AI processing
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const aiResponse = generateAiChatResponse(message);
+    setAiChatMessages(prev => [...prev, aiResponse]);
+  };
+
+  const generateAiChatResponse = (message: string) => {
+    const messageLower = message.toLowerCase();
+    
+    if (messageLower.includes('spend') || messageLower.includes('cost') || messageLower.includes('money')) {
+      return {
+        role: 'assistant' as const,
+        content: "Based on your collateral documents, here's a breakdown of spending:\n\n• Total documented expenses: $45,230\n• Highest category: HVAC maintenance ($12,450)\n• Most active property: Stanford GSB\n• Average monthly spend: $7,538\n\nWould you like me to break this down by property or time period?",
+        documents: collateralDocuments.filter(doc => doc.amount && doc.amount > 500).slice(0, 3)
+      };
+    }
+    
+    if (messageLower.includes('mold') || messageLower.includes('inspection')) {
+      return {
+        role: 'assistant' as const,
+        content: "I found several inspection reports in your documents:\n\n• 2 properties have mold-related findings\n• 1 requires immediate remediation\n• 3 preventive inspections scheduled\n\nThe most critical issue is at Sunnyvale 432 where basement mold was detected. I recommend prioritizing this repair.",
+        documents: collateralDocuments.filter(doc => doc.documentType === 'compliance_doc').slice(0, 2)
+      };
+    }
+    
+    return {
+      role: 'assistant' as const,
+      content: `I understand you're asking about "${message}". Based on your document collection, I can help you find relevant information. Let me search through your receipts, contracts, and reports to provide specific insights.\n\nWhat specific aspect would you like me to focus on?`,
+      documents: collateralDocuments.slice(0, 2)
+    };
+  };
+
+  // Keyboard shortcuts for AI search
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // CMD+K or Ctrl+K to focus AI search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        if (activeTab === 'collateral') {
+          const searchInput = document.querySelector('[placeholder*="Ask anything"]') as HTMLInputElement;
+          if (searchInput) {
+            searchInput.focus();
+          }
+        } else {
+          setActiveTab('collateral');
+          setTimeout(() => {
+            const searchInput = document.querySelector('[placeholder*="Ask anything"]') as HTMLInputElement;
+            if (searchInput) {
+              searchInput.focus();
+            }
+          }, 100);
+        }
+      }
+      // CMD+Shift+K or Ctrl+Shift+K to open Ask AI modal
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'K') {
+        e.preventDefault();
+        setAskAiModalOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab]);
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
@@ -4688,9 +5295,10 @@ export default function PMFinancialDashboard() {
                     <Button 
                       variant="outline" 
                       className="bg-purple-600 border-purple-600 text-white hover:bg-purple-700 hover:border-purple-700 flex items-center gap-2"
-                      onClick={() => setCollateralAIAssistOpen(true)}
+                      onClick={() => setAskAiModalOpen(true)}
                     >
-                      <Bot className="h-4 w-4" /> AI Assistant
+                      <Bot className="h-4 w-4" /> Ask AI
+                      <span className="text-xs text-purple-200 ml-2">⌘⇧K</span>
                     </Button>
                     {collateralSelectedDocs.length > 0 && (
                       <Button 
@@ -4703,6 +5311,134 @@ export default function PMFinancialDashboard() {
                     )}
                   </div>
                 </div>
+
+                {/* AI Search Bar */}
+                <div className="relative mb-6">
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Bot className="absolute left-11 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-400" />
+                    <Input 
+                      placeholder="Ask anything — e.g. 'How much did we spend on Unit 22's plumbing?' or 'Find receipts where we were overcharged' (⌘K)"
+                      className="bg-gray-800 border-gray-600 text-white pl-20 pr-4 py-4 text-lg rounded-xl focus:border-purple-500 focus:ring-purple-500"
+                      value={aiSearchQuery}
+                      onChange={(e) => {
+                        setAiSearchQuery(e.target.value);
+                        const suggestions = getAiSearchSuggestions(e.target.value);
+                        setAiSearchSuggestions(suggestions);
+                        setShowAiSuggestions(e.target.value.length > 0);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleAiSearch(aiSearchQuery);
+                        } else if (e.key === 'Escape') {
+                          setShowAiSuggestions(false);
+                        }
+                      }}
+                      onFocus={() => {
+                        if (aiSearchQuery.length > 0) {
+                          setShowAiSuggestions(true);
+                        }
+                      }}
+                    />
+                    {aiSearchLoading && (
+                      <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-400"></div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AI Search Suggestions */}
+                  {showAiSuggestions && aiSearchSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                      {aiSearchSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          className="px-4 py-3 hover:bg-gray-700 cursor-pointer text-gray-300 border-b border-gray-700 last:border-b-0"
+                          onClick={() => {
+                            setAiSearchQuery(suggestion);
+                            setShowAiSuggestions(false);
+                            handleAiSearch(suggestion);
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Bot className="h-4 w-4 text-purple-400" />
+                            <span className="text-sm">{suggestion}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* AI Search Results */}
+                {aiSearchResults && (
+                  <div className="bg-gray-800 border border-gray-600 rounded-lg p-6 space-y-4 mb-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Bot className="h-5 w-5 text-purple-400" />
+                      <h3 className="text-lg font-semibold text-white">AI Analysis</h3>
+                    </div>
+                    
+                    {/* AI Summary */}
+                    <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4">
+                      <p className="text-purple-100">{aiSearchResults.summary}</p>
+                    </div>
+
+                    {/* AI Insights */}
+                    {aiSearchResults.insights && aiSearchResults.insights.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-semibold text-gray-300">Key Insights:</h4>
+                        <ul className="space-y-1">
+                          {aiSearchResults.insights.map((insight: string, index: number) => (
+                            <li key={index} className="flex items-start gap-2 text-sm text-gray-300">
+                              <span className="text-blue-400 mt-1">•</span>
+                              {insight}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Related Documents */}
+                    {aiSearchResults.documents && aiSearchResults.documents.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-gray-300">Related Documents:</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {aiSearchResults.documents.map((doc: any) => {
+                            const IconComponent = getDocumentTypeIcon(doc.documentType);
+                            return (
+                              <div key={doc.id} className="bg-gray-700 border border-gray-600 rounded-lg p-3 hover:bg-gray-600 transition-colors">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <IconComponent className="h-4 w-4 text-blue-400" />
+                                  <span className="text-sm font-medium text-white truncate">{doc.filename}</span>
+                                </div>
+                                <div className="text-xs text-gray-400 space-y-1">
+                                  <div>Property: {doc.propertyName}</div>
+                                  <div>Uploaded: {doc.uploadDate}</div>
+                                  {doc.amount && <div className="text-green-400">Amount: ${doc.amount.toLocaleString()}</div>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Clear Results */}
+                    <div className="flex justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                        onClick={() => {
+                          setAiSearchResults(null);
+                          setAiSearchQuery('');
+                        }}
+                      >
+                        Clear Results
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Filters and Search */}
                 <div className="mb-6 space-y-4">
@@ -7731,6 +8467,171 @@ export default function PMFinancialDashboard() {
                     onClick={() => setCollateralUploadDialogOpen(false)}
                   >
                     Cancel
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Ask AI Modal Dialog */}
+            <Dialog open={askAiModalOpen} onOpenChange={setAskAiModalOpen}>
+              <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-4xl max-h-[90vh] overflow-y-auto m-4">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Bot className="h-5 w-5 text-purple-400" />
+                    Ask AI - Collateral Document Assistant
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-400">
+                    Ask questions about your documents, expenses, and property management data. AI will analyze your collateral hub and provide insights.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4">
+                  {/* Chat Messages */}
+                  <div className="bg-gray-800 rounded-lg p-4 min-h-[400px] max-h-[500px] overflow-y-auto">
+                    {aiChatMessages.length === 0 ? (
+                      <div className="text-center text-gray-400 py-8">
+                        <Bot className="h-12 w-12 mx-auto mb-4 text-purple-400" />
+                        <h3 className="text-lg font-semibold mb-2">Ask me anything about your documents</h3>
+                        <p className="text-sm mb-4">I can help you find information, analyze spending, and provide insights from your collateral hub.</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-left">
+                          <div className="bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors"
+                               onClick={() => handleAskAi("How much did we spend on HVAC repairs this year?")}>
+                            <div className="text-sm font-medium text-white">💰 Spending Analysis</div>
+                            <div className="text-xs text-gray-400">How much did we spend on HVAC repairs this year?</div>
+                          </div>
+                          <div className="bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors"
+                               onClick={() => handleAskAi("Show me inspection reports that mention mold")}>
+                            <div className="text-sm font-medium text-white">🔍 Document Search</div>
+                            <div className="text-xs text-gray-400">Show me inspection reports that mention mold</div>
+                          </div>
+                          <div className="bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors"
+                               onClick={() => handleAskAi("What properties have the highest maintenance costs?")}>
+                            <div className="text-sm font-medium text-white">📊 Property Insights</div>
+                            <div className="text-xs text-gray-400">What properties have the highest maintenance costs?</div>
+                          </div>
+                          <div className="bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors"
+                               onClick={() => handleAskAi("Find receipts where we were overcharged")}>
+                            <div className="text-sm font-medium text-white">⚠️ Cost Analysis</div>
+                            <div className="text-xs text-gray-400">Find receipts where we were overcharged</div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {aiChatMessages.map((message, index) => (
+                          <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[80%] rounded-lg p-3 ${
+                              message.role === 'user' 
+                                ? 'bg-blue-600 text-white' 
+                                : 'bg-gray-700 text-gray-100'
+                            }`}>
+                              <div className="flex items-start gap-2">
+                                {message.role === 'assistant' && <Bot className="h-4 w-4 text-purple-400 mt-1 flex-shrink-0" />}
+                                <div className="flex-1">
+                                  <div className="whitespace-pre-wrap">{message.content}</div>
+                                  
+                                  {/* Related Documents */}
+                                  {message.documents && message.documents.length > 0 && (
+                                    <div className="mt-3 space-y-2">
+                                      <div className="text-xs font-semibold text-gray-300">Related Documents:</div>
+                                      <div className="grid grid-cols-1 gap-2">
+                                        {message.documents.map((doc: any) => {
+                                          const IconComponent = getDocumentTypeIcon(doc.documentType);
+                                          return (
+                                            <div key={doc.id} className="bg-gray-600 rounded-lg p-2 hover:bg-gray-500 transition-colors">
+                                              <div className="flex items-center gap-2">
+                                                <IconComponent className="h-3 w-3 text-blue-400" />
+                                                <span className="text-xs font-medium text-white truncate">{doc.filename}</span>
+                                              </div>
+                                              <div className="text-xs text-gray-300 mt-1">
+                                                {doc.propertyName} • {doc.uploadDate}
+                                                {doc.amount && <span className="text-green-400 ml-2">${doc.amount.toLocaleString()}</span>}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Chat Input */}
+                  <div className="flex gap-2">
+                    <Input
+                      className="bg-gray-800 border-gray-600 text-white flex-1"
+                      placeholder="Ask about your documents, expenses, or properties..."
+                      value={aiChatInput}
+                      onChange={(e) => setAiChatInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleAskAi(aiChatInput);
+                        }
+                      }}
+                    />
+                    <Button
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                      onClick={() => handleAskAi(aiChatInput)}
+                      disabled={!aiChatInput.trim()}
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                      onClick={() => handleAskAi("Show me a summary of all expenses this month")}
+                    >
+                      Monthly Summary
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                      onClick={() => handleAskAi("What contracts are expiring soon?")}
+                    >
+                      Expiring Contracts
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                      onClick={() => handleAskAi("Find all warranty documents")}
+                    >
+                      Warranty Docs
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                      onClick={() => {
+                        setAiChatMessages([]);
+                        setAiChatInput('');
+                      }}
+                    >
+                      Clear Chat
+                    </Button>
+                  </div>
+                </div>
+
+                <DialogFooter className="mt-6">
+                  <Button
+                    variant="outline"
+                    className="border-gray-600 text-gray-300"
+                    onClick={() => setAskAiModalOpen(false)}
+                  >
+                    Close
                   </Button>
                 </DialogFooter>
               </DialogContent>
