@@ -154,7 +154,7 @@ export default function WorkOrderDetailPage() {
   // Add state for messaging functionality
   const [messages, setMessages] = useState<{
     id: string;
-    sender: 'PM' | 'CO' | 'Owner';
+    sender: 'PM' | 'CO' | 'Owner' | 'Technician';
     senderName: string;
     content: string;
     timestamp: string;
@@ -198,6 +198,14 @@ export default function WorkOrderDetailPage() {
       senderName: 'Property Owner',
       content: 'Perfect! Please keep me updated on the progress. Let me know if any unexpected issues arise.',
       timestamp: '2025-01-16T11:30:00Z',
+      type: 'message'
+    },
+    {
+      id: '6',
+      sender: 'Technician',
+      senderName: 'John Smith (Technician)',
+      content: 'I\'ve arrived on site and started the HVAC repair work. The issue is more complex than expected - the main compressor unit needs replacement. I\'ve taken photos and will need to order the part. Estimated completion time is now 2 additional days.',
+      timestamp: '2025-01-17T08:45:00Z',
       type: 'message'
     }
   ]);
@@ -852,7 +860,7 @@ export default function WorkOrderDetailPage() {
                       Messaging
                     </CardTitle>
                     <p className="text-sm text-gray-400">
-                      Communicate with property owners and central office about this work order
+                      Communicate with property owners, central office, and technicians about this work order
                     </p>
                   </CardHeader>
                   <CardContent>
@@ -866,6 +874,8 @@ export default function WorkOrderDetailPage() {
                               ? 'justify-end'
                               : message.sender === 'CO' && currentRole === 'centralOffice'
                               ? 'justify-end'
+                              : message.sender === 'Technician' && currentRole === 'technician'
+                              ? 'justify-end'
                               : 'justify-start'
                           }`}
                         >
@@ -877,10 +887,14 @@ export default function WorkOrderDetailPage() {
                                  ? 'bg-blue-600 text-white'
                                  : message.sender === 'CO' && currentRole === 'centralOffice'
                                  ? 'bg-blue-600 text-white'
+                                 : message.sender === 'Technician' && currentRole === 'technician'
+                                 ? 'bg-orange-600 text-white'
                                  : message.sender === 'Owner'
                                  ? 'bg-green-600/20 border border-green-500/30 text-green-100'
                                  : message.sender === 'CO'
                                  ? 'bg-purple-600 text-white'
+                                 : message.sender === 'Technician'
+                                 ? 'bg-orange-600 text-white'
                                  : 'bg-gray-700 text-gray-200'
                              }`}
                           >
@@ -927,8 +941,8 @@ export default function WorkOrderDetailPage() {
                             if (newMessage.trim()) {
                               const message = {
                                 id: Date.now().toString(),
-                                sender: (currentRole === 'pm' ? 'PM' : 'CO') as 'PM' | 'CO',
-                                senderName: currentRole === 'pm' ? 'Property Manager' : 'Central Office',
+                                sender: (currentRole === 'pm' ? 'PM' : currentRole === 'technician' ? 'Technician' : 'CO') as 'PM' | 'CO' | 'Technician',
+                                senderName: currentRole === 'pm' ? 'Property Manager' : currentRole === 'technician' ? 'Technician' : 'Central Office',
                                 content: newMessage,
                                 timestamp: new Date().toISOString(),
                                 type: 'message' as const,
@@ -937,7 +951,7 @@ export default function WorkOrderDetailPage() {
                               setNewMessage('');
                             }
                           }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white self-end"
+                          className={`${currentRole === 'technician' ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'} text-white self-end`}
                           disabled={!newMessage.trim()}
                         >
                           <Send className="h-4 w-4 mr-2" />
