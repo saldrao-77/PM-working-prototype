@@ -350,7 +350,11 @@ export default function WorkOrderDetailPage() {
             variant="ghost"
             onClick={() => {
               const role = localStorage.getItem('currentRole') || 'pm';
-              router.push(`/?tab=workorders&role=${role}`);
+              if (role === 'owner') {
+                router.push('/owner');
+              } else {
+                router.push(`/?tab=workorders&role=${role}`);
+              }
             }}
             className="text-gray-300 hover:text-white hover:bg-blue-600/20 border border-transparent hover:border-blue-500/30"
           >
@@ -487,7 +491,11 @@ export default function WorkOrderDetailPage() {
                 onClick={() => {
                   // Ensure we navigate to the correct dashboard based on current role
                   const role = currentRole || localStorage.getItem('currentRole') || 'pm';
-                  router.push(`/?tab=workorders&role=${role}`);
+                  if (role === 'owner') {
+                    router.push('/owner');
+                  } else {
+                    router.push(`/?tab=workorders&role=${role}`);
+                  }
                 }}
                 className="text-gray-300 hover:text-white hover:bg-blue-600/20 border border-transparent hover:border-blue-500/30"
               >
@@ -615,8 +623,8 @@ export default function WorkOrderDetailPage() {
                   { id: 'messaging', label: 'Messaging', icon: MessageSquare },
                   { id: 'details', label: 'Activities', icon: FileText },
                   { id: 'expenses', label: 'Expenses', icon: DollarSign },
-                  // Only show RFP/Bids tab for PM role
-                  ...(currentRole === 'pm' ? [{ id: 'rfp', label: 'RFP/Bids', icon: Receipt }] : []),
+                  // Only show RFP/Bids tab for PM and Owner roles
+                  ...(currentRole === 'pm' || currentRole === 'owner' ? [{ id: 'rfp', label: 'RFP/Bids', icon: Receipt }] : []),
                   // Only show RFP/Bids Control tab for Central Office role
                   ...(currentRole === 'centralOffice' ? [{ id: 'rfp-control', label: 'RFP/Bids Control', icon: Receipt }] : []),
                   { id: 'notes', label: 'Notes', icon: StickyNote },
@@ -867,7 +875,7 @@ export default function WorkOrderDetailPage() {
                     {/* Messages List */}
                     <div className="space-y-4 max-h-96 overflow-y-auto mb-4">
                       {messages.map((message) => (
-                        <div
+                                                <div
                           key={message.id}
                           className={`flex gap-3 ${
                             message.sender === 'PM' && currentRole === 'pm'
@@ -876,27 +884,31 @@ export default function WorkOrderDetailPage() {
                               ? 'justify-end'
                               : message.sender === 'Technician' && currentRole === 'technician'
                               ? 'justify-end'
+                              : message.sender === 'Owner' && currentRole === 'owner'
+                              ? 'justify-end'
                               : 'justify-start'
                           }`}
                         >
-                                                     <div
-                             className={`max-w-[70%] rounded-lg px-4 py-3 ${
-                               message.type === 'status_update'
-                                 ? 'bg-blue-600/20 border border-blue-500/30 text-blue-100'
-                                 : message.sender === 'PM' && currentRole === 'pm'
-                                 ? 'bg-blue-600 text-white'
-                                 : message.sender === 'CO' && currentRole === 'centralOffice'
-                                 ? 'bg-blue-600 text-white'
-                                 : message.sender === 'Technician' && currentRole === 'technician'
-                                 ? 'bg-orange-600 text-white'
-                                 : message.sender === 'Owner'
-                                 ? 'bg-green-600/20 border border-green-500/30 text-green-100'
-                                 : message.sender === 'CO'
-                                 ? 'bg-purple-600 text-white'
-                                 : message.sender === 'Technician'
-                                 ? 'bg-orange-600 text-white'
-                                 : 'bg-gray-700 text-gray-200'
-                             }`}
+                          <div
+                            className={`max-w-[70%] rounded-lg px-4 py-3 ${
+                              message.type === 'status_update'
+                                ? 'bg-blue-600/20 border border-blue-500/30 text-blue-100'
+                                : message.sender === 'PM' && currentRole === 'pm'
+                                ? 'bg-blue-600 text-white'
+                                : message.sender === 'CO' && currentRole === 'centralOffice'
+                                ? 'bg-blue-600 text-white'
+                                : message.sender === 'Technician' && currentRole === 'technician'
+                                ? 'bg-orange-600 text-white'
+                                : message.sender === 'Owner' && currentRole === 'owner'
+                                ? 'bg-green-600 text-white'
+                                : message.sender === 'Owner'
+                                ? 'bg-green-600/20 border border-green-500/30 text-green-100'
+                                : message.sender === 'CO'
+                                ? 'bg-purple-600 text-white'
+                                : message.sender === 'Technician'
+                                ? 'bg-orange-600 text-white'
+                                : 'bg-gray-700 text-gray-200'
+                            }`}
                           >
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-xs font-medium">
@@ -941,8 +953,8 @@ export default function WorkOrderDetailPage() {
                             if (newMessage.trim()) {
                               const message = {
                                 id: Date.now().toString(),
-                                sender: (currentRole === 'pm' ? 'PM' : currentRole === 'technician' ? 'Technician' : 'CO') as 'PM' | 'CO' | 'Technician',
-                                senderName: currentRole === 'pm' ? 'Property Manager' : currentRole === 'technician' ? 'Technician' : 'Central Office',
+                                sender: (currentRole === 'pm' ? 'PM' : currentRole === 'technician' ? 'Technician' : currentRole === 'owner' ? 'Owner' : 'CO') as 'PM' | 'CO' | 'Technician' | 'Owner',
+                                senderName: currentRole === 'pm' ? 'Property Manager' : currentRole === 'technician' ? 'Technician' : currentRole === 'owner' ? 'Property Owner' : 'Central Office',
                                 content: newMessage,
                                 timestamp: new Date().toISOString(),
                                 type: 'message' as const,
@@ -951,7 +963,7 @@ export default function WorkOrderDetailPage() {
                               setNewMessage('');
                             }
                           }}
-                          className={`${currentRole === 'technician' ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'} text-white self-end`}
+                          className={`${currentRole === 'technician' ? 'bg-orange-600 hover:bg-orange-700' : currentRole === 'owner' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white self-end`}
                           disabled={!newMessage.trim()}
                         >
                           <Send className="h-4 w-4 mr-2" />
@@ -1127,37 +1139,39 @@ export default function WorkOrderDetailPage() {
                 </Card>
               )}
 
-              {activeTab === 'rfp' && currentRole === 'pm' && (
+              {activeTab === 'rfp' && (currentRole === 'pm' || currentRole === 'owner') && (
                 <Card className="bg-gray-900 border-gray-700">
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="text-white">RFP/Bids</CardTitle>
-                    <Button 
-                      className="bg-blue-600 hover:bg-blue-700" 
-                      onClick={() => {
-                        setEditingBid(null);
-                        setRfpForm({
-                          vendorName: '',
-                          vendorContact: '',
-                          vendorEmail: '',
-                          vendorPhone: '',
-                          bidAmount: '',
-                          estimatedDuration: '',
-                          scope: '',
-                          materials: '',
-                          labor: '',
-                          pmComments: '',
-                          status: 'submitted',
-                          warranty: '',
-                          startDate: '',
-                          completionDate: '',
-                          bidLink: ''
-                        });
-                        setRfpDialogOpen(true);
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Bid
-                    </Button>
+                    {currentRole === 'pm' && (
+                      <Button 
+                        className="bg-blue-600 hover:bg-blue-700" 
+                        onClick={() => {
+                          setEditingBid(null);
+                          setRfpForm({
+                            vendorName: '',
+                            vendorContact: '',
+                            vendorEmail: '',
+                            vendorPhone: '',
+                            bidAmount: '',
+                            estimatedDuration: '',
+                            scope: '',
+                            materials: '',
+                            labor: '',
+                            pmComments: '',
+                            status: 'submitted',
+                            warranty: '',
+                            startDate: '',
+                            completionDate: '',
+                            bidLink: ''
+                          });
+                          setRfpDialogOpen(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Bid
+                      </Button>
+                    )}
                   </CardHeader>
                   <CardContent>
                     <div className="overflow-x-auto">
@@ -1238,42 +1252,44 @@ export default function WorkOrderDetailPage() {
                                 </td>
                                 <td className="py-3 px-4">
                                   <div className="flex items-center gap-2">
-                                    {/* Select Vendor Button */}
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className={`p-1 h-auto ${
-                                        bid.status === 'selected' 
-                                          ? 'text-green-400 hover:text-green-300' 
-                                          : 'text-purple-400 hover:text-purple-300'
-                                      }`}
-                                      onClick={() => handleSelectVendor(bid.id)}
-                                      title={bid.status === 'selected' ? 'Currently Selected' : 'Select this vendor'}
-                                    >
-                                      <CheckCircle className="h-4 w-4" />
-                                    </Button>
-                                    {/* Edit Button */}
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="text-blue-400 hover:text-blue-300 p-1 h-auto"
-                                      onClick={() => {
-                                        setEditingBid(bid);
-                                        setRfpForm({
-                                          vendorName: bid.vendorName,
-                                          vendorContact: bid.vendorContact,
-                                          vendorEmail: bid.vendorEmail,
-                                          vendorPhone: bid.vendorPhone,
-                                          bidAmount: bid.bidAmount.toString(),
-                                          estimatedDuration: bid.estimatedDuration,
-                                          scope: bid.scope,
-                                          materials: bid.materials,
-                                          labor: bid.labor,
-                                          pmComments: bid.pmComments,
-                                          status: bid.status,
-                                          warranty: bid.warranty,
-                                          startDate: bid.startDate,
-                                          completionDate: bid.completionDate,
+                                    {currentRole === 'pm' && (
+                                      <>
+                                        {/* Select Vendor Button */}
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className={`p-1 h-auto ${
+                                            bid.status === 'selected' 
+                                              ? 'text-green-400 hover:text-green-300' 
+                                              : 'text-purple-400 hover:text-purple-300'
+                                          }`}
+                                          onClick={() => handleSelectVendor(bid.id)}
+                                          title={bid.status === 'selected' ? 'Currently Selected' : 'Select this vendor'}
+                                        >
+                                          <CheckCircle className="h-4 w-4" />
+                                        </Button>
+                                        {/* Edit Button */}
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="text-blue-400 hover:text-blue-300 p-1 h-auto"
+                                          onClick={() => {
+                                            setEditingBid(bid);
+                                            setRfpForm({
+                                              vendorName: bid.vendorName,
+                                              vendorContact: bid.vendorContact,
+                                              vendorEmail: bid.vendorEmail,
+                                              vendorPhone: bid.vendorPhone,
+                                              bidAmount: bid.bidAmount.toString(),
+                                              estimatedDuration: bid.estimatedDuration,
+                                              scope: bid.scope,
+                                              materials: bid.materials,
+                                              labor: bid.labor,
+                                              pmComments: bid.pmComments,
+                                              status: bid.status,
+                                              warranty: bid.warranty,
+                                              startDate: bid.startDate,
+                                              completionDate: bid.completionDate,
                                           bidLink: bid.bidLink
                                         });
                                         setRfpDialogOpen(true);
@@ -1292,8 +1308,15 @@ export default function WorkOrderDetailPage() {
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
-                                  </div>
-                                </td>
+                                  </>
+                                )}
+                                {currentRole === 'owner' && (
+                                  <span className="text-sm text-gray-400">
+                                    {bid.status === 'selected' ? 'Selected' : 'Under Review'}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
                               </tr>
                             ))
                           )}

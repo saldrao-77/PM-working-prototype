@@ -693,6 +693,14 @@ function ExpensesTab() {
   const [expenseDetailDialog, setExpenseDetailDialog] = useState<any>(null)
   const [approveExpenseDialog, setApproveExpenseDialog] = useState<any>(null)
 
+  // All Expenses Table Filters
+  const [allExpensesStatusFilter, setAllExpensesStatusFilter] = useState("all")
+  const [allExpensesTypeFilter, setAllExpensesTypeFilter] = useState("all")
+  const [allExpensesPropertyFilter, setAllExpensesPropertyFilter] = useState("all")
+  const [allExpensesMadeByFilter, setAllExpensesMadeByFilter] = useState("all")
+  const [allExpensesDateFromFilter, setAllExpensesDateFromFilter] = useState("")
+  const [allExpensesDateToFilter, setAllExpensesDateToFilter] = useState("")
+
   // Mock expense data for approval
   const expensesNeedingApproval = [
     {
@@ -703,8 +711,8 @@ function ExpensesTab() {
       type: "Vendor",
       madeBy: "Jessica Chen (Property Manager)",
       property: "Stanford Graduate School of Business",
-      workOrder: "LED lighting upgrade - Building A",
-      workOrderId: "wo-123",
+      workOrder: "HVAC System Maintenance - Annual Service",
+      workOrderId: "job1",
       isWorkOrderRelated: true,
       memo: "Energy efficient retrofit for entire building",
       receipt: "✓",
@@ -718,8 +726,8 @@ function ExpensesTab() {
       type: "Vendor",
       madeBy: "David Chen (Property Manager)",
       property: "Mission Bay Tech Campus",
-      workOrder: "Security system upgrade",
-      workOrderId: "wo-456",
+      workOrder: "Emergency Plumbing Repair - Kitchen Sink",
+      workOrderId: "job2",
       isWorkOrderRelated: true,
       memo: "Upgrade req...",
       receipt: "✓",
@@ -733,8 +741,8 @@ function ExpensesTab() {
       type: "Card",
       madeBy: "Mike Rodriguez (Property Manager)",
       property: "Redwood Shores Office Complex",
-      workOrder: "Weekend emergency lockout service",
-      workOrderId: "wo-789",
+      workOrder: "Kitchen Renovation - Countertop Replacement",
+      workOrderId: "job4",
       isWorkOrderRelated: true,
       memo: "Emergency t...",
       receipt: "✓",
@@ -767,8 +775,8 @@ function ExpensesTab() {
       type: "Card",
       madeBy: "Alice Johnson (Technician)",
       property: "Financial District Tower",
-      workOrder: "Emergency pipe repair",
-      workOrderId: "wo-111",
+      workOrder: "Electrical Panel Upgrade",
+      workOrderId: "job5",
       isWorkOrderRelated: true,
       status: "Processed",
       memo: "Routine task leak fix",
@@ -797,6 +805,9 @@ function ExpensesTab() {
       type: "Vendor",
       madeBy: "Sarah Kim (Property Manager)",
       property: "Apple Park Campus",
+      workOrder: null,
+      workOrderId: null,
+      isWorkOrderRelated: false,
       status: "Processed",
       memo: "Quarterly maintenance",
       receipt: "✓"
@@ -809,11 +820,206 @@ function ExpensesTab() {
       type: "Card",
       madeBy: "Jennifer Lopez (Technician)",
       property: "Redwood City Office",
+      workOrder: null,
+      workOrderId: null,
+      isWorkOrderRelated: false,
       status: "Processed",
       memo: "Regular office supplies",
       receipt: "✓"
     }
   ]
+
+  // All expenses data (combination of all expense types)
+  const allExpensesData = [
+    {
+      id: "exp1",
+      date: "2024-02-23",
+      merchant: "Oracle Facilities",
+      amount: 5500.00,
+      type: "Vendor",
+      madeBy: "Jessica Chen (Property Manager)",
+      property: "Stanford Graduate School of Business",
+      workOrder: "HVAC System Maintenance - Annual Service",
+      workOrderId: "job1",
+      isWorkOrderRelated: true,
+      memo: "Energy efficient retrofit for entire building",
+      receipt: "✓",
+      status: "Flagged"
+    },
+    {
+      id: "exp2",
+      date: "2024-02-14",
+      merchant: "Security Systems Inc",
+      amount: 4800.00,
+      type: "Vendor",
+      madeBy: "David Chen (Property Manager)",
+      property: "Mission Bay Tech Campus",
+      workOrder: "Emergency Plumbing Repair - Kitchen Sink",
+      workOrderId: "job2",
+      isWorkOrderRelated: true,
+      memo: "Upgrade req...",
+      receipt: "✓",
+      status: "Flagged"
+    },
+    {
+      id: "exp4",
+      date: "2024-02-16",
+      merchant: "PlumbPro",
+      amount: 1850.00,
+      type: "Card",
+      madeBy: "Alice Johnson (Technician)",
+      property: "Financial District Tower",
+      workOrder: "Electrical Panel Upgrade",
+      workOrderId: "job5",
+      isWorkOrderRelated: true,
+      status: "Processed",
+      memo: "Routine task leak fix",
+      receipt: "✓"
+    },
+    {
+      id: "exp5",
+      date: "2024-02-16",
+      merchant: "CleanTech Solutions",
+      amount: 320.00,
+      type: "Card",
+      madeBy: "Bob Wilson (Technician)",
+      property: "Palo Alto Research Center",
+      workOrder: null,
+      workOrderId: null,
+      isWorkOrderRelated: false,
+      status: "Processed",
+      memo: "Monthly cleaning service",
+      receipt: "✓"
+    },
+    {
+      id: "exp6",
+      date: "2024-02-16",
+      merchant: "Landscaping Pro",
+      amount: 12000.00,
+      type: "Vendor",
+      madeBy: "Sarah Kim (Property Manager)",
+      property: "Apple Park Campus",
+      workOrder: null,
+      workOrderId: null,
+      isWorkOrderRelated: false,
+      status: "Processed",
+      memo: "Quarterly maintenance",
+      receipt: "✓"
+    },
+    {
+      id: "exp7",
+      date: "2024-02-15",
+      merchant: "Office Depot",
+      amount: 450.00,
+      type: "Card",
+      madeBy: "Jennifer Lopez (Technician)",
+      property: "Redwood City Office",
+      workOrder: null,
+      workOrderId: null,
+      isWorkOrderRelated: false,
+      status: "Processed",
+      memo: "Regular office supplies",
+      receipt: "✓"
+    },
+    {
+      id: "exp8",
+      date: "2024-02-20",
+      merchant: "ServiceMaster",
+      amount: 750.00,
+      type: "Vendor",
+      madeBy: "Jessica Chen (Property Manager)",
+      property: "Stanford Graduate School of Business",
+      workOrder: null,
+      workOrderId: null,
+      isWorkOrderRelated: false,
+      status: "Pending",
+      memo: "Critical system failure during finals week. Temporary solution in place.",
+      receipt: "✓"
+    },
+    {
+      id: "exp9",
+      date: "2024-02-19",
+      merchant: "Elevator Services Inc.",
+      amount: 200.00,
+      type: "Vendor",
+      madeBy: "Michael Rodriguez (Property Manager)",
+      property: "Mission Bay Tech Center",
+      workOrder: null,
+      workOrderId: null,
+      isWorkOrderRelated: false,
+      status: "Not Uploaded",
+      memo: "City inspector flagged elevator safety issues. Accommodation required for compliance.",
+      receipt: "✓"
+    }
+  ]
+
+  // Filter functions
+  const filterExpenses = (expenses: any[]) => {
+    return expenses.filter(expense => {
+      // Status filter
+      if (statusFilter !== "All" && expense.status !== statusFilter) return false
+      
+      // Type filter
+      if (typeFilter !== "All" && expense.type !== typeFilter) return false
+      
+      // Property filter
+      if (propertyFilter !== "All") {
+        if (propertyFilter === "Stanford GSB" && !expense.property.includes("Stanford")) return false
+        if (propertyFilter === "Mission Bay" && !expense.property.includes("Mission Bay")) return false
+      }
+      
+      // Made By filter
+      if (madeByFilter !== "All") {
+        if (madeByFilter === "PM" && !expense.madeBy.includes("Property Manager")) return false
+        if (madeByFilter === "Technician" && !expense.madeBy.includes("Technician")) return false
+      }
+      
+      // Date filters
+      if (dateFromFilter && new Date(expense.date) < new Date(dateFromFilter)) return false
+      if (dateToFilter && new Date(expense.date) > new Date(dateToFilter)) return false
+      
+      return true
+    })
+  }
+
+  const filterAllExpenses = (expenses: any[]) => {
+    return expenses.filter(expense => {
+      // Status filter
+      if (allExpensesStatusFilter !== "all") {
+        if (allExpensesStatusFilter === "pending" && expense.status !== "Pending") return false
+        if (allExpensesStatusFilter === "approved" && expense.status !== "Processed") return false
+      }
+      
+      // Type filter
+      if (allExpensesTypeFilter !== "all") {
+        if (allExpensesTypeFilter === "card" && expense.type !== "Card") return false
+        if (allExpensesTypeFilter === "invoice" && expense.type !== "Invoice") return false
+        if (allExpensesTypeFilter === "vendor" && expense.type !== "Vendor") return false
+      }
+      
+      // Property filter
+      if (allExpensesPropertyFilter !== "all") {
+        if (allExpensesPropertyFilter === "stanford" && !expense.property.includes("Stanford")) return false
+        if (allExpensesPropertyFilter === "mission" && !expense.property.includes("Mission")) return false
+      }
+      
+      // Made By filter
+      if (allExpensesMadeByFilter !== "all") {
+        if (allExpensesMadeByFilter === "pm" && !expense.madeBy.includes("Property Manager")) return false
+        if (allExpensesMadeByFilter === "tech" && !expense.madeBy.includes("Technician")) return false
+      }
+      
+      // Date filters
+      if (allExpensesDateFromFilter && new Date(expense.date) < new Date(allExpensesDateFromFilter)) return false
+      if (allExpensesDateToFilter && new Date(expense.date) > new Date(allExpensesDateToFilter)) return false
+      
+      return true
+    })
+  }
+
+  const filteredExpensesNeedingApproval = filterExpenses(expensesNeedingApproval)
+  const filteredProcessedExpenses = filterExpenses(processedExpenses)
+  const filteredAllExpenses = filterAllExpenses(allExpensesData)
 
   const handleApprove = (expenseId: string) => {
     const expense = [...expensesNeedingApproval, ...processedExpenses].find(e => e.id === expenseId)
@@ -828,11 +1034,11 @@ function ExpensesTab() {
   }
 
   const handleViewDetails = (expenseId: string) => {
-    const expense = [...expensesNeedingApproval, ...processedExpenses].find(e => e.id === expenseId)
+    const expense = [...expensesNeedingApproval, ...processedExpenses, ...allExpensesData].find(e => e.id === expenseId)
     if (expense) {
       if (expense.isWorkOrderRelated && expense.workOrderId) {
-        // Navigate to work order detail page (like PM > Work orders > more details)
-        window.open(`/workorders/${expense.workOrderId}`, '_blank')
+        // Navigate to work order detail page (exact same page as PM > Work orders > view details but for owners)
+        window.location.href = `/workorders/${expense.workOrderId}?role=owner`
       } else {
         // Show popup dialog for non-work order expenses (like PM > Expenses > eye icon)
         setExpenseDetailDialog(expense)
@@ -849,7 +1055,45 @@ function ExpensesTab() {
   }
 
   const handleBulkExport = (type: 'csv' | 'receipts' | 'bookkeeper') => {
-    console.log(`Bulk exporting as: ${type}`)
+    const selectedCount = selectedExpenses.length
+    
+    if (type === 'csv') {
+      // Create CSV data
+      const csvData = filteredAllExpenses.map(expense => ({
+        Date: expense.date,
+        Merchant: expense.merchant,
+        Amount: expense.amount,
+        Type: expense.type,
+        'Made By': expense.madeBy,
+        Property: expense.property,
+        Status: expense.status,
+        'Work Order Related': expense.isWorkOrderRelated ? 'Yes' : 'No',
+        Memo: expense.memo
+      }))
+      
+      // Convert to CSV string
+      const csvString = [
+        Object.keys(csvData[0]).join(','),
+        ...csvData.map(row => Object.values(row).join(','))
+      ].join('\n')
+      
+      // Download
+      const blob = new Blob([csvString], { type: 'text/csv' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `expenses_${new Date().toISOString().split('T')[0]}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+      
+    } else if (type === 'receipts') {
+      // Create zip file with receipts (mock functionality)
+      alert(`Downloading ${selectedCount || filteredAllExpenses.length} receipts as ZIP file...`)
+      
+    } else if (type === 'bookkeeper') {
+      // Send to bookkeeper (mock functionality)
+      alert(`Sending ${selectedCount || filteredAllExpenses.length} expenses to bookkeeper...`)
+    }
   }
 
   return (
@@ -864,11 +1108,11 @@ function ExpensesTab() {
               <SelectTrigger className="w-20 bg-gray-800 border-gray-600 text-white">
                 <SelectValue />
               </SelectTrigger>
-                              <SelectContent className="bg-gray-800 border-gray-600">
-                  <SelectItem value="MTD" className="text-white">MTD</SelectItem>
-                  <SelectItem value="YTD" className="text-white">YTD</SelectItem>
-                  <SelectItem value="QTD" className="text-white">QTD</SelectItem>
-                </SelectContent>
+              <SelectContent className="bg-gray-800 border-gray-600">
+                <SelectItem value="MTD" className="text-white">MTD</SelectItem>
+                <SelectItem value="YTD" className="text-white">YTD</SelectItem>
+                <SelectItem value="QTD" className="text-white">QTD</SelectItem>
+              </SelectContent>
             </Select>
           </div>
         </div>
@@ -925,11 +1169,11 @@ function ExpensesTab() {
           <div className="flex flex-wrap gap-2">
             <Badge className="bg-blue-600 text-white">
               <Flag className="h-3 w-3 mr-1" />
-                             Auto-flag &gt; $2,000
+              Auto-flag &gt; $2,000
             </Badge>
             <Badge className="bg-green-600 text-white">
               <AlertTriangle className="h-3 w-3 mr-1" />
-                             Auto-flag &gt; 10% of budget
+              Auto-flag &gt; 10% of budget
             </Badge>
             <Badge className="bg-purple-600 text-white">
               <Receipt className="h-3 w-3 mr-1" />
@@ -937,11 +1181,11 @@ function ExpensesTab() {
             </Badge>
             <Badge className="bg-yellow-600 text-white">
               <CheckCircle className="h-3 w-3 mr-1" />
-                             Pre-approval &gt; $500
+              Pre-approval &gt; $500
             </Badge>
             <Badge className="bg-red-600 text-white">
               <Zap className="h-3 w-3 mr-1" />
-                             Maintenance &gt; $5K
+              Maintenance &gt; $5K
             </Badge>
           </div>
         </CardContent>
@@ -954,7 +1198,7 @@ function ExpensesTab() {
             <div className="flex items-center gap-2">
               <FileSpreadsheet className="h-5 w-5 text-blue-400" />
               <span className="text-white">Export & Bookkeeping</span>
-              <Badge className="bg-gray-700 text-gray-300">0 selected</Badge>
+              <Badge className="bg-gray-700 text-gray-300">{selectedExpenses.length} selected</Badge>
             </div>
             <div className="flex gap-2">
               <Button
@@ -964,7 +1208,7 @@ function ExpensesTab() {
                 className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
               >
                 <Download className="h-4 w-4 mr-2" />
-                Export CSV (0)
+                Export CSV ({selectedExpenses.length || filteredAllExpenses.length})
               </Button>
               <Button
                 size="sm"
@@ -973,7 +1217,7 @@ function ExpensesTab() {
                 className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
               >
                 <Receipt className="h-4 w-4 mr-2" />
-                Download Receipts (0)
+                Download Receipts ({selectedExpenses.length || filteredAllExpenses.length})
               </Button>
               <Button
                 size="sm"
@@ -982,7 +1226,7 @@ function ExpensesTab() {
                 className="bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
               >
                 <Send className="h-4 w-4 mr-2" />
-                Send to Bookkeeper (0)
+                Send to Bookkeeper ({selectedExpenses.length || filteredAllExpenses.length})
               </Button>
             </div>
           </div>
@@ -1054,7 +1298,7 @@ function ExpensesTab() {
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-red-400" />
-            Expenses Needing Approval (6)
+            Expenses Needing Approval ({filteredExpensesNeedingApproval.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -1076,7 +1320,7 @@ function ExpensesTab() {
                 </tr>
               </thead>
               <tbody>
-                {expensesNeedingApproval.map((expense) => (
+                {filteredExpensesNeedingApproval.map((expense) => (
                   <tr key={expense.id} className="border-b border-gray-700 hover:bg-gray-700">
                     <td className="py-3 px-4 text-white">{expense.date}</td>
                     <td className="py-3 px-4 text-white">{expense.merchant}</td>
@@ -1090,12 +1334,11 @@ function ExpensesTab() {
                     <td className="py-3 px-4 text-white">{expense.property}</td>
                     <td className="py-3 px-4 text-white">{expense.workOrder || 'N/A'}</td>
                     <td className="py-3 px-4 text-center">
-                      <input
-                        type="checkbox"
-                        checked={expense.isWorkOrderRelated}
-                        disabled
-                        className="rounded bg-gray-700 border-gray-600"
-                      />
+                      {expense.isWorkOrderRelated ? (
+                        <CheckCircle className="h-4 w-4 text-green-400 mx-auto" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-red-400 mx-auto" />
+                      )}
                     </td>
                     <td className="py-3 px-4 text-white">{expense.memo}</td>
                     <td className="py-3 px-4 text-center">
@@ -1126,7 +1369,7 @@ function ExpensesTab() {
                         >
                           Deny
                         </Button>
-                                              </div>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1141,7 +1384,7 @@ function ExpensesTab() {
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-green-400" />
-            Processed Expenses (4)
+            Processed Expenses ({filteredProcessedExpenses.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -1163,7 +1406,7 @@ function ExpensesTab() {
                 </tr>
               </thead>
               <tbody>
-                {processedExpenses.map((expense) => (
+                {filteredProcessedExpenses.map((expense) => (
                   <tr key={expense.id} className="border-b border-gray-700 hover:bg-gray-700">
                     <td className="py-3 px-4 text-white">{expense.date}</td>
                     <td className="py-3 px-4 text-white">{expense.merchant}</td>
@@ -1176,12 +1419,11 @@ function ExpensesTab() {
                     <td className="py-3 px-4 text-white">{expense.madeBy}</td>
                     <td className="py-3 px-4 text-white">{expense.property}</td>
                     <td className="py-3 px-4 text-center">
-                      <input
-                        type="checkbox"
-                        checked={expense.isWorkOrderRelated}
-                        disabled
-                        className="rounded bg-gray-700 border-gray-600"
-                      />
+                      {expense.isWorkOrderRelated ? (
+                        <CheckCircle className="h-4 w-4 text-green-400 mx-auto" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-red-400 mx-auto" />
+                      )}
                     </td>
                     <td className="py-3 px-4">
                       <Badge className="bg-green-600 text-white">
@@ -1217,7 +1459,7 @@ function ExpensesTab() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-6 gap-4 mb-4">
-            <Select>
+            <Select value={allExpensesStatusFilter} onValueChange={setAllExpensesStatusFilter}>
               <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -1227,7 +1469,7 @@ function ExpensesTab() {
                 <SelectItem value="approved" className="text-white">Approved</SelectItem>
               </SelectContent>
             </Select>
-            <Select>
+            <Select value={allExpensesTypeFilter} onValueChange={setAllExpensesTypeFilter}>
               <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
@@ -1238,7 +1480,7 @@ function ExpensesTab() {
                 <SelectItem value="vendor" className="text-white">Vendor</SelectItem>
               </SelectContent>
             </Select>
-            <Select>
+            <Select value={allExpensesPropertyFilter} onValueChange={setAllExpensesPropertyFilter}>
               <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                 <SelectValue placeholder="Property" />
               </SelectTrigger>
@@ -1248,7 +1490,7 @@ function ExpensesTab() {
                 <SelectItem value="mission" className="text-white">Mission Bay</SelectItem>
               </SelectContent>
             </Select>
-            <Select>
+            <Select value={allExpensesMadeByFilter} onValueChange={setAllExpensesMadeByFilter}>
               <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                 <SelectValue placeholder="Made By" />
               </SelectTrigger>
@@ -1260,11 +1502,15 @@ function ExpensesTab() {
             </Select>
             <Input
               type="date"
+              value={allExpensesDateFromFilter}
+              onChange={(e) => setAllExpensesDateFromFilter(e.target.value)}
               className="bg-gray-800 border-gray-600 text-white"
               placeholder="mm/dd/yyyy"
             />
             <Input
               type="date"
+              value={allExpensesDateToFilter}
+              onChange={(e) => setAllExpensesDateToFilter(e.target.value)}
               className="bg-gray-800 border-gray-600 text-white"
               placeholder="mm/dd/yyyy"
             />
@@ -1275,11 +1521,12 @@ function ExpensesTab() {
               <thead className="border-b border-gray-700">
                 <tr>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Date</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-300">Vendor</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Merchant</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Amount</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Type</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Made By</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Property</th>
+                  <th className="text-center py-3 px-4 font-medium text-gray-300">WO Related</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Status</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Memo</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Receipt</th>
@@ -1287,110 +1534,50 @@ function ExpensesTab() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-gray-700">
-                  <td className="py-3 px-4 text-white">2024-02-20</td>
-                  <td className="py-3 px-4 text-white">ServiceMaster</td>
-                  <td className="py-3 px-4 text-white">$750.00</td>
-                  <td className="py-3 px-4">
-                    <Badge className="bg-purple-600">Vendor</Badge>
-                  </td>
-                  <td className="py-3 px-4 text-white">Jessica Chen (Property Manager)</td>
-                  <td className="py-3 px-4 text-white">Stanford Graduate School of Business</td>
-                  <td className="py-3 px-4">
-                    <Badge className="bg-yellow-600">Pending</Badge>
-                  </td>
-                  <td className="py-3 px-4 text-white">Critical system failure during finals week. Temporary solution in place.</td>
-                  <td className="py-3 px-4 text-center">
-                    <CheckCircle className="h-4 w-4 text-green-400 mx-auto" />
-                  </td>
-                  <td className="py-3 px-4">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
-                    >
-                      View Details
-                    </Button>
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-700">
-                  <td className="py-3 px-4 text-white">2024-02-19</td>
-                  <td className="py-3 px-4 text-white">Elevator Services Inc.</td>
-                  <td className="py-3 px-4 text-white">$200.00</td>
-                  <td className="py-3 px-4">
-                    <Badge className="bg-purple-600">Vendor</Badge>
-                  </td>
-                  <td className="py-3 px-4 text-white">Michael Rodriguez (Property Manager)</td>
-                  <td className="py-3 px-4 text-white">Mission Bay Tech Center</td>
-                  <td className="py-3 px-4">
-                    <Badge className="bg-red-600">Not Uploaded</Badge>
-                  </td>
-                  <td className="py-3 px-4 text-white">City inspector flagged elevator safety issues. Accommodation required for compliance.</td>
-                  <td className="py-3 px-4 text-center">
-                    <CheckCircle className="h-4 w-4 text-green-400 mx-auto" />
-                  </td>
-                  <td className="py-3 px-4">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
-                    >
-                      View Details
-                    </Button>
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-700">
-                  <td className="py-3 px-4 text-white">2024-02-18</td>
-                  <td className="py-3 px-4 text-white">PlumbPro</td>
-                  <td className="py-3 px-4 text-white">$1950.00</td>
-                  <td className="py-3 px-4">
-                    <Badge className="bg-blue-600">Card</Badge>
-                  </td>
-                  <td className="py-3 px-4 text-white">Alice Johnson (Technician)</td>
-                  <td className="py-3 px-4 text-white">Financial District Tower</td>
-                  <td className="py-3 px-4">
-                    <Badge className="bg-green-600">Processed</Badge>
-                  </td>
-                  <td className="py-3 px-4 text-white">Routine task, no structural damage.</td>
-                  <td className="py-3 px-4 text-center">
-                    <CheckCircle className="h-4 w-4 text-green-400 mx-auto" />
-                  </td>
-                  <td className="py-3 px-4">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
-                    >
-                      View Details
-                    </Button>
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-700">
-                  <td className="py-3 px-4 text-white">2024-02-17</td>
-                  <td className="py-3 px-4 text-white">Oracle Facilities</td>
-                  <td className="py-3 px-4 text-white">$900.00</td>
-                  <td className="py-3 px-4">
-                    <Badge className="bg-purple-600">Vendor</Badge>
-                  </td>
-                  <td className="py-3 px-4 text-white">Jessica Chen (Property Manager)</td>
-                  <td className="py-3 px-4 text-white">Redwood Shores Office Complex</td>
-                  <td className="py-3 px-4">
-                    <Badge className="bg-green-600">Processed</Badge>
-                  </td>
-                  <td className="py-3 px-4 text-white">Energy efficiency upgrade with strong ROI projections.</td>
-                  <td className="py-3 px-4 text-center">
-                    <CheckCircle className="h-4 w-4 text-green-400 mx-auto" />
-                  </td>
-                  <td className="py-3 px-4">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
-                    >
-                      View Details
-                    </Button>
-                  </td>
-                </tr>
+                {filteredAllExpenses.map((expense) => (
+                  <tr key={expense.id} className="border-b border-gray-700 hover:bg-gray-700">
+                    <td className="py-3 px-4 text-white">{expense.date}</td>
+                    <td className="py-3 px-4 text-white">{expense.merchant}</td>
+                    <td className="py-3 px-4 text-white">${expense.amount.toFixed(2)}</td>
+                    <td className="py-3 px-4">
+                      <Badge className={expense.type === 'Vendor' ? 'bg-purple-600' : 'bg-blue-600'}>
+                        {expense.type}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-4 text-white">{expense.madeBy}</td>
+                    <td className="py-3 px-4 text-white">{expense.property}</td>
+                    <td className="py-3 px-4 text-center">
+                      {expense.isWorkOrderRelated ? (
+                        <CheckCircle className="h-4 w-4 text-green-400 mx-auto" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-red-400 mx-auto" />
+                      )}
+                    </td>
+                    <td className="py-3 px-4">
+                      <Badge className={
+                        expense.status === 'Processed' ? 'bg-green-600' : 
+                        expense.status === 'Pending' ? 'bg-yellow-600' : 
+                        expense.status === 'Flagged' ? 'bg-red-600' : 'bg-gray-600'
+                      }>
+                        {expense.status}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-4 text-white">{expense.memo}</td>
+                    <td className="py-3 px-4 text-center">
+                      <CheckCircle className="h-4 w-4 text-green-400 mx-auto" />
+                    </td>
+                    <td className="py-3 px-4">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleViewDetails(expense.id)}
+                        className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -1559,15 +1746,22 @@ function ExpensesTab() {
                 <div className="flex items-center gap-2">
                   <Label className="text-gray-300">Receipt Available:</Label>
                   <CheckCircle className="h-5 w-5 text-green-400" />
+                  <a
+                    href={`/receipts/${expenseDetailDialog.id}_receipt.pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 underline ml-2"
+                  >
+                    View Receipt
+                  </a>
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-gray-300">Work Order Related:</Label>
-                  <input
-                    type="checkbox"
-                    checked={expenseDetailDialog.isWorkOrderRelated}
-                    disabled
-                    className="rounded bg-gray-700 border-gray-600"
-                  />
+                  {expenseDetailDialog.isWorkOrderRelated ? (
+                    <CheckCircle className="h-5 w-5 text-green-400" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-red-400" />
+                  )}
                 </div>
               </div>
             </div>
