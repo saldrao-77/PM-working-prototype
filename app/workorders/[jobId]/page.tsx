@@ -492,7 +492,7 @@ export default function WorkOrderDetailPage() {
                   // Ensure we navigate to the correct dashboard based on current role
                   const role = currentRole || localStorage.getItem('currentRole') || 'pm';
                   if (role === 'owner') {
-                    router.push('/owner');
+                    router.push('/owner?tab=expenses');
                   } else {
                     router.push(`/?tab=workorders&role=${role}`);
                   }

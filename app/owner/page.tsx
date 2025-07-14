@@ -118,6 +118,15 @@ export default function OwnerDashboard() {
     }
   }, [])
 
+  // Handle URL parameters for tab navigation
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const tabParam = urlParams.get('tab')
+    if (tabParam) {
+      setActiveTab(tabParam)
+    }
+  }, [])
+
   const handlePasswordSubmit = () => {
     if (passwordInput === OWNER_PASSWORD) {
       setIsAuthenticated(true)
@@ -156,6 +165,7 @@ export default function OwnerDashboard() {
     { id: 'reimbursements', label: 'Reimbursements', icon: Receipt },
     { id: 'reporting', label: 'Reporting', icon: FileText },
     { id: 'collateral', label: 'Collateral Hub', icon: FileArchive },
+    { id: 'communications', label: 'Communications', icon: MessageSquare },
   ]
 
   if (!isAuthenticated) {
@@ -281,9 +291,10 @@ export default function OwnerDashboard() {
             {activeTab === "properties" && <PropertiesTab />}
             {activeTab === "forecasting" && <ForecastingTab />}
             {activeTab === "smart-insights" && <SmartInsightsTab />}
-            {activeTab === "reimbursements" && <ReimbursementsTab />}
+            {activeTab === "reimbursements" && <ReimbursementsTab setActiveTab={setActiveTab} />}
             {activeTab === "reporting" && <ReportingTab />}
             {activeTab === "collateral" && <CollateralTab />}
+            {activeTab === "communications" && <CommunicationsTab />}
           </div>
         </div>
       </div>
@@ -2819,9 +2830,15 @@ function SmartInsightsTab() {
   )
 }
 
-function ReimbursementsTab() {
+function ReimbursementsTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
   const [selectedPacket, setSelectedPacket] = useState<string | null>(null)
   const [showProcessModal, setShowProcessModal] = useState(false)
+  const [showExpenseFilterDialog, setShowExpenseFilterDialog] = useState(false)
+  const [showFlagDialog, setShowFlagDialog] = useState(false)
+  const [showGetInTouchDialog, setShowGetInTouchDialog] = useState(false)
+  const [selectedReimbursementPacket, setSelectedReimbursementPacket] = useState<any>(null)
+  const [selectedExpenseItems, setSelectedExpenseItems] = useState<string[]>([])
+  const [messageContent, setMessageContent] = useState("")
   const [processForm, setProcessForm] = useState({
     workOrder: "HVAC System Maintenance - Annual Service",
     jobId: "#job1",
@@ -2838,35 +2855,32 @@ function ReimbursementsTab() {
     {
       id: "redwood",
       name: "Redwood Shores Office Complex",
+      bankName: "Wells Fargo Business Banking",
       accountId: "TA-2024-001",
       currentBalance: 285000,
       ytdDeposits: 450000,
       ytdWithdrawals: 165000,
-      pendingReimbursements: 0,
-      requiresApproval: true,
-      approvalMessage: "Requires approval to release funds"
+      pendingReimbursements: 0
     },
     {
       id: "mission",
       name: "Mission Bay Tech Campus",
+      bankName: "Bank of America Commercial",
       accountId: "TA-2024-002",  
       currentBalance: 195000,
       ytdDeposits: 320000,
       ytdWithdrawals: 125000,
-      pendingReimbursements: 0,
-      requiresApproval: true,
-      approvalMessage: "Requires approval to release funds"
+      pendingReimbursements: 0
     },
     {
       id: "skyline",
       name: "Skyline Vista",
+      bankName: "Chase Business Complete",
       accountId: "TA-2024-003",
       currentBalance: 125000,
       ytdDeposits: 200000,
       ytdWithdrawals: 75000,
-      pendingReimbursements: 0,
-      requiresApproval: false,
-      approvalMessage: null
+      pendingReimbursements: 0
     }
   ]
 
@@ -2888,43 +2902,75 @@ function ReimbursementsTab() {
       expenses: [
         {
           id: "exp1",
+          date: "2024-06-28",
           vendor: "Bay Area HVAC Solutions",
           amount: 18500,
+          type: "Vendor",
           category: "Emergency Repairs",
-          glCode: "REP-HVAC",
+          glCode: "6200",
           receipt: true,
           flagged: true,
-          status: "Uploaded"
+          status: "Uploaded",
+          madeBy: "Jessica Chen (Property Manager)",
+          property: "Redwood Shores Office Complex",
+          workOrder: "HVAC System Maintenance - Annual Service",
+          workOrderId: "job1",
+          isWorkOrderRelated: true,
+          memo: "Emergency HVAC repair - main compressor unit replacement"
         },
         {
           id: "exp2", 
+          date: "2024-06-29",
           vendor: "Citywide Cleaning Services",
           amount: 12450,
+          type: "Vendor",
           category: "Operations",
-          glCode: "OPS-CLEAN",
+          glCode: "6100",
           receipt: true,
           flagged: false,
-          status: "Uploaded"
+          status: "Uploaded",
+          madeBy: "David Chen (Property Manager)",
+          property: "Redwood Shores Office Complex",
+          workOrder: null,
+          workOrderId: null,
+          isWorkOrderRelated: false,
+          memo: "Monthly cleaning service contract"
         },
         {
           id: "exp3",
+          date: "2024-06-30",
           vendor: "Elite Security Systems",
           amount: 8750,
+          type: "Vendor",
           category: "Capital Improvements",
-          glCode: "CAP-SEC",
+          glCode: "7500",
           receipt: true,
           flagged: false,
-          status: "Uploaded"
+          status: "Uploaded",
+          madeBy: "Mike Rodriguez (Property Manager)",
+          property: "Redwood Shores Office Complex",
+          workOrder: "Security System Upgrade - Building A",
+          workOrderId: "job2",
+          isWorkOrderRelated: true,
+          memo: "Security system upgrade for Building A"
         },
         {
           id: "exp4",
+          date: "2024-06-30",
           vendor: "Pacific Landscaping",
           amount: 6000,
+          type: "Vendor",
           category: "Operations",
-          glCode: "OPS-LAND",
+          glCode: "6150",
           receipt: false,
           flagged: true,
-          status: "Missing"
+          status: "Missing",
+          madeBy: "Sarah Johnson (Property Manager)",
+          property: "Redwood Shores Office Complex",
+          workOrder: null,
+          workOrderId: null,
+          isWorkOrderRelated: false,
+          memo: "Quarterly landscaping maintenance"
         }
       ]
     },
@@ -2944,34 +2990,62 @@ function ReimbursementsTab() {
       expenses: [
         {
           id: "exp5",
+          date: "2024-07-01",
           vendor: "TechFlow Plumbing",
           amount: 15250,
+          type: "Vendor",
           category: "Emergency Repairs",
-          glCode: "REP-PLUMB",
+          glCode: "6250",
           receipt: true,
           flagged: false,
-          status: "Uploaded"
+          status: "Uploaded",
+          madeBy: "James Wilson (Property Manager)",
+          property: "Mission Bay Tech Campus",
+          workOrder: "Emergency Plumbing Repair - Kitchen Sink",
+          workOrderId: "job3",
+          isWorkOrderRelated: true,
+          memo: "Emergency plumbing repair in kitchen facility"
         },
         {
           id: "exp6",
+          date: "2024-07-01",
           vendor: "Metro Office Supplies",
           amount: 8500,
+          type: "Vendor",
           category: "Operations",
-          glCode: "OPS-SUPP",
+          glCode: "6300",
           receipt: true,
           flagged: true,
-          status: "Flagged"
+          status: "Flagged",
+          madeBy: "Jennifer Davis (Property Manager)",
+          property: "Mission Bay Tech Campus",
+          workOrder: null,
+          workOrderId: null,
+          isWorkOrderRelated: false,
+          memo: "Office supplies for administrative staff"
         }
       ]
     }
   ]
 
-  const handleApprovePacket = (packetId: string) => {
-    console.log(`Approving packet: ${packetId}`)
+  const handleFlagPacket = (packetId: string) => {
+    const packet = reimbursementPackets.find(p => p.id === packetId)
+    if (packet) {
+      setSelectedReimbursementPacket(packet)
+      setSelectedExpenseItems([])
+      setMessageContent("")
+      setShowFlagDialog(true)
+    }
   }
 
-  const handleRejectPacket = (packetId: string) => {
-    console.log(`Rejecting packet: ${packetId}`)
+  const handleGetInTouch = (packetId: string) => {
+    const packet = reimbursementPackets.find(p => p.id === packetId)
+    if (packet) {
+      setSelectedReimbursementPacket(packet)
+      setSelectedExpenseItems([])
+      setMessageContent("")
+      setShowGetInTouchDialog(true)
+    }
   }
 
   const handleProcessReimbursement = () => {
@@ -2980,24 +3054,99 @@ function ReimbursementsTab() {
   }
 
   const handleExportPDF = (packetId: string) => {
-    console.log(`Exporting PDF for packet: ${packetId}`)
+    // Create a mock PDF blob and download it
+    const pdfData = `Monthly Reimbursement Report - ${packetId}\n\nGenerated: ${new Date().toLocaleString()}\n\nThis is a sample PDF export.`
+    const blob = new Blob([pdfData], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${packetId}_report.pdf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   const handleViewDetails = (packetId: string) => {
-    console.log(`Viewing details for packet: ${packetId}`)
+    // Navigate to expenses page with filters applied to show only this packet's expenses
+    setShowExpenseFilterDialog(true)
   }
 
-  const handleViewHistory = (packetId: string) => {
-    console.log(`Viewing history for packet: ${packetId}`)
+  const handleExpenseViewDetails = (expenseId: string) => {
+    // Find the expense from all packets
+    const allExpenses = reimbursementPackets.flatMap(p => p.expenses)
+    const expense = allExpenses.find(e => e.id === expenseId)
+    if (expense) {
+      if (expense.isWorkOrderRelated && expense.workOrderId) {
+        // Navigate to work order detail page (same as owner expenses)
+        window.location.href = `/workorders/${expense.workOrderId}?role=owner`
+      } else {
+        // Show popup dialog for non-work order expenses (same as owner expenses)
+        setExpenseDetailDialog(expense)
+      }
+    }
   }
+
+  const handleSendMessage = (isFlag: boolean) => {
+    if (messageContent.trim() && selectedReimbursementPacket) {
+      // Create a new message in the communications system
+      const message = {
+        id: Date.now().toString(),
+        propertyId: selectedReimbursementPacket.id,
+        senderId: "owner1",
+        senderName: "Property Owner",
+        senderRole: "owner",
+        content: messageContent,
+        timestamp: new Date(),
+        status: "sent",
+        threadId: `thread_${selectedReimbursementPacket.id}`,
+        type: isFlag ? "flag" : "inquiry",
+        relatedExpenses: selectedExpenseItems,
+        packetId: selectedReimbursementPacket.id
+      }
+      
+      // Close dialog and navigate to communications tab
+      setShowFlagDialog(false)
+      setShowGetInTouchDialog(false)
+      setMessageContent("")
+      setSelectedExpenseItems([])
+      setSelectedReimbursementPacket(null)
+      
+      // Navigate to communications tab
+      setActiveTab("communications")
+    }
+  }
+
+  const handleExportReport = () => {
+    // Create a mock CSV report and download it
+    const csvData = `Monthly Reimbursement Report\nGenerated: ${new Date().toLocaleString()}\n\nPacket ID,Status,Submitted By,Date,Total,Expense Count\n`
+    const blob = new Blob([csvData], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `monthly_reimbursements_${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  // State for expense detail dialog (copied from ExpensesTab)
+  const [expenseDetailDialog, setExpenseDetailDialog] = useState<any>(null)
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">Owner Reimbursements</h2>
+        <div>
+          <h2 className="text-xl font-bold text-white">Monthly Reimbursements</h2>
+          <p className="text-sm text-gray-400">Review monthly expense packets submitted by property managers</p>
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-400">2 packets pending review</span>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Button 
+            onClick={handleExportReport}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
             Export Report
           </Button>
         </div>
@@ -3045,26 +3194,22 @@ function ReimbursementsTab() {
                   </div>
                 </div>
                 
-                {account.requiresApproval && (
-                  <div className="bg-red-900/20 border border-red-500/30 rounded p-2">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-red-400" />
-                      <span className="text-xs text-red-300">
-                        {account.approvalMessage}
-                      </span>
-                    </div>
+                <div className="text-xs">
+                  <div className="text-gray-400">Bank Account</div>
+                  <div className="text-white font-medium">
+                    {account.bankName}
                   </div>
-                )}
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       </div>
 
-      {/* Pending Reimbursement Packets */}
+      {/* Monthly Reimbursement Packets */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-white">Pending Reimbursement Packets</h3>
-        <p className="text-sm text-gray-400">Review and approve PM expense submissions to trust accounts</p>
+        <h3 className="text-lg font-semibold text-white">Monthly Reimbursement Packets</h3>
+        <p className="text-sm text-gray-400">Monthly expense packets are automatically processed. Flag any items that need attention.</p>
         
         {reimbursementPackets.map((packet) => (
           <Card key={packet.id} className="bg-gray-800 border-gray-700">
@@ -3207,14 +3352,6 @@ function ReimbursementsTab() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => handleViewHistory(packet.id)}
-                  className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  View History
-                </Button>
-                <Button
-                  variant="outline"
                   onClick={() => handleExportPDF(packet.id)}
                   className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
                 >
@@ -3223,22 +3360,312 @@ function ReimbursementsTab() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => handleRejectPacket(packet.id)}
-                  className="bg-red-600 border-red-600 text-white hover:bg-red-700"
+                  onClick={() => handleFlagPacket(packet.id)}
+                  className="bg-yellow-600 border-yellow-600 text-white hover:bg-yellow-700"
                 >
-                  Reject Packet
+                  <Flag className="h-4 w-4 mr-2" />
+                  Flag Items
                 </Button>
                 <Button
-                  onClick={() => handleApprovePacket(packet.id)}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => handleGetInTouch(packet.id)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                  Approve Full Packet
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Get In Touch
                 </Button>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* Expense Filter Dialog */}
+      <Dialog open={showExpenseFilterDialog} onOpenChange={setShowExpenseFilterDialog}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Expense Details - Filtered View</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Showing expenses from the selected reimbursement packet
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b border-gray-700">
+                  <tr>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">Date</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">Merchant</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">Amount</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">Category</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">GL Code</th>
+                    <th className="text-center py-3 px-4 font-medium text-gray-300">Receipt</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">Status</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reimbursementPackets[0].expenses.map((expense) => (
+                    <tr key={expense.id} className="border-b border-gray-700">
+                      <td className="py-3 px-4 text-white">6/30/2024</td>
+                      <td className="py-3 px-4 text-white">{expense.vendor}</td>
+                      <td className="py-3 px-4 text-white">${expense.amount.toLocaleString()}</td>
+                      <td className="py-3 px-4 text-white">{expense.category}</td>
+                      <td className="py-3 px-4 text-white">{expense.glCode}</td>
+                      <td className="py-3 px-4 text-center">
+                        {expense.receipt ? (
+                          <CheckCircle className="h-4 w-4 text-green-400 mx-auto" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-red-400 mx-auto" />
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge className={
+                          expense.status === "Uploaded" ? "bg-green-600" :
+                          expense.status === "Flagged" ? "bg-yellow-600" :
+                          "bg-red-600"
+                        }>
+                          {expense.status}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                            onClick={() => handleExpenseViewDetails(expense.id)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Flag Items Dialog */}
+      <Dialog open={showFlagDialog} onOpenChange={setShowFlagDialog}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Flag Reimbursement Items</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Select expense items to flag and send a message to the property manager
+            </DialogDescription>
+          </DialogHeader>
+          {selectedReimbursementPacket && (
+            <div className="space-y-4">
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <h4 className="font-medium text-white mb-2">Reimbursement Packet: {selectedReimbursementPacket.id}</h4>
+                <p className="text-sm text-gray-400">Select specific expense items to flag (optional)</p>
+              </div>
+              
+              <div className="space-y-2">
+                {selectedReimbursementPacket.expenses.map((expense: any) => (
+                  <div key={expense.id} className="flex items-center space-x-2 p-3 bg-gray-800 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id={expense.id}
+                      checked={selectedExpenseItems.includes(expense.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedExpenseItems([...selectedExpenseItems, expense.id])
+                        } else {
+                          setSelectedExpenseItems(selectedExpenseItems.filter(id => id !== expense.id))
+                        }
+                      }}
+                      className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-600 rounded"
+                    />
+                    <label htmlFor={expense.id} className="flex-1 text-sm text-white cursor-pointer">
+                      <span className="font-medium">{expense.vendor}</span> - ${expense.amount.toLocaleString()} ({expense.category})
+                    </label>
+                  </div>
+                ))}
+              </div>
+              
+              <div>
+                <Label className="text-gray-300">Message to Property Manager</Label>
+                <Textarea
+                  value={messageContent}
+                  onChange={(e) => setMessageContent(e.target.value)}
+                  className="bg-gray-800 border-gray-600 text-white mt-2"
+                  placeholder="Describe your concerns about these expenses..."
+                  rows={4}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowFlagDialog(false)}
+              className="border-gray-600 text-gray-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleSendMessage(true)}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={!messageContent.trim()}
+            >
+              <Flag className="h-4 w-4 mr-2" />
+              Flag Items & Send Message
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Get In Touch Dialog */}
+      <Dialog open={showGetInTouchDialog} onOpenChange={setShowGetInTouchDialog}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Get In Touch About Reimbursement</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Send a message to the property manager about this reimbursement packet
+            </DialogDescription>
+          </DialogHeader>
+          {selectedReimbursementPacket && (
+            <div className="space-y-4">
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <h4 className="font-medium text-white mb-2">Reimbursement Packet: {selectedReimbursementPacket.id}</h4>
+                <p className="text-sm text-gray-400">Total: ${selectedReimbursementPacket.total.toLocaleString()}</p>
+              </div>
+              
+              <div>
+                <Label className="text-gray-300">Message to Property Manager</Label>
+                <Textarea
+                  value={messageContent}
+                  onChange={(e) => setMessageContent(e.target.value)}
+                  className="bg-gray-800 border-gray-600 text-white mt-2"
+                  placeholder="Type your message or questions about this reimbursement..."
+                  rows={4}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowGetInTouchDialog(false)}
+              className="border-gray-600 text-gray-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleSendMessage(false)}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={!messageContent.trim()}
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Send Message
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Expense Detail Dialog (copied from ExpensesTab) */}
+      <Dialog open={!!expenseDetailDialog} onOpenChange={() => setExpenseDetailDialog(null)}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Expense Details</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              View detailed information about this expense
+            </DialogDescription>
+          </DialogHeader>
+          {expenseDetailDialog && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-gray-300">Date</Label>
+                  <div className="text-white bg-gray-800 rounded p-3">{expenseDetailDialog.date}</div>
+                </div>
+                <div>
+                  <Label className="text-gray-300">Merchant</Label>
+                  <div className="text-white bg-gray-800 rounded p-3">{expenseDetailDialog.vendor}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-gray-300">Amount</Label>
+                  <div className="text-white bg-gray-800 rounded p-3">${expenseDetailDialog.amount?.toFixed(2)}</div>
+                </div>
+                <div>
+                  <Label className="text-gray-300">Type</Label>
+                  <div className="text-white bg-gray-800 rounded p-3">{expenseDetailDialog.type}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-gray-300">Made By</Label>
+                  <div className="text-white bg-gray-800 rounded p-3">{expenseDetailDialog.madeBy}</div>
+                </div>
+                <div>
+                  <Label className="text-gray-300">Property</Label>
+                  <div className="text-white bg-gray-800 rounded p-3">{expenseDetailDialog.property}</div>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-gray-300">Work Order</Label>
+                <div className="text-white bg-gray-800 rounded p-3">
+                  {expenseDetailDialog.workOrder || 'N/A'}
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-gray-300">Status</Label>
+                <div className="text-white bg-gray-800 rounded p-3">{expenseDetailDialog.status}</div>
+              </div>
+
+              <div>
+                <Label className="text-gray-300">Memo</Label>
+                <div className="text-white bg-gray-800 rounded p-3">{expenseDetailDialog.memo}</div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Label className="text-gray-300">Receipt Available:</Label>
+                  <CheckCircle className="h-5 w-5 text-green-400" />
+                  <a
+                    href={`/receipts/${expenseDetailDialog.id}_receipt.pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 underline ml-2"
+                  >
+                    View Receipt
+                  </a>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-gray-300">Work Order Related:</Label>
+                  {expenseDetailDialog.isWorkOrderRelated ? (
+                    <CheckCircle className="h-5 w-5 text-green-400" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-red-400" />
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setExpenseDetailDialog(null)}
+              className="border-gray-600 text-gray-300"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Process Reimbursement Modal */}
       <Dialog open={showProcessModal} onOpenChange={setShowProcessModal}>
@@ -3339,6 +3766,220 @@ function ReimbursementsTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  )
+}
+
+function CommunicationsTab() {
+  const [selectedProperty, setSelectedProperty] = useState("all")
+  const [newMessage, setNewMessage] = useState("")
+  const [messages, setMessages] = useState<{
+    id: string;
+    propertyId: string;
+    propertyName: string;
+    senderId: string;
+    senderName: string;
+    senderRole: string;
+    content: string;
+    timestamp: Date;
+    status: string;
+    threadId: string;
+    type?: string;
+    relatedExpenses?: string[];
+    packetId?: string;
+  }[]>([
+    {
+      id: "1",
+      propertyId: "redwood",
+      propertyName: "Redwood Shores Office Complex",
+      senderId: "pm1",
+      senderName: "Jessica Chen",
+      senderRole: "pm",
+      content: "Hi! I wanted to update you on the HVAC repair work order. We've received quotes from 3 contractors and are ready to proceed with the work.",
+      timestamp: new Date("2024-01-15T10:30:00Z"),
+      status: "read",
+      threadId: "thread_redwood_1"
+    },
+    {
+      id: "2",
+      propertyId: "redwood",
+      propertyName: "Redwood Shores Office Complex",
+      senderId: "owner1",
+      senderName: "Property Owner",
+      senderRole: "owner",
+      content: "Thanks for the update! Could you please send me the quotes for review? I want to make sure we're getting the best value.",
+      timestamp: new Date("2024-01-15T14:45:00Z"),
+      status: "sent",
+      threadId: "thread_redwood_1"
+    },
+    {
+      id: "3",
+      propertyId: "mission",
+      propertyName: "Mission Bay Tech Campus",
+      senderId: "pm2",
+      senderName: "James Wilson",
+      senderRole: "pm",
+      content: "The plumbing repair has been completed successfully. All systems are now working properly.",
+      timestamp: new Date("2024-01-16T09:15:00Z"),
+      status: "unread",
+      threadId: "thread_mission_1"
+    }
+  ])
+
+  const properties = [
+    { id: "all", name: "All Properties" },
+    { id: "redwood", name: "Redwood Shores Office Complex" },
+    { id: "mission", name: "Mission Bay Tech Campus" },
+    { id: "skyline", name: "Skyline Vista" }
+  ]
+
+  const filteredMessages = selectedProperty === "all" 
+    ? messages 
+    : messages.filter(msg => msg.propertyId === selectedProperty)
+
+  const groupedMessages = filteredMessages.reduce((acc, message) => {
+    const key = `${message.propertyId}_${message.threadId}`
+    if (!acc[key]) {
+      acc[key] = {
+        threadId: message.threadId,
+        propertyId: message.propertyId,
+        propertyName: message.propertyName,
+        lastMessage: message,
+        messages: []
+      }
+    }
+    acc[key].messages.push(message)
+    if (message.timestamp > acc[key].lastMessage.timestamp) {
+      acc[key].lastMessage = message
+    }
+    return acc
+  }, {} as any)
+
+  const handleSendMessage = (propertyId: string, threadId: string) => {
+    if (newMessage.trim()) {
+      const message = {
+        id: Date.now().toString(),
+        propertyId,
+        propertyName: properties.find(p => p.id === propertyId)?.name || "",
+        senderId: "owner1",
+        senderName: "Property Owner",
+        senderRole: "owner",
+        content: newMessage,
+        timestamp: new Date(),
+        status: "sent",
+        threadId
+      }
+      setMessages([...messages, message])
+      setNewMessage("")
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-white">Communications</h2>
+          <p className="text-sm text-gray-400">Messaging with property managers, technicians, and central office</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={selectedProperty} onValueChange={setSelectedProperty}>
+            <SelectTrigger className="w-64 bg-gray-800 border-gray-600 text-white">
+              <SelectValue placeholder="Select property" />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-800 border-gray-600">
+              {properties.map(property => (
+                <SelectItem key={property.id} value={property.id} className="text-white">
+                  {property.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
+        {Object.values(groupedMessages).map((thread: any) => (
+          <Card key={thread.threadId} className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  <span>{thread.propertyName}</span>
+                </div>
+                <Badge className={
+                  thread.lastMessage.status === "unread" ? "bg-blue-600" : "bg-gray-600"
+                }>
+                  {thread.messages.length} messages
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4 max-h-96 overflow-y-auto mb-4">
+                {thread.messages.map((message: any) => (
+                  <div
+                    key={message.id}
+                    className={`flex gap-3 ${
+                      message.senderRole === 'owner' ? 'justify-end' : 'justify-start'
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[70%] rounded-lg px-4 py-3 ${
+                        message.type === 'flag'
+                          ? 'bg-red-600/20 border border-red-500/30 text-red-100'
+                          : message.senderRole === 'owner'
+                          ? 'bg-green-600 text-white'
+                          : message.senderRole === 'pm'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-700 text-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium">
+                          {message.senderName}
+                        </span>
+                        {message.type === 'flag' && (
+                          <Badge className="bg-red-500/20 text-red-300 text-xs">
+                            <Flag className="h-3 w-3 mr-1" />
+                            Flagged
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm leading-relaxed">{message.content}</p>
+                      <p className="text-xs opacity-70 mt-2">
+                        {message.timestamp.toLocaleDateString()} at{' '}
+                        {message.timestamp.toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-gray-700 pt-4">
+                <div className="flex gap-2">
+                  <Textarea
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="flex-1 bg-gray-800 border-gray-600 text-white resize-none"
+                    rows={3}
+                  />
+                  <Button
+                    onClick={() => handleSendMessage(thread.propertyId, thread.threadId)}
+                    className="bg-green-600 hover:bg-green-700 text-white self-end"
+                    disabled={!newMessage.trim()}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Send
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   )
 }
