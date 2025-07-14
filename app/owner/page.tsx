@@ -93,6 +93,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts'
 
 const OWNER_PASSWORD = "owner123"
+const PM_PASSWORD = "pm123"
 
 // Owner Dashboard Main Component
 export default function OwnerDashboard() {
@@ -102,6 +103,11 @@ export default function OwnerDashboard() {
   const [showPasswordDialog, setShowPasswordDialog] = useState(true)
   const [activeTab, setActiveTab] = useState("dashboard")
   const [passwordError, setPasswordError] = useState("")
+  
+  // PM Dashboard access states
+  const [showPMPasswordDialog, setShowPMPasswordDialog] = useState(false)
+  const [pmPasswordInput, setPmPasswordInput] = useState("")
+  const [pmPasswordError, setPmPasswordError] = useState("")
 
   // Check authentication on mount
   useEffect(() => {
@@ -124,8 +130,20 @@ export default function OwnerDashboard() {
   }
 
   const handleBackToPM = () => {
-    localStorage.removeItem('ownerAuthenticated')
-    router.push('/')
+    setShowPMPasswordDialog(true)
+    setPmPasswordInput("")
+    setPmPasswordError("")
+  }
+
+  const handlePMPasswordSubmit = () => {
+    if (pmPasswordInput === PM_PASSWORD) {
+      localStorage.removeItem('ownerAuthenticated')
+      setShowPMPasswordDialog(false)
+      router.push('/')
+      setPmPasswordError("")
+    } else {
+      setPmPasswordError("Incorrect password")
+    }
   }
 
   // Sidebar navigation tabs
@@ -179,7 +197,7 @@ export default function OwnerDashboard() {
                 onClick={handleBackToPM}
                 className="border-gray-600 text-gray-300 hover:bg-gray-800"
               >
-                Back to PM Dashboard
+                PM Dashboard
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -237,7 +255,7 @@ export default function OwnerDashboard() {
                 className="w-full justify-start bg-red-900 border-red-700 text-red-300 hover:bg-red-800 hover:text-white"
               >
                 <ArrowUp className="h-4 w-4 mr-2" />
-                Back to PM Dashboard
+                PM Dashboard
               </Button>
             </div>
           </div>
@@ -269,6 +287,49 @@ export default function OwnerDashboard() {
           </div>
         </div>
       </div>
+
+      {/* PM Dashboard Password Dialog */}
+      <Dialog open={showPMPasswordDialog} onOpenChange={() => {}}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">PM Dashboard Access</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Enter the PM password to access the dashboard
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-gray-300">Password</Label>
+              <Input
+                type="password"
+                value={pmPasswordInput}
+                onChange={(e) => setPmPasswordInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handlePMPasswordSubmit()}
+                className="bg-gray-800 border-gray-600 text-white"
+                placeholder="Enter PM password"
+              />
+              {pmPasswordError && (
+                <p className="text-red-400 text-sm mt-1">{pmPasswordError}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              onClick={handlePMPasswordSubmit}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Access PM Dashboard
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowPMPasswordDialog(false)}
+              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -3866,6 +3927,7 @@ function CollateralTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </>
   )
 } 
