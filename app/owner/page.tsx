@@ -2422,7 +2422,6 @@ function ForecastingTab() {
 }
 
 function SmartInsightsTab() {
-  const [selectedBenchmark, setSelectedBenchmark] = useState("property")
   const [roiCalcForm, setRoiCalcForm] = useState({
     assetType: "",
     actionType: "",
@@ -2431,77 +2430,121 @@ function SmartInsightsTab() {
   })
   const [aiQuery, setAiQuery] = useState("")
   const [showRoiCalculator, setShowRoiCalculator] = useState(false)
+  const [showAiInput, setShowAiInput] = useState(false)
 
   const handleAiQuestion = (question: string) => {
     setAiQuery(question)
-    console.log(`AI Query: ${question}`)
+    setShowAiInput(true)
+    // Simulate AI response
+    setTimeout(() => {
+      console.log(`AI Query: ${question}`)
+      // In real implementation, this would call the AI service
+    }, 500)
   }
 
   const handleRoiCalculation = () => {
     console.log("Calculating ROI", roiCalcForm)
+    // In real implementation, this would perform the calculation
   }
 
+  const handleExportCSV = () => {
+    console.log("Exporting to CSV")
+    // In real implementation, this would export the data
+  }
+
+  const handleExportPDF = () => {
+    console.log("Exporting to PDF")
+    // In real implementation, this would export the data
+  }
+
+  const handleDrillDown = () => {
+    console.log("Drilling down by property")
+    // In real implementation, this would navigate to detailed view
+  }
+
+  // Interactive Cost Benchmarking Data - matching the image exactly
   const benchmarkingData = [
     {
       category: "HVAC",
       actual: 12500,
+      actualWidth: 85,
       market: 9800,
+      marketWidth: 65,
       cleanSheet: 8200,
+      cleanSheetWidth: 55,
       portfolio: 11200,
-      overCleanSheet: "52%",
+      portfolioWidth: 75,
+      overCleanSheet: "52% over clean sheet",
       recommendations: ["Negotiate vendor contracts", "Vendor consolidation"]
     },
     {
       category: "Elevator",
       actual: 8200,
+      actualWidth: 70,
       market: 7100,
+      marketWidth: 60,
       cleanSheet: 6500,
+      cleanSheetWidth: 55,
       portfolio: 7800,
-      overCleanSheet: "26%",
+      portfolioWidth: 65,
+      overCleanSheet: "26% over clean sheet",
       recommendations: ["Contract optimization", "Preventive maintenance"]
     },
     {
       category: "Fire Safety",
       actual: 5400,
+      actualWidth: 60,
       market: 4900,
+      marketWidth: 55,
       cleanSheet: 4200,
+      cleanSheetWidth: 45,
       portfolio: 5100,
-      overCleanSheet: "29%",
+      portfolioWidth: 55,
+      overCleanSheet: "29% over clean sheet",
       recommendations: ["Multi-year contracts", "Vendor negotiation"]
     },
     {
       category: "Plumbing",
       actual: 7800,
+      actualWidth: 80,
       market: 6900,
+      marketWidth: 70,
       cleanSheet: 5800,
+      cleanSheetWidth: 60,
       portfolio: 7200,
-      overCleanSheet: "34%",
+      portfolioWidth: 75,
+      overCleanSheet: "34% over clean sheet",
       recommendations: ["Emergency service rates", "Vendor consolidation"]
     },
     {
       category: "General R&M",
       actual: 15200,
+      actualWidth: 90,
       market: 13800,
+      marketWidth: 82,
       cleanSheet: 11500,
+      cleanSheetWidth: 68,
       portfolio: 14100,
-      overCleanSheet: "32%",
+      portfolioWidth: 84,
+      overCleanSheet: "32% over clean sheet",
       recommendations: ["Contract standardization", "Vendor performance"]
     }
   ]
 
+  // Cost Benchmarking Summary Data
   const costBenchmarkingSummary = [
-    { category: "Total R&M", perSqFt: "$18.2", variance: "12%", performance: "Below Market" },
-    { category: "HVAC", perSqFt: "$8.4", variance: "15%", performance: "Behind" },
-    { category: "Market Average", perSqFt: "$16.2", variance: "8%", performance: "Baseline" },
-    { category: "Savings", perSqFt: "$1.85/sq ft", variance: "7%", performance: "Potential" },
-    { category: "Electrical", perSqFt: "$4.2", variance: "9%", performance: "On Track" }
+    { category: "Total R&M", perSqFt: "$18.2", variance: "$12.5", performance: "$396k" },
+    { category: "Market Average", perSqFt: "$14.2", variance: "$9.2", performance: "$349k" },
+    { category: "Savings", perSqFt: "$4.0", variance: "$3.3", performance: "$47k" },
+    { category: "Electrical", perSqFt: "$4.2", variance: "$2.8", performance: "$34k" }
   ]
 
+  // Recent Analyses for ROI Calculator
   const recentAnalyses = [
     {
       type: "HVAC System - Building A",
       result: "2.3 year payback",
-      savings: "44 years",
+      savings: "4.4 years",
       status: "Approved"
     },
     {
@@ -2514,99 +2557,74 @@ function SmartInsightsTab() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-white">Smart Insights</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-white">Smart Insights</h2>
+      </div>
 
       {/* Portfolio Performance */}
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
           <CardTitle className="text-white">Portfolio Performance</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-white mb-2">69%</div>
-            <div className="text-sm text-gray-400">of budget used</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-400 mb-2">$5.6M</div>
-            <div className="text-sm text-gray-400">saved vs clean sheet</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-red-400 mb-2">3</div>
-            <div className="text-sm text-gray-400">properties over budget</div>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-blue-400 mb-2">69%</div>
+              <div className="text-sm text-gray-300">Premium Budget Utilization</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-red-400 mb-2">$-5.6M</div>
+              <div className="text-sm text-gray-300">Total Savings</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-red-400 mb-2">3</div>
+              <div className="text-sm text-gray-300">Properties Over Budget</div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Ask AI Panel */}
+      {/* Ask AI Smart Analysis */}
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Bot className="h-5 w-5 text-purple-400" />
-            Ask AI Smart Analysis
-          </CardTitle>
+          <CardTitle className="text-white">Ask AI Smart Analysis</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-            <Button
-              variant="outline"
-              className="justify-start h-auto p-3 bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-              onClick={() => handleAiQuestion("How much did we spend on R&M across all properties in Q1?")}
-            >
-              <span className="text-sm">How much did we spend on R&M across all properties in Q1?</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto p-3 bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-              onClick={() => handleAiQuestion("Which vendors have the highest cost per service call?")}
-            >
-              <span className="text-sm">Which vendors have the highest cost per service call?</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto p-3 bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-              onClick={() => handleAiQuestion("Show me all emergency repairs over $5K this year")}
-            >
-              <span className="text-sm">Show me all emergency repairs over $5K this year</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto p-3 bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-              onClick={() => handleAiQuestion("What did we reimburse late we should have caught?")}
-            >
-              <span className="text-sm">What did we reimburse late we should have caught?</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto p-3 bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-              onClick={() => handleAiQuestion("Which category has the highest variance?")}
-            >
-              <span className="text-sm">Which category has the highest variance?</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto p-3 bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-              onClick={() => handleAiQuestion("What are our biggest budget overruns by category?")}
-            >
-              <span className="text-sm">What are our biggest budget overruns by category?</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto p-3 bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-              onClick={() => handleAiQuestion("What are the top 3 urgent recommendations?")}
-            >
-              <span className="text-sm">What are the top 3 urgent recommendations?</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto p-3 bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-              onClick={() => handleAiQuestion("What's the real R&M spend 3x benchmark vs primary?")}
-            >
-              <span className="text-sm">What's the real R&M spend 3x benchmark vs primary?</span>
-            </Button>
+          <div className="text-sm text-gray-300 mb-4">
+            How much did we spend on R&M across all properties in Q1?
           </div>
-          <div className="mt-4">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+            {[
+              "How much did we spend on R&M across all properties in Q1?",
+              "Which vendors have the highest cost per service call?",
+              "What's the total R&M spend 3x benchmark vs primary?",
+              "Show me all emergency repairs over $5K this year",
+              "What's the real R&M spend 3x benchmark vs primary?",
+              "What are our biggest budget overruns by category?",
+              "What did we reimburse late we should have caught?",
+              "What are the top 3 urgent recommendations?"
+            ].map((question, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                className="justify-start h-auto p-3 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 text-left"
+                onClick={() => handleAiQuestion(question)}
+              >
+                <span className="text-sm">{question}</span>
+              </Button>
+            ))}
+          </div>
+
+          <div className="flex gap-3">
             <Button
-              className="bg-purple-600 hover:bg-purple-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setShowAiInput(true)}
+            >
+              Ask AI
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white"
               onClick={() => setShowRoiCalculator(!showRoiCalculator)}
             >
               <Calculator className="h-4 w-4 mr-2" />
@@ -2626,46 +2644,78 @@ function SmartInsightsTab() {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
+            <div className="grid grid-cols-4 gap-4 text-center text-sm font-medium text-gray-300 mb-4">
+              <div>Property</div>
+              <div>Cost Range</div>
+              <div>Region</div>
+              <div>Year YoY</div>
+            </div>
+            
             {benchmarkingData.map((item, index) => (
               <div key={index} className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium text-white">{item.category}</h4>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-4">
                     <span className="text-sm text-gray-400">Versus: Market Median, Clean Sheet Pro, Chambre Diversified</span>
-                    <span className="text-sm font-bold text-red-400">{item.overCleanSheet} over clean sheet</span>
+                    <span className="text-sm font-bold text-red-400 bg-red-900 px-2 py-1 rounded">
+                      {item.overCleanSheet}
+                    </span>
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <div className="text-xs text-gray-400">Actual</div>
-                    <div className="bg-blue-600 h-8 rounded flex items-center justify-center text-white text-sm">
-                      ${item.actual.toLocaleString()}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-4">
+                    <div className="w-20 text-xs text-gray-400">Actual</div>
+                    <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
+                      <div 
+                        className="bg-blue-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
+                        style={{ width: `${item.actualWidth}%` }}
+                      >
+                        ${item.actual.toLocaleString()}
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="text-xs text-gray-400">Market</div>
-                    <div className="bg-gray-600 h-8 rounded flex items-center justify-center text-white text-sm">
-                      ${item.market.toLocaleString()}
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="w-20 text-xs text-gray-400">Market</div>
+                    <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
+                      <div 
+                        className="bg-gray-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
+                        style={{ width: `${item.marketWidth}%` }}
+                      >
+                        ${item.market.toLocaleString()}
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="text-xs text-gray-400">Clean Sheet</div>
-                    <div className="bg-green-600 h-8 rounded flex items-center justify-center text-white text-sm">
-                      ${item.cleanSheet.toLocaleString()}
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="w-20 text-xs text-gray-400">Clean Sheet</div>
+                    <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
+                      <div 
+                        className="bg-green-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
+                        style={{ width: `${item.cleanSheetWidth}%` }}
+                      >
+                        ${item.cleanSheet.toLocaleString()}
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="text-xs text-gray-400">Portfolio</div>
-                    <div className="bg-purple-600 h-8 rounded flex items-center justify-center text-white text-sm">
-                      ${item.portfolio.toLocaleString()}
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="w-20 text-xs text-gray-400">Portfolio</div>
+                    <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
+                      <div 
+                        className="bg-purple-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
+                        style={{ width: `${item.portfolioWidth}%` }}
+                      >
+                        ${item.portfolio.toLocaleString()}
+                      </div>
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex flex-wrap gap-2">
                   {item.recommendations.map((rec, recIndex) => (
-                    <Badge key={recIndex} className="bg-orange-600 text-white">
+                    <Badge key={recIndex} className="bg-orange-500 text-white hover:bg-orange-600 cursor-pointer">
                       {rec}
                     </Badge>
                   ))}
@@ -2674,14 +2724,25 @@ function SmartInsightsTab() {
             ))}
           </div>
           
-          <div className="mt-6 flex gap-4">
-            <Button variant="outline" className="bg-gray-700 border-gray-600 text-white">
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button 
+              variant="outline" 
+              className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+              onClick={handleExportCSV}
+            >
               Export CSV
             </Button>
-            <Button variant="outline" className="bg-gray-700 border-gray-600 text-white">
+            <Button 
+              variant="outline" 
+              className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+              onClick={handleExportPDF}
+            >
               Export PDF
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={handleDrillDown}
+            >
               Drill Down by Property
             </Button>
           </div>
@@ -2699,6 +2760,7 @@ function SmartInsightsTab() {
               <thead className="border-b border-gray-700">
                 <tr>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Category</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Market Performance</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Per Sq Ft</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Variance</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Performance</th>
@@ -2707,21 +2769,11 @@ function SmartInsightsTab() {
               <tbody>
                 {costBenchmarkingSummary.map((item, index) => (
                   <tr key={index} className="border-b border-gray-700">
-                    <td className="py-3 px-4 text-white">{item.category}</td>
+                    <td className="py-3 px-4 text-white font-medium">{item.category}</td>
+                    <td className="py-3 px-4 text-white">{item.perSqFt}</td>
                     <td className="py-3 px-4 text-white">{item.perSqFt}</td>
                     <td className="py-3 px-4 text-white">{item.variance}</td>
-                    <td className="py-3 px-4">
-                      <Badge 
-                        className={
-                          item.performance === "On Track" ? "bg-green-600" :
-                          item.performance === "Potential" ? "bg-blue-600" :
-                          item.performance === "Baseline" ? "bg-gray-600" :
-                          "bg-red-600"
-                        }
-                      >
-                        {item.performance}
-                      </Badge>
-                    </td>
+                    <td className="py-3 px-4 text-white">{item.performance}</td>
                   </tr>
                 ))}
               </tbody>
@@ -2731,101 +2783,115 @@ function SmartInsightsTab() {
       </Card>
 
       {/* ROI Calculator */}
-      {showRoiCalculator && (
-        <Card className="bg-gray-800 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Calculator className="h-5 w-5 text-green-400" />
-              ROI Calculator
-            </CardTitle>
-            <p className="text-sm text-gray-400">
-              Calculate returns on property maintenance decisions
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h4 className="font-medium text-white">Calculation Inputs</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-gray-300">Asset Type</Label>
-                    <Select value={roiCalcForm.assetType} onValueChange={(value) => setRoiCalcForm(prev => ({ ...prev, assetType: value }))}>
-                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                        <SelectValue placeholder="Select asset" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-600">
-                        <SelectItem value="hvac" className="text-white">HVAC System</SelectItem>
-                        <SelectItem value="elevator" className="text-white">Elevator</SelectItem>
-                        <SelectItem value="plumbing" className="text-white">Plumbing</SelectItem>
-                        <SelectItem value="electrical" className="text-white">Electrical</SelectItem>
-                      </SelectContent>
-                    </Select>
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Calculator className="h-5 w-5 text-green-400" />
+            ROI Calculator
+          </CardTitle>
+          <p className="text-sm text-gray-400">
+            AI-powered returns on property maintenance decisions
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h4 className="font-medium text-white">Calculation Inputs</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-gray-300">Asset Type</Label>
+                  <Select value={roiCalcForm.assetType} onValueChange={(value) => setRoiCalcForm(prev => ({ ...prev, assetType: value }))}>
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue placeholder="Select asset" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-600">
+                      <SelectItem value="hvac" className="text-white">HVAC System</SelectItem>
+                      <SelectItem value="elevator" className="text-white">Elevator</SelectItem>
+                      <SelectItem value="plumbing" className="text-white">Plumbing</SelectItem>
+                      <SelectItem value="electrical" className="text-white">Electrical</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-gray-300">Action Type</Label>
+                  <Select value={roiCalcForm.actionType} onValueChange={(value) => setRoiCalcForm(prev => ({ ...prev, actionType: value }))}>
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue placeholder="Replace" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-600">
+                      <SelectItem value="replace" className="text-white">Replace</SelectItem>
+                      <SelectItem value="repair" className="text-white">Repair</SelectItem>
+                      <SelectItem value="upgrade" className="text-white">Upgrade</SelectItem>
+                      <SelectItem value="maintain" className="text-white">Maintain</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-gray-300">Estimated Cost</Label>
+                  <Input
+                    type="text"
+                    value={roiCalcForm.cost}
+                    onChange={(e) => setRoiCalcForm(prev => ({ ...prev, cost: e.target.value }))}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="e.g. $15,000"
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-300">Current Annual OpEx</Label>
+                  <Input
+                    type="text"
+                    value={roiCalcForm.opex}
+                    onChange={(e) => setRoiCalcForm(prev => ({ ...prev, opex: e.target.value }))}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="e.g. $3,500"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-gray-300">AI Risk & Urgency</Label>
+                <div className="space-y-2">
+                  <div className="text-sm text-gray-400">
+                    What's the ROI on replacing HVAC in Building A?
                   </div>
-                  <div>
-                    <Label className="text-gray-300">Action Type</Label>
-                    <Select value={roiCalcForm.actionType} onValueChange={(value) => setRoiCalcForm(prev => ({ ...prev, actionType: value }))}>
-                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                        <SelectValue placeholder="Select action" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-600">
-                        <SelectItem value="replace" className="text-white">Replace</SelectItem>
-                        <SelectItem value="repair" className="text-white">Repair</SelectItem>
-                        <SelectItem value="upgrade" className="text-white">Upgrade</SelectItem>
-                        <SelectItem value="maintain" className="text-white">Maintain</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="text-sm text-gray-400">
+                    Should we lease or buy the elevator/elevator replacement?
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    We analyzed 5 rooftop systems, should we repair or replace?
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-gray-300">Estimated Cost</Label>
-                    <Input
-                      type="number"
-                      value={roiCalcForm.cost}
-                      onChange={(e) => setRoiCalcForm(prev => ({ ...prev, cost: e.target.value }))}
-                      className="bg-gray-700 border-gray-600 text-white"
-                      placeholder="$0"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-gray-300">Est. Annual OpEx</Label>
-                    <Input
-                      type="number"
-                      value={roiCalcForm.opex}
-                      onChange={(e) => setRoiCalcForm(prev => ({ ...prev, opex: e.target.value }))}
-                      className="bg-gray-700 border-gray-600 text-white"
-                      placeholder="$0"
-                    />
-                  </div>
-                </div>
-                <Button 
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                  onClick={handleRoiCalculation}
-                >
-                  Calculate ROI
-                </Button>
               </div>
               
-              <div className="space-y-4">
-                <h4 className="font-medium text-white">Recent Analyses</h4>
-                <div className="space-y-3">
-                  {recentAnalyses.map((analysis, index) => (
-                    <div key={index} className="p-3 bg-gray-700 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-white">{analysis.type}</span>
-                        <Badge className="bg-green-600 text-white">{analysis.status}</Badge>
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {analysis.result} • {analysis.savings}
-                      </div>
+              <Button 
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                onClick={handleRoiCalculation}
+              >
+                Calculate ROI
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              <h4 className="font-medium text-white">Recent Analyses</h4>
+              <div className="space-y-3">
+                {recentAnalyses.map((analysis, index) => (
+                  <div key={index} className="p-3 bg-gray-700 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-white">{analysis.type}</span>
+                      <Badge className="bg-green-600 text-white">{analysis.status}</Badge>
                     </div>
-                  ))}
-                </div>
+                    <div className="text-xs text-gray-400">
+                      {analysis.result} • {analysis.savings}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
