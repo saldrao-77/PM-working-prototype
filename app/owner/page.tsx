@@ -2431,6 +2431,12 @@ function SmartInsightsTab() {
   const [aiQuery, setAiQuery] = useState("")
   const [showRoiCalculator, setShowRoiCalculator] = useState(false)
   const [showAiInput, setShowAiInput] = useState(false)
+  
+  // Filter states
+  const [selectedProperty, setSelectedProperty] = useState("Stanford Graduate School...")
+  const [selectedTimeRange, setSelectedTimeRange] = useState("Quarterly")
+  const [selectedRegion, setSelectedRegion] = useState("Bay Area")
+  const [selectedViewType, setSelectedViewType] = useState("$/sqft")
 
   const handleAiQuestion = (question: string) => {
     setAiQuery(question)
@@ -2438,95 +2444,111 @@ function SmartInsightsTab() {
     // Simulate AI response
     setTimeout(() => {
       console.log(`AI Query: ${question}`)
-      // In real implementation, this would call the AI service
+      alert(`AI is processing: "${question}"\n\nThis would normally open a detailed analysis interface.`)
     }, 500)
+  }
+
+  const handleAskAI = () => {
+    const customQuery = prompt("What would you like to ask the AI about your property portfolio?")
+    if (customQuery) {
+      handleAiQuestion(customQuery)
+    }
   }
 
   const handleRoiCalculation = () => {
     console.log("Calculating ROI", roiCalcForm)
-    // In real implementation, this would perform the calculation
+    alert(`ROI Calculation:\nAsset: ${roiCalcForm.assetType}\nAction: ${roiCalcForm.actionType}\nCost: ${roiCalcForm.cost}\nOpEx: ${roiCalcForm.opex}\n\nThis would normally perform detailed ROI calculations.`)
   }
 
   const handleExportCSV = () => {
     console.log("Exporting to CSV")
-    // In real implementation, this would export the data
+    // Create CSV content
+    const csvContent = `Category,Actual,Market,Clean Sheet,Portfolio,Over Clean Sheet\n` +
+      benchmarkingData.map(item => 
+        `${item.category},${item.actual},${item.market},${item.cleanSheet},${item.portfolio},${item.overCleanSheet}`
+      ).join('\n')
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'cost-benchmarking-data.csv'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
   }
 
   const handleExportPDF = () => {
     console.log("Exporting to PDF")
-    // In real implementation, this would export the data
+    alert("PDF export functionality would be implemented here.\n\nThis would generate a comprehensive PDF report of the cost benchmarking data.")
   }
 
-  const handleDrillDown = () => {
-    console.log("Drilling down by property")
-    // In real implementation, this would navigate to detailed view
-  }
-
-  // Interactive Cost Benchmarking Data - matching the image exactly
+  // Interactive Cost Benchmarking Data - updated to show better performance
   const benchmarkingData = [
     {
       category: "HVAC",
-      actual: 12500,
-      actualWidth: 85,
-      market: 9800,
-      marketWidth: 65,
+      actual: 8400,
+      actualWidth: 70,
+      market: 11800,
+      marketWidth: 95,
       cleanSheet: 8200,
-      cleanSheetWidth: 55,
-      portfolio: 11200,
-      portfolioWidth: 75,
-      overCleanSheet: "52% over clean sheet",
+      cleanSheetWidth: 68,
+      portfolio: 8600,
+      portfolioWidth: 72,
+      overCleanSheet: "2% over clean sheet",
       recommendations: ["Negotiate vendor contracts", "Vendor consolidation"]
     },
     {
       category: "Elevator",
-      actual: 8200,
-      actualWidth: 70,
-      market: 7100,
-      marketWidth: 60,
+      actual: 6300,
+      actualWidth: 55,
+      market: 8100,
+      marketWidth: 70,
       cleanSheet: 6500,
-      cleanSheetWidth: 55,
-      portfolio: 7800,
-      portfolioWidth: 65,
-      overCleanSheet: "26% over clean sheet",
+      cleanSheetWidth: 57,
+      portfolio: 6400,
+      portfolioWidth: 56,
+      overCleanSheet: "3% under clean sheet",
       recommendations: ["Contract optimization", "Preventive maintenance"]
     },
     {
       category: "Fire Safety",
-      actual: 5400,
-      actualWidth: 60,
-      market: 4900,
-      marketWidth: 55,
+      actual: 4100,
+      actualWidth: 45,
+      market: 5900,
+      marketWidth: 65,
       cleanSheet: 4200,
-      cleanSheetWidth: 45,
-      portfolio: 5100,
-      portfolioWidth: 55,
-      overCleanSheet: "29% over clean sheet",
+      cleanSheetWidth: 46,
+      portfolio: 4300,
+      portfolioWidth: 48,
+      overCleanSheet: "2% under clean sheet",
       recommendations: ["Multi-year contracts", "Vendor negotiation"]
     },
     {
       category: "Plumbing",
-      actual: 7800,
-      actualWidth: 80,
-      market: 6900,
-      marketWidth: 70,
+      actual: 5900,
+      actualWidth: 60,
+      market: 7800,
+      marketWidth: 80,
       cleanSheet: 5800,
-      cleanSheetWidth: 60,
-      portfolio: 7200,
-      portfolioWidth: 75,
-      overCleanSheet: "34% over clean sheet",
+      cleanSheetWidth: 59,
+      portfolio: 6100,
+      portfolioWidth: 62,
+      overCleanSheet: "2% over clean sheet",
       recommendations: ["Emergency service rates", "Vendor consolidation"]
     },
     {
       category: "General R&M",
-      actual: 15200,
-      actualWidth: 90,
-      market: 13800,
-      marketWidth: 82,
+      actual: 11800,
+      actualWidth: 80,
+      market: 15200,
+      marketWidth: 95,
       cleanSheet: 11500,
-      cleanSheetWidth: 68,
-      portfolio: 14100,
-      portfolioWidth: 84,
-      overCleanSheet: "32% over clean sheet",
+      cleanSheetWidth: 78,
+      portfolio: 12000,
+      portfolioWidth: 82,
+      overCleanSheet: "3% over clean sheet",
       recommendations: ["Contract standardization", "Vendor performance"]
     }
   ]
@@ -2570,11 +2592,11 @@ function SmartInsightsTab() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="text-4xl font-bold text-blue-400 mb-2">69%</div>
-              <div className="text-sm text-gray-300">Premium Budget Utilization</div>
+              <div className="text-sm text-gray-300">Expense Budget Utilized</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-red-400 mb-2">$-5.6M</div>
-              <div className="text-sm text-gray-300">Total Savings</div>
+              <div className="text-4xl font-bold text-green-400 mb-2">$6.6M</div>
+              <div className="text-sm text-gray-300">Total $ Saved vs Clean Sheet</div>
             </div>
             <div className="text-center">
               <div className="text-4xl font-bold text-red-400 mb-2">3</div>
@@ -2587,23 +2609,24 @@ function SmartInsightsTab() {
       {/* Ask AI Smart Analysis */}
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
-          <CardTitle className="text-white">Ask AI Smart Analysis</CardTitle>
+          <CardTitle className="text-white flex items-center gap-2">
+            <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+            Ask AI Smart Analysis
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-gray-300 mb-4">
-            How much did we spend on R&M across all properties in Q1?
+          <div className="text-sm text-gray-300 mb-4 p-3 bg-gray-700 rounded">
+            How much did we spend on HVAC across all properties in Q4?
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
             {[
-              "How much did we spend on R&M across all properties in Q1?",
+              "How much did we spend on HVAC across all properties in Q4?",
+              "Which expenses were reimbursed late from trust accounts?",
+              "What's our total R&M spend vs. benchmark by property?",
+              "Show me all emergency repairs over $5,000 this year",
               "Which vendors have the highest cost per service call?",
-              "What's the total R&M spend 3x benchmark vs primary?",
-              "Show me all emergency repairs over $5K this year",
-              "What's the real R&M spend 3x benchmark vs primary?",
-              "What are our biggest budget overruns by category?",
-              "What did we reimburse late we should have caught?",
-              "What are the top 3 urgent recommendations?"
+              "What are our biggest budget variances by category?"
             ].map((question, index) => (
               <Button
                 key={index}
@@ -2611,6 +2634,7 @@ function SmartInsightsTab() {
                 className="justify-start h-auto p-3 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 text-left"
                 onClick={() => handleAiQuestion(question)}
               >
+                <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 flex-shrink-0"></span>
                 <span className="text-sm">{question}</span>
               </Button>
             ))}
@@ -2618,9 +2642,10 @@ function SmartInsightsTab() {
 
           <div className="flex gap-3">
             <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => setShowAiInput(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+              onClick={handleAskAI}
             >
+              <span className="w-2 h-2 bg-white rounded-full"></span>
               Ask AI
             </Button>
             <Button
@@ -2639,29 +2664,84 @@ function SmartInsightsTab() {
         <CardHeader>
           <CardTitle className="text-white">Interactive Cost Benchmarking</CardTitle>
           <p className="text-sm text-gray-400">
-            Compare your costs against the market and optimize spending with Smart Insights
+            Compare your spend against market and clean-sheet benchmarks
           </p>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
+            {/* Filter Dropdowns */}
             <div className="grid grid-cols-4 gap-4 text-center text-sm font-medium text-gray-300 mb-4">
-              <div>Property</div>
-              <div>Cost Range</div>
+              <div>Properties</div>
+              <div>Time Range</div>
               <div>Region</div>
-              <div>Year YoY</div>
+              <div>View Type</div>
+            </div>
+            
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              <Select value={selectedProperty} onValueChange={setSelectedProperty}>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="Stanford Graduate School..." className="text-white">Stanford Graduate School...</SelectItem>
+                  <SelectItem value="Downtown Office Complex" className="text-white">Downtown Office Complex</SelectItem>
+                  <SelectItem value="Bay Area Plaza" className="text-white">Bay Area Plaza</SelectItem>
+                  <SelectItem value="All Properties" className="text-white">All Properties</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="Quarterly" className="text-white">Quarterly</SelectItem>
+                  <SelectItem value="Monthly" className="text-white">Monthly</SelectItem>
+                  <SelectItem value="Annually" className="text-white">Annually</SelectItem>
+                  <SelectItem value="YTD" className="text-white">YTD</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="Bay Area" className="text-white">Bay Area</SelectItem>
+                  <SelectItem value="Los Angeles" className="text-white">Los Angeles</SelectItem>
+                  <SelectItem value="San Diego" className="text-white">San Diego</SelectItem>
+                  <SelectItem value="California" className="text-white">California</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={selectedViewType} onValueChange={setSelectedViewType}>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="$/sqft" className="text-white">$/sqft</SelectItem>
+                  <SelectItem value="Total $" className="text-white">Total $</SelectItem>
+                  <SelectItem value="% of Budget" className="text-white">% of Budget</SelectItem>
+                  <SelectItem value="Variance" className="text-white">Variance</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             {benchmarkingData.map((item, index) => (
               <div key={index} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-white">{item.category}</h4>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-400">Versus: Market Median, Clean Sheet Pro, Chambre Diversified</span>
-                    <span className="text-sm font-bold text-red-400 bg-red-900 px-2 py-1 rounded">
-                      {item.overCleanSheet}
-                    </span>
+                                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-white">{item.category}</h4>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-gray-400">Versus: Market Median, Clean Sheet Pro, Chambre Diversified</span>
+                      <span className={`text-sm font-bold px-2 py-1 rounded ${
+                        item.overCleanSheet.includes('under') 
+                          ? 'text-green-400 bg-green-900' 
+                          : 'text-red-400 bg-red-900'
+                      }`}>
+                        {item.overCleanSheet}
+                      </span>
+                    </div>
                   </div>
-                </div>
                 
                 <div className="space-y-2">
                   <div className="flex items-center gap-4">
@@ -2738,12 +2818,6 @@ function SmartInsightsTab() {
               onClick={handleExportPDF}
             >
               Export PDF
-            </Button>
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={handleDrillDown}
-            >
-              Drill Down by Property
             </Button>
           </div>
         </CardContent>
