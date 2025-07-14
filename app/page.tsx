@@ -3059,6 +3059,16 @@ export default function PMFinancialDashboard() {
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
               </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  window.location.href = '/owner';
+                }}
+                className="w-full justify-start bg-blue-900 border-blue-700 text-blue-300 hover:bg-blue-800 hover:text-white"
+              >
+                <User className="h-4 w-4 mr-2" />
+                Owner Dashboard
+              </Button>
             </div>
           </div>
         </div>
