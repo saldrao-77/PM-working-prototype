@@ -690,6 +690,8 @@ function ExpensesTab() {
   const [dateToFilter, setDateToFilter] = useState("")
   const [showEditRules, setShowEditRules] = useState(false)
   const [selectedExpenses, setSelectedExpenses] = useState<string[]>([])
+  const [expenseDetailDialog, setExpenseDetailDialog] = useState<any>(null)
+  const [approveExpenseDialog, setApproveExpenseDialog] = useState<any>(null)
 
   // Mock expense data for approval
   const expensesNeedingApproval = [
@@ -702,6 +704,8 @@ function ExpensesTab() {
       madeBy: "Jessica Chen (Property Manager)",
       property: "Stanford Graduate School of Business",
       workOrder: "LED lighting upgrade - Building A",
+      workOrderId: "wo-123",
+      isWorkOrderRelated: true,
       memo: "Energy efficient retrofit for entire building",
       receipt: "✓",
       status: "Flagged"
@@ -715,6 +719,8 @@ function ExpensesTab() {
       madeBy: "David Chen (Property Manager)",
       property: "Mission Bay Tech Campus",
       workOrder: "Security system upgrade",
+      workOrderId: "wo-456",
+      isWorkOrderRelated: true,
       memo: "Upgrade req...",
       receipt: "✓",
       status: "Flagged"
@@ -728,7 +734,24 @@ function ExpensesTab() {
       madeBy: "Mike Rodriguez (Property Manager)",
       property: "Redwood Shores Office Complex",
       workOrder: "Weekend emergency lockout service",
+      workOrderId: "wo-789",
+      isWorkOrderRelated: true,
       memo: "Emergency t...",
+      receipt: "✓",
+      status: "Flagged"
+    },
+    {
+      id: "exp3a",
+      date: "2024-01-05",
+      merchant: "Office Supplies Plus",
+      amount: 245.00,
+      type: "Card",
+      madeBy: "Alice Johnson (Technician)",
+      property: "Stanford Graduate School of Business",
+      workOrder: null,
+      workOrderId: null,
+      isWorkOrderRelated: false,
+      memo: "General office supplies",
       receipt: "✓",
       status: "Flagged"
     }
@@ -744,6 +767,9 @@ function ExpensesTab() {
       type: "Card",
       madeBy: "Alice Johnson (Technician)",
       property: "Financial District Tower",
+      workOrder: "Emergency pipe repair",
+      workOrderId: "wo-111",
+      isWorkOrderRelated: true,
       status: "Processed",
       memo: "Routine task leak fix",
       receipt: "✓"
@@ -756,6 +782,9 @@ function ExpensesTab() {
       type: "Card",
       madeBy: "Bob Wilson (Technician)",
       property: "Palo Alto Research Center",
+      workOrder: null,
+      workOrderId: null,
+      isWorkOrderRelated: false,
       status: "Processed",
       memo: "Monthly cleaning service",
       receipt: "✓"
@@ -787,15 +816,36 @@ function ExpensesTab() {
   ]
 
   const handleApprove = (expenseId: string) => {
-    console.log(`Approving expense: ${expenseId}`)
+    const expense = [...expensesNeedingApproval, ...processedExpenses].find(e => e.id === expenseId)
+    if (expense) {
+      setApproveExpenseDialog(expense)
+    }
   }
 
   const handleDeny = (expenseId: string) => {
     console.log(`Denying expense: ${expenseId}`)
+    // TODO: Implement deny functionality
   }
 
   const handleViewDetails = (expenseId: string) => {
-    console.log(`Viewing details for expense: ${expenseId}`)
+    const expense = [...expensesNeedingApproval, ...processedExpenses].find(e => e.id === expenseId)
+    if (expense) {
+      if (expense.isWorkOrderRelated && expense.workOrderId) {
+        // Navigate to work order detail page (like PM > Work orders > more details)
+        window.open(`/workorders/${expense.workOrderId}`, '_blank')
+      } else {
+        // Show popup dialog for non-work order expenses (like PM > Expenses > eye icon)
+        setExpenseDetailDialog(expense)
+      }
+    }
+  }
+
+  const confirmApproval = () => {
+    if (approveExpenseDialog) {
+      console.log(`Approved expense: ${approveExpenseDialog.id}`)
+      setApproveExpenseDialog(null)
+      // TODO: Update expense status
+    }
   }
 
   const handleBulkExport = (type: 'csv' | 'receipts' | 'bookkeeper') => {
@@ -814,11 +864,11 @@ function ExpensesTab() {
               <SelectTrigger className="w-20 bg-gray-800 border-gray-600 text-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-600">
-                <SelectItem value="MTD">MTD</SelectItem>
-                <SelectItem value="YTD">YTD</SelectItem>
-                <SelectItem value="QTD">QTD</SelectItem>
-              </SelectContent>
+                              <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="MTD" className="text-white">MTD</SelectItem>
+                  <SelectItem value="YTD" className="text-white">YTD</SelectItem>
+                  <SelectItem value="QTD" className="text-white">QTD</SelectItem>
+                </SelectContent>
             </Select>
           </div>
         </div>
@@ -946,10 +996,10 @@ function ExpensesTab() {
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent className="bg-gray-800 border-gray-600">
-            <SelectItem value="All">All</SelectItem>
-            <SelectItem value="Flagged">Flagged</SelectItem>
-            <SelectItem value="Processed">Processed</SelectItem>
-            <SelectItem value="Pending">Pending</SelectItem>
+            <SelectItem value="All" className="text-white">All</SelectItem>
+            <SelectItem value="Flagged" className="text-white">Flagged</SelectItem>
+            <SelectItem value="Processed" className="text-white">Processed</SelectItem>
+            <SelectItem value="Pending" className="text-white">Pending</SelectItem>
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -957,9 +1007,10 @@ function ExpensesTab() {
             <SelectValue placeholder="Type" />
           </SelectTrigger>
           <SelectContent className="bg-gray-800 border-gray-600">
-            <SelectItem value="All">All</SelectItem>
-            <SelectItem value="Card">Card</SelectItem>
-            <SelectItem value="Vendor">Vendor</SelectItem>
+            <SelectItem value="All" className="text-white">All</SelectItem>
+            <SelectItem value="Card" className="text-white">Card</SelectItem>
+            <SelectItem value="Invoice" className="text-white">Invoice</SelectItem>
+            <SelectItem value="Vendor" className="text-white">Vendor</SelectItem>
           </SelectContent>
         </Select>
         <Select value={propertyFilter} onValueChange={setPropertyFilter}>
@@ -967,9 +1018,9 @@ function ExpensesTab() {
             <SelectValue placeholder="Property" />
           </SelectTrigger>
           <SelectContent className="bg-gray-800 border-gray-600">
-            <SelectItem value="All">All</SelectItem>
-            <SelectItem value="Stanford GSB">Stanford GSB</SelectItem>
-            <SelectItem value="Mission Bay">Mission Bay</SelectItem>
+            <SelectItem value="All" className="text-white">All</SelectItem>
+            <SelectItem value="Stanford GSB" className="text-white">Stanford GSB</SelectItem>
+            <SelectItem value="Mission Bay" className="text-white">Mission Bay</SelectItem>
           </SelectContent>
         </Select>
         <Select value={madeByFilter} onValueChange={setMadeByFilter}>
@@ -977,9 +1028,9 @@ function ExpensesTab() {
             <SelectValue placeholder="Made By" />
           </SelectTrigger>
           <SelectContent className="bg-gray-800 border-gray-600">
-            <SelectItem value="All">All</SelectItem>
-            <SelectItem value="PM">Property Manager</SelectItem>
-            <SelectItem value="Technician">Technician</SelectItem>
+            <SelectItem value="All" className="text-white">All</SelectItem>
+            <SelectItem value="PM" className="text-white">Property Manager</SelectItem>
+            <SelectItem value="Technician" className="text-white">Technician</SelectItem>
           </SelectContent>
         </Select>
         <Input
@@ -1018,6 +1069,7 @@ function ExpensesTab() {
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Made By</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Property</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Work Order</th>
+                  <th className="text-center py-3 px-4 font-medium text-gray-300">WO Related</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Memo</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Receipt</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Actions</th>
@@ -1036,13 +1088,29 @@ function ExpensesTab() {
                     </td>
                     <td className="py-3 px-4 text-white">{expense.madeBy}</td>
                     <td className="py-3 px-4 text-white">{expense.property}</td>
-                    <td className="py-3 px-4 text-white">{expense.workOrder}</td>
+                    <td className="py-3 px-4 text-white">{expense.workOrder || 'N/A'}</td>
+                    <td className="py-3 px-4 text-center">
+                      <input
+                        type="checkbox"
+                        checked={expense.isWorkOrderRelated}
+                        disabled
+                        className="rounded bg-gray-700 border-gray-600"
+                      />
+                    </td>
                     <td className="py-3 px-4 text-white">{expense.memo}</td>
                     <td className="py-3 px-4 text-center">
                       <CheckCircle className="h-4 w-4 text-green-400 mx-auto" />
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewDetails(expense.id)}
+                          className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Button
                           size="sm"
                           onClick={() => handleApprove(expense.id)}
@@ -1058,7 +1126,7 @@ function ExpensesTab() {
                         >
                           Deny
                         </Button>
-                      </div>
+                                              </div>
                     </td>
                   </tr>
                 ))}
@@ -1087,6 +1155,7 @@ function ExpensesTab() {
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Type</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Made By</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Property</th>
+                  <th className="text-center py-3 px-4 font-medium text-gray-300">WO Related</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Status</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Memo</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Receipt</th>
@@ -1106,6 +1175,14 @@ function ExpensesTab() {
                     </td>
                     <td className="py-3 px-4 text-white">{expense.madeBy}</td>
                     <td className="py-3 px-4 text-white">{expense.property}</td>
+                    <td className="py-3 px-4 text-center">
+                      <input
+                        type="checkbox"
+                        checked={expense.isWorkOrderRelated}
+                        disabled
+                        className="rounded bg-gray-700 border-gray-600"
+                      />
+                    </td>
                     <td className="py-3 px-4">
                       <Badge className="bg-green-600 text-white">
                         {expense.status}
@@ -1120,9 +1197,9 @@ function ExpensesTab() {
                         size="sm"
                         variant="outline"
                         onClick={() => handleViewDetails(expense.id)}
-                        className="bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
+                        className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
                       >
-                        View Details
+                        <Eye className="h-4 w-4" />
                       </Button>
                     </td>
                   </tr>
@@ -1145,9 +1222,9 @@ function ExpensesTab() {
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-600">
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="all" className="text-white">All</SelectItem>
+                <SelectItem value="pending" className="text-white">Pending</SelectItem>
+                <SelectItem value="approved" className="text-white">Approved</SelectItem>
               </SelectContent>
             </Select>
             <Select>
@@ -1155,9 +1232,10 @@ function ExpensesTab() {
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-600">
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="card">Card</SelectItem>
-                <SelectItem value="vendor">Vendor</SelectItem>
+                <SelectItem value="all" className="text-white">All</SelectItem>
+                <SelectItem value="card" className="text-white">Card</SelectItem>
+                <SelectItem value="invoice" className="text-white">Invoice</SelectItem>
+                <SelectItem value="vendor" className="text-white">Vendor</SelectItem>
               </SelectContent>
             </Select>
             <Select>
@@ -1165,9 +1243,9 @@ function ExpensesTab() {
                 <SelectValue placeholder="Property" />
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-600">
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="stanford">Stanford GSB</SelectItem>
-                <SelectItem value="mission">Mission Bay</SelectItem>
+                <SelectItem value="all" className="text-white">All</SelectItem>
+                <SelectItem value="stanford" className="text-white">Stanford GSB</SelectItem>
+                <SelectItem value="mission" className="text-white">Mission Bay</SelectItem>
               </SelectContent>
             </Select>
             <Select>
@@ -1175,9 +1253,9 @@ function ExpensesTab() {
                 <SelectValue placeholder="Made By" />
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-600">
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="pm">Property Manager</SelectItem>
-                <SelectItem value="tech">Technician</SelectItem>
+                <SelectItem value="all" className="text-white">All</SelectItem>
+                <SelectItem value="pm" className="text-white">Property Manager</SelectItem>
+                <SelectItem value="tech" className="text-white">Technician</SelectItem>
               </SelectContent>
             </Select>
             <Input
@@ -1318,6 +1396,258 @@ function ExpensesTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Rules Dialog */}
+      <Dialog open={showEditRules} onOpenChange={setShowEditRules}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Edit AI Policy Rules</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Configure automatic flagging rules for expense approvals
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Current Rules */}
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4">Current Policy Rules</h3>
+              <div className="space-y-3">
+                {[
+                  { category: 'Amount Threshold', rule: 'Auto-flag expenses over $2,000', aiEnabled: true, active: true },
+                  { category: 'Budget Variance', rule: 'Auto-flag expenses over 10% of budget', aiEnabled: true, active: true },
+                  { category: 'Receipt Requirements', rule: 'Flag expenses without receipts', aiEnabled: false, active: true },
+                  { category: 'Pre-approval', rule: 'Require pre-approval for expenses over $500', aiEnabled: false, active: true },
+                  { category: 'Maintenance Threshold', rule: 'Flag maintenance expenses over $5,000', aiEnabled: true, active: true }
+                ].map((rule, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <Badge className="bg-purple-600 text-white">{rule.category}</Badge>
+                        {rule.aiEnabled && <Badge className="bg-blue-600 text-white">AI Enabled</Badge>}
+                      </div>
+                      <p className="text-white mt-2">{rule.rule}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Switch checked={rule.active} />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Add New Rule */}
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4">Add New Rule</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-gray-300">Category</Label>
+                  <Select>
+                    <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-600">
+                      <SelectItem value="amount" className="text-white">Amount Threshold</SelectItem>
+                      <SelectItem value="vendor" className="text-white">Vendor Restrictions</SelectItem>
+                      <SelectItem value="category" className="text-white">Expense Category</SelectItem>
+                      <SelectItem value="property" className="text-white">Property Specific</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-gray-300">Rule Type</Label>
+                  <Select>
+                    <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                      <SelectValue placeholder="Select rule type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-600">
+                      <SelectItem value="flag" className="text-white">Auto-flag</SelectItem>
+                      <SelectItem value="approve" className="text-white">Auto-approve</SelectItem>
+                      <SelectItem value="deny" className="text-white">Auto-deny</SelectItem>
+                      <SelectItem value="require" className="text-white">Require approval</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="mt-4">
+                <Label className="text-gray-300">Rule Description</Label>
+                <Textarea
+                  placeholder="Describe the rule logic..."
+                  className="bg-gray-800 border-gray-600 text-white"
+                />
+              </div>
+              <Button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Rule
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowEditRules(false)}
+              className="border-gray-600 text-gray-300"
+            >
+              Cancel
+            </Button>
+            <Button className="bg-green-600 hover:bg-green-700 text-white">
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Expense Detail Dialog (for non-work order expenses) */}
+      <Dialog open={!!expenseDetailDialog} onOpenChange={() => setExpenseDetailDialog(null)}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Expense Details</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Detailed information for this expense
+            </DialogDescription>
+          </DialogHeader>
+          
+          {expenseDetailDialog && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-gray-300">Date</Label>
+                  <div className="text-white">{expenseDetailDialog.date}</div>
+                </div>
+                <div>
+                  <Label className="text-gray-300">Amount</Label>
+                  <div className="text-white text-xl font-bold">${expenseDetailDialog.amount.toFixed(2)}</div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-gray-300">Merchant</Label>
+                  <div className="text-white">{expenseDetailDialog.merchant}</div>
+                </div>
+                <div>
+                  <Label className="text-gray-300">Type</Label>
+                  <Badge className={expenseDetailDialog.type === 'Vendor' ? 'bg-purple-600' : 'bg-blue-600'}>
+                    {expenseDetailDialog.type}
+                  </Badge>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-gray-300">Made By</Label>
+                <div className="text-white">{expenseDetailDialog.madeBy}</div>
+              </div>
+
+              <div>
+                <Label className="text-gray-300">Property</Label>
+                <div className="text-white">{expenseDetailDialog.property}</div>
+              </div>
+
+              <div>
+                <Label className="text-gray-300">Memo</Label>
+                <div className="text-white bg-gray-800 rounded p-3">{expenseDetailDialog.memo}</div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Label className="text-gray-300">Receipt Available:</Label>
+                  <CheckCircle className="h-5 w-5 text-green-400" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-gray-300">Work Order Related:</Label>
+                  <input
+                    type="checkbox"
+                    checked={expenseDetailDialog.isWorkOrderRelated}
+                    disabled
+                    className="rounded bg-gray-700 border-gray-600"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setExpenseDetailDialog(null)}
+              className="border-gray-600 text-gray-300"
+            >
+              Close
+            </Button>
+            {expenseDetailDialog?.status === 'Flagged' && (
+              <Button
+                onClick={() => handleApprove(expenseDetailDialog.id)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                Approve Expense
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Approve Expense Dialog */}
+      <Dialog open={!!approveExpenseDialog} onOpenChange={() => setApproveExpenseDialog(null)}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Approve Expense</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Confirm approval for this expense
+            </DialogDescription>
+          </DialogHeader>
+          
+          {approveExpenseDialog && (
+            <div className="space-y-4">
+              <div className="bg-gray-800 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-gray-300">Merchant:</span>
+                  <span className="text-white font-medium">{approveExpenseDialog.merchant}</span>
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-gray-300">Amount:</span>
+                  <span className="text-white text-xl font-bold">${approveExpenseDialog.amount.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-300">Property:</span>
+                  <span className="text-white">{approveExpenseDialog.property}</span>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-gray-300">Approval Notes (Optional)</Label>
+                <Textarea
+                  placeholder="Add any notes about this approval..."
+                  className="bg-gray-800 border-gray-600 text-white"
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setApproveExpenseDialog(null)}
+              className="border-gray-600 text-gray-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmApproval}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Confirm Approval
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -1591,9 +1921,9 @@ function ForecastingTab() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-600">
-                <SelectItem value="Rest of 2024">Rest of 2024</SelectItem>
-                <SelectItem value="2025">2025</SelectItem>
-                <SelectItem value="Next 6 months">Next 6 months</SelectItem>
+                <SelectItem value="Rest of 2024" className="text-white">Rest of 2024</SelectItem>
+                <SelectItem value="2025" className="text-white">2025</SelectItem>
+                <SelectItem value="Next 6 months" className="text-white">Next 6 months</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -2219,10 +2549,10 @@ function SmartInsightsTab() {
                         <SelectValue placeholder="Select asset" />
                       </SelectTrigger>
                       <SelectContent className="bg-gray-800 border-gray-600">
-                        <SelectItem value="hvac">HVAC System</SelectItem>
-                        <SelectItem value="elevator">Elevator</SelectItem>
-                        <SelectItem value="plumbing">Plumbing</SelectItem>
-                        <SelectItem value="electrical">Electrical</SelectItem>
+                        <SelectItem value="hvac" className="text-white">HVAC System</SelectItem>
+                        <SelectItem value="elevator" className="text-white">Elevator</SelectItem>
+                        <SelectItem value="plumbing" className="text-white">Plumbing</SelectItem>
+                        <SelectItem value="electrical" className="text-white">Electrical</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -2233,10 +2563,10 @@ function SmartInsightsTab() {
                         <SelectValue placeholder="Select action" />
                       </SelectTrigger>
                       <SelectContent className="bg-gray-800 border-gray-600">
-                        <SelectItem value="replace">Replace</SelectItem>
-                        <SelectItem value="repair">Repair</SelectItem>
-                        <SelectItem value="upgrade">Upgrade</SelectItem>
-                        <SelectItem value="maintain">Maintain</SelectItem>
+                        <SelectItem value="replace" className="text-white">Replace</SelectItem>
+                        <SelectItem value="repair" className="text-white">Repair</SelectItem>
+                        <SelectItem value="upgrade" className="text-white">Upgrade</SelectItem>
+                        <SelectItem value="maintain" className="text-white">Maintain</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -3347,26 +3677,159 @@ function CollateralTab() {
     URL.revokeObjectURL(url)
   }, [collateralDocs, collateralSelectedDocs])
 
+  // AI Search functionality - copied exactly from PM dashboard
+  const getAiSearchSuggestions = (query: string) => {
+    const roleSuggestions = {
+      owner: [
+        // Property Performance & Financial Analysis
+        "What properties have the highest maintenance costs?",
+        "Show me monthly spending by property",
+        "Find all budget vs actual reports",
+        "What expense categories are over budget?",
+        "Show me year-over-year cost comparisons",
+        "What were the most expensive repairs last quarter?",
+        "Find all expenses over $1000",
+        "Show me cash flow projections",
+        "What maintenance costs exceeded budget?",
+        "Show me property ROI comparisons",
+        
+        // HVAC & Major Systems
+        "How much did we spend on HVAC repairs this year?",
+        "Find all HVAC maintenance contracts",
+        "Show me heating system invoices from last winter",
+        "What HVAC vendors do we use most frequently?",
+        "Find air conditioning repair receipts over $500",
+        "Show me all furnace replacement quotes",
+        "What HVAC warranties are expiring soon?",
+        
+        // Property-Specific Queries
+        "Find all receipts for Stanford GSB property",
+        "Show me Sunnyvale 432 maintenance costs",
+        "What repairs were done at Mission Bay?",
+        "Find all Redwood Shores expenses",
+        "Show me Stanford GSB inspection reports",
+        "What vendors service our properties?",
+        
+        // Insurance & Compliance
+        "Find all insurance certificates",
+        "Show me property insurance claims",
+        "What insurance policies are expiring?",
+        "Find liability insurance documents",
+        "Show me all damage assessment reports",
+        "What compliance documents are due?",
+        "Show me inspection reports",
+        "Find all safety inspection certificates",
+        
+        // Vendor & Contractor Analysis
+        "What contractors do we use most?",
+        "Find all vendor contact information",
+        "Show me contractor performance reviews",
+        "What vendors offer the best rates?",
+        "Find all preferred vendor agreements",
+        "Show me vendor response time reports",
+        "What vendors have the highest invoices?",
+        
+        // Emergency & Urgent Repairs
+        "Show me all emergency repair receipts",
+        "Find after-hours service call costs",
+        "What emergency repairs happened last month?",
+        "Find all urgent maintenance requests",
+        "What emergency vendors do we use?",
+        "Show me emergency repair response times",
+        
+        // Document & Contract Management
+        "Find contracts expiring in the next 30 days",
+        "Show me all service agreements",
+        "What maintenance contracts are active?",
+        "Find all warranty documents",
+        "Show me all documents uploaded this week",
+        "What documents are missing or incomplete?",
+        
+        // Seasonal & Weather-Related
+        "Find all winter weather damage costs",
+        "Show me storm damage assessments",
+        "What seasonal maintenance schedules are due?",
+        "Find all weather-related insurance claims",
+        "Show me seasonal equipment rentals",
+        
+        // Tax & Financial Reporting
+        "Find all tax-deductible expenses",
+        "Show me financial variance reports",
+        "What expenses need owner approval?",
+        "Find all capital expenditure receipts",
+        "Show me quarterly expense summaries"
+      ]
+    };
+
+    const currentSuggestions = roleSuggestions.owner;
+    
+    if (!query.trim()) {
+      return currentSuggestions.slice(0, 5);
+    }
+    
+    return currentSuggestions.filter(suggestion => 
+      suggestion.toLowerCase().includes(query.toLowerCase())
+    ).slice(0, 5);
+  };
+
   const handleAiSearch = async (query: string) => {
-    if (!query.trim()) return
+    if (!query.trim()) return;
     
-    setAiSearchLoading(true)
+    setAiSearchLoading(true);
+    setShowAiSuggestions(false);
     
-    // Mock AI search suggestions
-    const suggestions = [
-      'Show me all warranties expiring in 2025',
-      'Find invoices uploaded by Sarah Chen',
-      'What insurance certificates do we have for Redwood Shores?',
-      'Show contracts with amounts over $5,000'
-    ]
-    setAiSearchSuggestions(suggestions)
+    // Simulate AI search processing
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Simulate AI processing
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // Mock AI search results based on query
+    const mockResults = generateMockAiResults(query);
+    setAiSearchResults(mockResults);
+    setAiSearchLoading(false);
+  };
+
+  const generateMockAiResults = (query: string) => {
+    const queryLower = query.toLowerCase();
     
-    setAiSearchLoading(false)
-    setShowAiSuggestions(true)
-  }
+    // Mock AI reasoning and document matching
+    if (queryLower.includes('hvac') || queryLower.includes('heating') || queryLower.includes('cooling')) {
+      return {
+        summary: "Found 8 HVAC-related documents totaling $12,450 in expenses across 3 properties. The most recent service was a $3,200 repair at Stanford GSB on December 15th.",
+        documents: collateralDocuments.filter(doc => 
+          doc.filename.toLowerCase().includes('hvac') || 
+          doc.tags.some(tag => tag.toLowerCase().includes('hvac'))
+        ).slice(0, 4),
+        insights: [
+          "Stanford GSB has the highest HVAC maintenance costs ($8,200 YTD)",
+          "Most common issue: Filter replacements and duct cleaning",
+          "Average cost per HVAC service: $1,556"
+        ]
+      };
+    }
+    
+    if (queryLower.includes('warranty') || queryLower.includes('expiring')) {
+      return {
+        summary: "Found 5 warranty documents with 2 expiring in the next 90 days.",
+        documents: collateralDocuments.filter(doc => 
+          doc.documentType === 'warranty'
+        ).slice(0, 3),
+        insights: [
+          "2 warranties expire in Q1 2025",
+          "Total warranty coverage value: $45,000",
+          "Most warranties are for HVAC and electrical systems"
+        ]
+      };
+    }
+    
+    return {
+      summary: `Found ${Math.floor(Math.random() * 10) + 1} relevant documents for your query.`,
+      documents: collateralDocuments.slice(0, 3),
+      insights: [
+        "Based on your query, here are the most relevant documents",
+        "Consider reviewing similar documents in this category",
+        "AI found potential cost savings opportunities"
+      ]
+    };
+  };
 
   // Optimized Collateral Hub Helper Functions with memoization
   const filteredCollateralDocs = useMemo(() => {
@@ -3487,63 +3950,62 @@ function CollateralTab() {
         </div>
       </div>
 
-      {/* AI Search Bar */}
-      <div className="mb-6">
+      {/* AI Search Bar - copied exactly from PM dashboard */}
+      <div className="relative mb-6">
         <div className="relative">
-          <div className="relative flex items-center">
-            <Sparkles className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-400" />
-            <Input
-              placeholder="Ask AI about your documents... (e.g., 'Show me all warranties expiring in 2025')"
-              value={aiSearchQuery}
-              onChange={(e) => setAiSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleAiSearch(aiSearchQuery)
-                }
-              }}
-              className="pl-12 pr-12 py-3 bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-500/30 text-white placeholder-purple-300/70 rounded-lg"
-            />
-            <Button
-              size="sm"
-              className="absolute right-2 bg-purple-600 hover:bg-purple-700 text-white"
-              onClick={() => handleAiSearch(aiSearchQuery)}
-              disabled={aiSearchLoading}
-            >
-              {aiSearchLoading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-          
-          {/* AI Search Suggestions */}
-          {showAiSuggestions && aiSearchSuggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-10">
-              <div className="p-3 border-b border-gray-600">
-                <div className="flex items-center gap-2 text-sm text-purple-300">
-                  <Bot className="h-4 w-4" />
-                  <span>Try these AI-powered searches:</span>
-                </div>
-              </div>
-              <div className="p-2">
-                {aiSearchSuggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded transition-colors"
-                    onClick={() => {
-                      setAiSearchQuery(suggestion)
-                      handleAiSearch(suggestion)
-                      setShowAiSuggestions(false)
-                    }}
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Bot className="absolute left-11 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-400" />
+          <Input 
+            placeholder="Ask anything — e.g. 'How much did we spend on Unit 22's plumbing?' or 'Find receipts where we were overcharged' (⌘K)"
+            className="bg-gray-800 border-gray-600 text-white pl-20 pr-4 py-4 text-lg rounded-xl focus:border-purple-500 focus:ring-purple-500"
+            value={aiSearchQuery}
+            onChange={(e) => {
+              setAiSearchQuery(e.target.value);
+              const suggestions = getAiSearchSuggestions(e.target.value);
+              setAiSearchSuggestions(suggestions);
+              setShowAiSuggestions(e.target.value.length > 0);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleAiSearch(aiSearchQuery);
+              } else if (e.key === 'Escape') {
+                setShowAiSuggestions(false);
+              }
+            }}
+            onFocus={() => {
+              if (aiSearchQuery.length > 0) {
+                setShowAiSuggestions(true);
+              }
+            }}
+          />
+          {aiSearchLoading && (
+            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-400"></div>
             </div>
           )}
         </div>
+
+        {/* AI Search Suggestions */}
+        {showAiSuggestions && aiSearchSuggestions.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+            {aiSearchSuggestions.map((suggestion, index) => (
+              <div
+                key={index}
+                className="px-4 py-3 hover:bg-gray-700 cursor-pointer text-gray-300 border-b border-gray-700 last:border-b-0"
+                onClick={() => {
+                  setAiSearchQuery(suggestion);
+                  setShowAiSuggestions(false);
+                  handleAiSearch(suggestion);
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <Bot className="h-4 w-4 text-purple-400" />
+                  <span className="text-sm">{suggestion}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Search and Filters */}
