@@ -109,6 +109,82 @@ export default function OwnerDashboard() {
   const [pmPasswordInput, setPmPasswordInput] = useState("")
   const [pmPasswordError, setPmPasswordError] = useState("")
 
+  // Shared messages state for all tabs
+  const [sharedMessages, setSharedMessages] = useState<{
+    id: string;
+    propertyId: string;
+    propertyName: string;
+    senderId: string;
+    senderName: string;
+    senderRole: string;
+    content: string;
+    timestamp: Date;
+    status: string;
+    threadId: string;
+    type?: string;
+    relatedExpenses?: string[];
+    packetId?: string;
+  }[]>([
+    {
+      id: "1",
+      propertyId: "redwood",
+      propertyName: "Redwood Shores Office Complex",
+      senderId: "pm1",
+      senderName: "Jessica Chen",
+      senderRole: "pm",
+      content: "Hi! I wanted to update you on the HVAC repair work order. We've received quotes from 3 contractors and are ready to proceed with the work.",
+      timestamp: new Date("2024-01-15T10:30:00Z"),
+      status: "read",
+      threadId: "thread_redwood_1"
+    },
+    {
+      id: "2",
+      propertyId: "redwood",
+      propertyName: "Redwood Shores Office Complex",
+      senderId: "owner1",
+      senderName: "Property Owner",
+      senderRole: "owner",
+      content: "Thanks for the update! Could you please send me the quotes for review? I want to make sure we're getting the best value.",
+      timestamp: new Date("2024-01-15T14:45:00Z"),
+      status: "sent",
+      threadId: "thread_redwood_1"
+    },
+    {
+      id: "3",
+      propertyId: "mission",
+      propertyName: "Mission Bay Tech Campus",
+      senderId: "pm2",
+      senderName: "James Wilson",
+      senderRole: "pm",
+      content: "The plumbing repair has been completed successfully. All systems are now working properly.",
+      timestamp: new Date("2024-01-16T09:15:00Z"),
+      status: "unread",
+      threadId: "thread_mission_1"
+    }
+  ])
+
+  // Function to add message to shared state
+  const addMessage = (message: {
+    propertyId: string;
+    propertyName: string;
+    senderId: string;
+    senderName: string;
+    senderRole: string;
+    content: string;
+    threadId: string;
+    type?: string;
+    relatedExpenses?: string[];
+    packetId?: string;
+  }) => {
+    const newMessage = {
+      id: Date.now().toString(),
+      timestamp: new Date(),
+      status: "sent",
+      ...message
+    }
+    setSharedMessages(prev => [...prev, newMessage])
+  }
+
   // Check authentication on mount
   useEffect(() => {
     const ownerAuth = localStorage.getItem('ownerAuthenticated')
@@ -289,12 +365,12 @@ export default function OwnerDashboard() {
             {activeTab === "dashboard" && <DashboardTab />}
             {activeTab === "expenses" && <ExpensesTab />}
             {activeTab === "properties" && <PropertiesTab />}
-            {activeTab === "forecasting" && <ForecastingTab />}
+            {activeTab === "forecasting" && <ForecastingTab setActiveTab={setActiveTab} addMessage={addMessage} />}
             {activeTab === "smart-insights" && <SmartInsightsTab />}
-            {activeTab === "reimbursements" && <ReimbursementsTab setActiveTab={setActiveTab} />}
+            {activeTab === "reimbursements" && <ReimbursementsTab setActiveTab={setActiveTab} addMessage={addMessage} />}
             {activeTab === "reporting" && <ReportingTab />}
             {activeTab === "collateral" && <CollateralTab />}
-            {activeTab === "communications" && <CommunicationsTab />}
+            {activeTab === "communications" && <CommunicationsTab messages={sharedMessages} setMessages={setSharedMessages} />}
           </div>
         </div>
       </div>
@@ -2041,10 +2117,30 @@ function PropertiesTab() {
   )
 }
 
-function ForecastingTab() {
+function ForecastingTab({ setActiveTab, addMessage }: { 
+  setActiveTab: (tab: string) => void;
+  addMessage: (message: {
+    propertyId: string;
+    propertyName: string;
+    senderId: string;
+    senderName: string;
+    senderRole: string;
+    content: string;
+    threadId: string;
+    type?: string;
+    relatedExpenses?: string[];
+    packetId?: string;
+  }) => void;
+}) {
   const [selectedPeriod, setSelectedPeriod] = useState("Monthly")
-  const [dateRange, setDateRange] = useState("Rest of 2024")
+  const [dateRange, setDateRange] = useState("Rest of 2025")
   const [showAddExpense, setShowAddExpense] = useState(false)
+  const [showEditExpenses, setShowEditExpenses] = useState(false)
+  const [showAdjustForecast, setShowAdjustForecast] = useState(false)
+  const [selectedExpenseId, setSelectedExpenseId] = useState<number | null>(null)
+  const [showApplyRecommendation, setShowApplyRecommendation] = useState(false)
+  const [selectedRecommendationType, setSelectedRecommendationType] = useState("")
+  const [communicationMessage, setCommunicationMessage] = useState("")
 
   // Mock data for the chart
   const monthlyData = [
@@ -2061,6 +2157,32 @@ function ForecastingTab() {
     { month: 'Nov', actual: 0, forecast: 1200000, budget: 1250000 },
     { month: 'Dec', actual: 0, forecast: 1150000, budget: 1200000 }
   ]
+
+  const quarterlyData = [
+    { month: 'Q1', actual: 3650000, forecast: 3800000, budget: 3980000 },
+    { month: 'Q2', actual: 3530000, forecast: 3670000, budget: 3800000 },
+    { month: 'Q3', actual: 0, forecast: 4050000, budget: 4200000 },
+    { month: 'Q4', actual: 0, forecast: 3600000, budget: 3750000 }
+  ]
+
+  const getChartData = () => {
+    return selectedPeriod === "Monthly" ? monthlyData : quarterlyData
+  }
+
+  const getKPIData = () => {
+    const data = getChartData()
+    const totalForecast = data.reduce((sum, item) => sum + item.forecast, 0)
+    const totalBudget = data.reduce((sum, item) => sum + item.budget, 0)
+    const remainingBudget = totalBudget - totalForecast
+    
+    return {
+      forecastedSpend: totalForecast,
+      remainingBudget: totalBudget,
+      budgetDelta: remainingBudget,
+      budgetStatus: remainingBudget > 0 ? "Under Budget" : remainingBudget < 0 ? "Over Budget" : "At Budget",
+      budgetStatusColor: remainingBudget > 0 ? "text-green-400" : remainingBudget < 0 ? "text-red-400" : "text-yellow-400"
+    }
+  }
 
   const upcomingExpenses = [
     {
@@ -2090,7 +2212,22 @@ function ForecastingTab() {
   ]
 
   const handleExportReport = () => {
-    console.log("Exporting forecast report")
+    // Create a mock CSV export
+    const csvData = [
+      ['Property', 'Month', 'Actual', 'Forecast', 'Budget', 'Variance'],
+      ['Redwood Shores', 'Jan 2025', '1200000', '1250000', '1300000', '-100000'],
+      ['Mission Bay', 'Jan 2025', '1150000', '1200000', '1280000', '-130000'],
+      ['Skyline Vista', 'Jan 2025', '1100000', '1150000', '1200000', '-100000']
+    ]
+    
+    const csvContent = csvData.map(row => row.join(',')).join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `forecast-report-${dateRange.replace(' ', '-').toLowerCase()}.csv`
+    a.click()
+    window.URL.revokeObjectURL(url)
   }
 
   const handleAddExpense = () => {
@@ -2098,19 +2235,44 @@ function ForecastingTab() {
   }
 
   const handleEditExpense = (id: number) => {
-    console.log(`Editing expense ${id}`)
+    setSelectedExpenseId(id)
+    setShowEditExpenses(true)
   }
 
   const handleViewInExpenses = () => {
-    console.log("Viewing in expenses")
+    // Navigate to expenses tab filtered for Mission Bay property
+    const searchParams = new URLSearchParams(window.location.search)
+    searchParams.set('tab', 'expenses')
+    searchParams.set('property', 'Mission Bay Tech Campus')
+    window.history.pushState({}, '', `${window.location.pathname}?${searchParams.toString()}`)
+    setActiveTab('expenses')
   }
 
   const handleAdjustForecast = () => {
-    console.log("Adjusting forecast")
+    setShowAdjustForecast(true)
   }
 
   const handleApplyRecommendation = (type: string) => {
-    console.log(`Applying recommendation: ${type}`)
+    setSelectedRecommendationType(type)
+    
+    // Auto-populate communication message based on recommendation type
+    let message = ""
+    switch (type) {
+      case "early_maintenance":
+        message = "Hi Team,\n\nBased on our Smart Forecast analysis, we recommend scheduling early maintenance for the HVAC system at Mission Bay Tech Campus. This proactive approach will help prevent potential failures and reduce overall costs.\n\nPlease coordinate with the maintenance team to schedule this within the next 2 weeks.\n\nDetails:\n- Property: Mission Bay Tech Campus\n- System: HVAC\n- Recommended Action: Early maintenance\n- Expected Cost Savings: $8,500\n- Timeline: Next 2 weeks\n\nLet me know if you need any additional information.\n\nBest regards,\nProperty Owner"
+        break
+      case "vendor_contract":
+        message = "Hi Team,\n\nOur Smart Forecast analysis indicates we should renegotiate the vendor contract for plumbing services at Mission Bay Tech Campus. Current rates are above market averages.\n\nPlease review the following:\n- Current contract terms\n- Market rate analysis\n- Alternative vendor options\n- Negotiate better rates or find replacement vendor\n\nExpected savings: $12,000 annually\n\nPlease provide an update within 1 week.\n\nBest regards,\nProperty Owner"
+        break
+      case "emergency_fund":
+        message = "Hi Team,\n\nSmart Forecast analysis recommends increasing the emergency fund allocation for Mission Bay Tech Campus due to aging infrastructure.\n\nRecommendation:\n- Increase emergency fund by $25,000\n- Focus on electrical and plumbing systems\n- Schedule preventive assessments\n\nThis will help us avoid costly emergency repairs and maintain property value.\n\nPlease confirm receipt and let me know about implementation timeline.\n\nBest regards,\nProperty Owner"
+        break
+      default:
+        message = "Hi Team,\n\nBased on our Smart Forecast analysis, we have a recommendation for Mission Bay Tech Campus that requires your attention.\n\nPlease review the forecast data and coordinate the recommended actions.\n\nLet me know if you need any clarification.\n\nBest regards,\nProperty Owner"
+    }
+    
+    setCommunicationMessage(message)
+    setShowApplyRecommendation(true)
   }
 
   return (
@@ -2126,8 +2288,8 @@ function ForecastingTab() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-600">
-                <SelectItem value="Rest of 2024" className="text-white">Rest of 2024</SelectItem>
-                <SelectItem value="2025" className="text-white">2025</SelectItem>
+                <SelectItem value="Rest of 2025" className="text-white">Rest of 2025</SelectItem>
+                <SelectItem value="2026" className="text-white">2026</SelectItem>
                 <SelectItem value="Next 6 months" className="text-white">Next 6 months</SelectItem>
               </SelectContent>
             </Select>
@@ -2146,30 +2308,33 @@ function ForecastingTab() {
         <Card className="bg-gray-800 border-gray-700">
           <CardContent className="p-4">
             <div className="text-sm text-gray-400 mb-1">Forecasted Spend</div>
-            <div className="text-2xl font-bold text-white">$8,615,500</div>
-            <div className="text-xs text-gray-500 mt-1">Total Forecasted</div>
+            <div className="text-2xl font-bold text-white">${getKPIData().forecastedSpend.toLocaleString()}</div>
+            <div className="text-xs text-gray-500 mt-1">Total Forecasted ({selectedPeriod})</div>
           </CardContent>
         </Card>
         <Card className="bg-gray-800 border-gray-700">
           <CardContent className="p-4">
-            <div className="text-sm text-gray-400 mb-1">Remaining Budget</div>
-            <div className="text-2xl font-bold text-green-400">$12,684,500</div>
-            <div className="text-xs text-gray-500 mt-1">Remaining Budget</div>
+            <div className="text-sm text-gray-400 mb-1">Total Budget</div>
+            <div className="text-2xl font-bold text-blue-400">${getKPIData().remainingBudget.toLocaleString()}</div>
+            <div className="text-xs text-gray-500 mt-1">Total Budget ({selectedPeriod})</div>
           </CardContent>
         </Card>
         <Card className="bg-gray-800 border-gray-700">
           <CardContent className="p-4">
-            <div className="text-sm text-gray-400 mb-1">Delta vs. Budget</div>
-            <div className="text-2xl font-bold text-red-400">+$12,684,500</div>
-            <div className="text-xs text-gray-500 mt-1">Delta vs. Budget</div>
+            <div className="text-sm text-gray-400 mb-1">Remaining Budget - Forecasted Spend</div>
+            <div className={`text-2xl font-bold ${getKPIData().budgetStatusColor}`}>${Math.abs(getKPIData().budgetDelta).toLocaleString()}</div>
+            <div className="text-xs text-gray-500 mt-1">{getKPIData().budgetStatus}</div>
           </CardContent>
         </Card>
         <Card className="bg-gray-800 border-gray-700">
           <CardContent className="p-4">
             <div className="text-sm text-gray-400 mb-1">Risk Level</div>
-            <Badge className="bg-orange-600 text-white">Medium Risk</Badge>
-            <div className="text-xs text-gray-500 mt-1">1 properties exceed budget threshold</div>
-            <div className="text-xs text-gray-500">Action required on flagged properties</div>
+            <Badge className={getKPIData().budgetDelta < 0 ? "bg-red-600 text-white" : "bg-green-600 text-white"}>
+              {getKPIData().budgetDelta < 0 ? "High Risk" : "Low Risk"}
+            </Badge>
+            <div className="text-xs text-gray-500 mt-1">
+              {getKPIData().budgetDelta < 0 ? "Over budget - immediate action required" : "Within budget parameters"}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -2203,7 +2368,7 @@ function ForecastingTab() {
           <CardContent>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyData}>
+                <LineChart data={getChartData()}>
                   <XAxis dataKey="month" stroke="#9CA3AF" />
                   <YAxis stroke="#9CA3AF" />
                   <RechartsTooltip 
@@ -2417,6 +2582,239 @@ function ForecastingTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Add Expense Dialog */}
+      <Dialog open={showAddExpense} onOpenChange={setShowAddExpense}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Projected Expense</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-gray-300">Property</Label>
+              <Select>
+                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                  <SelectValue placeholder="Select property" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="redwood" className="text-white">Redwood Shores</SelectItem>
+                  <SelectItem value="mission" className="text-white">Mission Bay</SelectItem>
+                  <SelectItem value="skyline" className="text-white">Skyline Vista</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-gray-300">Date</Label>
+              <Input type="date" className="bg-gray-800 border-gray-600 text-white" />
+            </div>
+            <div>
+              <Label className="text-gray-300">Category</Label>
+              <Select>
+                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="maintenance" className="text-white">Maintenance</SelectItem>
+                  <SelectItem value="capital" className="text-white">Capital Improvements</SelectItem>
+                  <SelectItem value="opex" className="text-white">Recurring OpEx</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-gray-300">Amount</Label>
+              <Input type="number" placeholder="Enter amount" className="bg-gray-800 border-gray-600 text-white" />
+            </div>
+            <div>
+              <Label className="text-gray-300">Description</Label>
+              <Textarea placeholder="Enter description" className="bg-gray-800 border-gray-600 text-white" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddExpense(false)}>Cancel</Button>
+            <Button onClick={() => setShowAddExpense(false)} className="bg-green-600 hover:bg-green-700">Add Expense</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Expenses Dialog */}
+      <Dialog open={showEditExpenses} onOpenChange={setShowEditExpenses}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Upcoming Expenses</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="max-h-96 overflow-y-auto">
+              {upcomingExpenses.map((expense) => (
+                <div key={expense.id} className="border border-gray-600 rounded-lg p-4 mb-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-gray-300">Property</Label>
+                      <Select defaultValue={expense.property}>
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-800 border-gray-600">
+                          <SelectItem value="Redwood Shores" className="text-white">Redwood Shores</SelectItem>
+                          <SelectItem value="Mission Bay" className="text-white">Mission Bay</SelectItem>
+                          <SelectItem value="Skyline Vista" className="text-white">Skyline Vista</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-300">Date</Label>
+                      <Input type="date" defaultValue={expense.date} className="bg-gray-800 border-gray-600 text-white" />
+                    </div>
+                    <div>
+                      <Label className="text-gray-300">Category</Label>
+                      <Select defaultValue={expense.category}>
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-800 border-gray-600">
+                          <SelectItem value="Maintenance" className="text-white">Maintenance</SelectItem>
+                          <SelectItem value="Capital Improvements" className="text-white">Capital Improvements</SelectItem>
+                          <SelectItem value="Recurring OpEx" className="text-white">Recurring OpEx</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-300">Amount</Label>
+                      <Input type="number" defaultValue={expense.amount} className="bg-gray-800 border-gray-600 text-white" />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex justify-end gap-2">
+                    <Button size="sm" variant="outline" className="bg-red-600 hover:bg-red-700 text-white">
+                      Delete
+                    </Button>
+                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+                      Save Changes
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditExpenses(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Adjust Forecast Dialog */}
+      <Dialog open={showAdjustForecast} onOpenChange={setShowAdjustForecast}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Adjust Forecast</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-gray-300">Property</Label>
+              <Select defaultValue="mission">
+                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="redwood" className="text-white">Redwood Shores</SelectItem>
+                  <SelectItem value="mission" className="text-white">Mission Bay</SelectItem>
+                  <SelectItem value="skyline" className="text-white">Skyline Vista</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-gray-300">Adjustment Type</Label>
+              <Select>
+                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                  <SelectValue placeholder="Select adjustment type" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="increase" className="text-white">Increase Budget</SelectItem>
+                  <SelectItem value="decrease" className="text-white">Decrease Budget</SelectItem>
+                  <SelectItem value="reallocation" className="text-white">Reallocate Funds</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-gray-300">Amount</Label>
+              <Input type="number" placeholder="Enter adjustment amount" className="bg-gray-800 border-gray-600 text-white" />
+            </div>
+            <div>
+              <Label className="text-gray-300">Reason</Label>
+              <Textarea placeholder="Explain the reason for this adjustment" className="bg-gray-800 border-gray-600 text-white" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAdjustForecast(false)}>Cancel</Button>
+            <Button onClick={() => setShowAdjustForecast(false)} className="bg-blue-600 hover:bg-blue-700">Apply Adjustment</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Apply Recommendation Dialog */}
+      <Dialog open={showApplyRecommendation} onOpenChange={setShowApplyRecommendation}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Apply Recommendation - Communications</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              This message will be sent to the property manager with details about the recommended action.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-gray-300">Recommendation Type</Label>
+              <div className="text-white font-medium">{selectedRecommendationType.replace('_', ' ').toUpperCase()}</div>
+            </div>
+            <div>
+              <Label className="text-gray-300">Message to Property Manager</Label>
+              <Textarea 
+                value={communicationMessage}
+                onChange={(e) => setCommunicationMessage(e.target.value)}
+                className="bg-gray-800 border-gray-600 text-white min-h-[200px]"
+                placeholder="Message will be auto-populated based on recommendation type"
+              />
+            </div>
+            <div>
+              <Label className="text-gray-300">Priority Level</Label>
+              <Select defaultValue="normal">
+                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="low" className="text-white">Low</SelectItem>
+                  <SelectItem value="normal" className="text-white">Normal</SelectItem>
+                  <SelectItem value="high" className="text-white">High</SelectItem>
+                  <SelectItem value="urgent" className="text-white">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowApplyRecommendation(false)}>Cancel</Button>
+            <Button 
+              onClick={() => {
+                // Add the message to the shared state
+                addMessage({
+                  propertyId: "redwood",
+                  propertyName: "Redwood Shores Office Complex",
+                  senderId: "owner1",
+                  senderName: "Property Owner",
+                  senderRole: "owner",
+                  content: communicationMessage,
+                  threadId: "thread_redwood_forecasting",
+                  type: "forecast_recommendation",
+                  relatedExpenses: [],
+                  packetId: selectedRecommendationType
+                })
+                
+                setShowApplyRecommendation(false)
+                setActiveTab('communications')
+              }}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Send Message & Go to Communications
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -2429,151 +2827,222 @@ function SmartInsightsTab() {
     opex: ""
   })
   const [aiQuery, setAiQuery] = useState("")
-  const [showRoiCalculator, setShowRoiCalculator] = useState(false)
-  const [showAiInput, setShowAiInput] = useState(false)
+  const [aiDirectInput, setAiDirectInput] = useState("")
+  const [aiResults, setAiResults] = useState<string>("")
+  const [showAiResults, setShowAiResults] = useState(false)
+  const [showRoiPopup, setShowRoiPopup] = useState(false)
+  const [roiResults, setRoiResults] = useState<any>(null)
   
-  // Filter states
+  // Filter states that actually work
   const [selectedProperty, setSelectedProperty] = useState("Stanford Graduate School...")
   const [selectedTimeRange, setSelectedTimeRange] = useState("Quarterly")
   const [selectedRegion, setSelectedRegion] = useState("Bay Area")
   const [selectedViewType, setSelectedViewType] = useState("$/sqft")
 
-  const handleAiQuestion = (question: string) => {
-    setAiQuery(question)
-    setShowAiInput(true)
-    // Simulate AI response
-    setTimeout(() => {
-      console.log(`AI Query: ${question}`)
-      alert(`AI is processing: "${question}"\n\nThis would normally open a detailed analysis interface.`)
-    }, 500)
+  // Base data for different filter combinations
+  const benchmarkingDataSets = {
+    "Stanford Graduate School...": {
+      "Quarterly": {
+        "HVAC": { actual: 8400, market: 11800, cleanSheet: 8200, portfolio: 8600 },
+        "Elevator": { actual: 6300, market: 8100, cleanSheet: 6500, portfolio: 6400 },
+        "Fire Safety": { actual: 4100, market: 5900, cleanSheet: 4200, portfolio: 4300 },
+        "Plumbing": { actual: 5900, market: 7800, cleanSheet: 5800, portfolio: 6100 },
+        "General R&M": { actual: 11800, market: 15200, cleanSheet: 11500, portfolio: 12000 }
+      },
+      "Monthly": {
+        "HVAC": { actual: 2800, market: 3930, cleanSheet: 2733, portfolio: 2867 },
+        "Elevator": { actual: 2100, market: 2700, cleanSheet: 2167, portfolio: 2133 },
+        "Fire Safety": { actual: 1367, market: 1967, cleanSheet: 1400, portfolio: 1433 },
+        "Plumbing": { actual: 1967, market: 2600, cleanSheet: 1933, portfolio: 2033 },
+        "General R&M": { actual: 3933, market: 5067, cleanSheet: 3833, portfolio: 4000 }
+      }
+    },
+    "All Properties": {
+      "Quarterly": {
+        "HVAC": { actual: 10200, market: 13800, cleanSheet: 9800, portfolio: 10400 },
+        "Elevator": { actual: 7500, market: 9200, cleanSheet: 7200, portfolio: 7600 },
+        "Fire Safety": { actual: 5200, market: 7100, cleanSheet: 4900, portfolio: 5300 },
+        "Plumbing": { actual: 6800, market: 8900, cleanSheet: 6500, portfolio: 7100 },
+        "General R&M": { actual: 13500, market: 17200, cleanSheet: 13000, portfolio: 13800 }
+      },
+      "Monthly": {
+        "HVAC": { actual: 3400, market: 4600, cleanSheet: 3267, portfolio: 3467 },
+        "Elevator": { actual: 2500, market: 3067, cleanSheet: 2400, portfolio: 2533 },
+        "Fire Safety": { actual: 1733, market: 2367, cleanSheet: 1633, portfolio: 1767 },
+        "Plumbing": { actual: 2267, market: 2967, cleanSheet: 2167, portfolio: 2367 },
+        "General R&M": { actual: 4500, market: 5733, cleanSheet: 4333, portfolio: 4600 }
+      }
+    }
   }
 
-  const handleAskAI = () => {
-    const customQuery = prompt("What would you like to ask the AI about your property portfolio?")
-    if (customQuery) {
-      handleAiQuestion(customQuery)
+  const handleAiQuestion = (question: string) => {
+    setAiQuery(question)
+    setShowAiResults(true)
+    // Simulate AI response processing
+    setTimeout(() => {
+      setAiResults(`AI Analysis for: "${question}"\n\nBased on your portfolio data, here are the key insights:\n\n• Current spend analysis shows patterns across your properties\n• Cost optimization opportunities identified\n• Recommended actions for immediate implementation\n\nThis analysis is based on your current portfolio performance and benchmarking data.`)
+    }, 1000)
+  }
+
+  const handleAskAIDirect = () => {
+    if (aiDirectInput.trim()) {
+      handleAiQuestion(aiDirectInput)
+      setAiDirectInput("")
     }
+  }
+
+  const scrollToRoiCalculator = () => {
+    document.getElementById('roi-calculator-section')?.scrollIntoView({ behavior: 'smooth' })
   }
 
   const handleRoiCalculation = () => {
-    console.log("Calculating ROI", roiCalcForm)
-    alert(`ROI Calculation:\nAsset: ${roiCalcForm.assetType}\nAction: ${roiCalcForm.actionType}\nCost: ${roiCalcForm.cost}\nOpEx: ${roiCalcForm.opex}\n\nThis would normally perform detailed ROI calculations.`)
-  }
-
-  const handleExportCSV = () => {
-    console.log("Exporting to CSV")
-    // Create CSV content
-    const csvContent = `Category,Actual,Market,Clean Sheet,Portfolio,Over Clean Sheet\n` +
-      benchmarkingData.map(item => 
-        `${item.category},${item.actual},${item.market},${item.cleanSheet},${item.portfolio},${item.overCleanSheet}`
-      ).join('\n')
+    let formToUse = roiCalcForm
     
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'cost-benchmarking-data.csv'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
-  }
-
-  const handleExportPDF = () => {
-    console.log("Exporting to PDF")
-    alert("PDF export functionality would be implemented here.\n\nThis would generate a comprehensive PDF report of the cost benchmarking data.")
-  }
-
-  // Interactive Cost Benchmarking Data - updated to show better performance
-  const benchmarkingData = [
-    {
-      category: "HVAC",
-      actual: 8400,
-      actualWidth: 70,
-      market: 11800,
-      marketWidth: 95,
-      cleanSheet: 8200,
-      cleanSheetWidth: 68,
-      portfolio: 8600,
-      portfolioWidth: 72,
-      overCleanSheet: "2% over clean sheet",
-      recommendations: ["Negotiate vendor contracts", "Vendor consolidation"]
-    },
-    {
-      category: "Elevator",
-      actual: 6300,
-      actualWidth: 55,
-      market: 8100,
-      marketWidth: 70,
-      cleanSheet: 6500,
-      cleanSheetWidth: 57,
-      portfolio: 6400,
-      portfolioWidth: 56,
-      overCleanSheet: "3% under clean sheet",
-      recommendations: ["Contract optimization", "Preventive maintenance"]
-    },
-    {
-      category: "Fire Safety",
-      actual: 4100,
-      actualWidth: 45,
-      market: 5900,
-      marketWidth: 65,
-      cleanSheet: 4200,
-      cleanSheetWidth: 46,
-      portfolio: 4300,
-      portfolioWidth: 48,
-      overCleanSheet: "2% under clean sheet",
-      recommendations: ["Multi-year contracts", "Vendor negotiation"]
-    },
-    {
-      category: "Plumbing",
-      actual: 5900,
-      actualWidth: 60,
-      market: 7800,
-      marketWidth: 80,
-      cleanSheet: 5800,
-      cleanSheetWidth: 59,
-      portfolio: 6100,
-      portfolioWidth: 62,
-      overCleanSheet: "2% over clean sheet",
-      recommendations: ["Emergency service rates", "Vendor consolidation"]
-    },
-    {
-      category: "General R&M",
-      actual: 11800,
-      actualWidth: 80,
-      market: 15200,
-      marketWidth: 95,
-      cleanSheet: 11500,
-      cleanSheetWidth: 78,
-      portfolio: 12000,
-      portfolioWidth: 82,
-      overCleanSheet: "3% over clean sheet",
-      recommendations: ["Contract standardization", "Vendor performance"]
+    // If form fields are empty but AI input has content, try to auto-fill from AI input
+    if ((!roiCalcForm.assetType || !roiCalcForm.actionType || !roiCalcForm.cost) && aiDirectInput.trim()) {
+      const input = aiDirectInput.toLowerCase()
+      let autoFilledForm = { ...roiCalcForm }
+      
+      // Auto-detect asset type
+      if (input.includes("hvac") || input.includes("heating") || input.includes("cooling")) {
+        autoFilledForm.assetType = "hvac"
+      } else if (input.includes("elevator")) {
+        autoFilledForm.assetType = "elevator"
+      } else if (input.includes("plumbing") || input.includes("leak")) {
+        autoFilledForm.assetType = "plumbing"
+      } else if (input.includes("electrical") || input.includes("lighting")) {
+        autoFilledForm.assetType = "electrical"
+      }
+      
+      // Auto-detect action type
+      if (input.includes("replace") || input.includes("replacing")) {
+        autoFilledForm.actionType = "Replace"
+      } else if (input.includes("repair") || input.includes("repairing")) {
+        autoFilledForm.actionType = "Repair"
+      } else if (input.includes("upgrade") || input.includes("upgrading")) {
+        autoFilledForm.actionType = "Upgrade"
+      }
+      
+      // Set default cost based on asset type
+      if (!autoFilledForm.cost) {
+        if (autoFilledForm.assetType === "hvac") {
+          autoFilledForm.cost = "$45,000"
+          autoFilledForm.opex = "$8,500"
+        } else if (autoFilledForm.assetType === "elevator") {
+          autoFilledForm.cost = "$75,000"
+          autoFilledForm.opex = "$12,000"
+        } else if (autoFilledForm.assetType === "plumbing") {
+          autoFilledForm.cost = "$15,000"
+          autoFilledForm.opex = "$2,500"
+        } else if (autoFilledForm.assetType === "electrical") {
+          autoFilledForm.cost = "$25,000"
+          autoFilledForm.opex = "$3,200"
+        } else {
+          autoFilledForm.cost = "$30,000"
+          autoFilledForm.opex = "$5,000"
+        }
+      }
+      
+      // Check if we have enough info now
+      if (!autoFilledForm.assetType || !autoFilledForm.actionType || !autoFilledForm.cost) {
+        alert("Please fill in all required fields (Asset Type, Action Type, and Estimated Cost) or provide more specific information in the AI input field.")
+        return
+      }
+      
+      // Use the auto-filled form for calculation
+      formToUse = autoFilledForm
+      setRoiCalcForm(autoFilledForm)
+    } else if (!roiCalcForm.assetType || !roiCalcForm.actionType || !roiCalcForm.cost) {
+      alert("Please fill in all required fields (Asset Type, Action Type, and Estimated Cost) or use the Quick Questions to auto-fill the form.")
+      return
     }
-  ]
 
-  // Cost Benchmarking Summary Data
-  const costBenchmarkingSummary = [
-    { category: "Total R&M", perSqFt: "$18.2", variance: "$12.5", performance: "$396k" },
-    { category: "Market Average", perSqFt: "$14.2", variance: "$9.2", performance: "$349k" },
-    { category: "Savings", perSqFt: "$4.0", variance: "$3.3", performance: "$47k" },
-    { category: "Electrical", perSqFt: "$4.2", variance: "$2.8", performance: "$34k" }
-  ]
+    // Use the determined form for calculations
+    const cost = parseFloat(formToUse.cost.replace(/[^0-9.-]+/g, ""))
+    const opex = parseFloat(formToUse.opex.replace(/[^0-9.-]+/g, "")) || 0
+    
+    // Calculate ROI based on asset type and action
+    let paybackYears = 0
+    let savings = 0
+    let recommendation = ""
+
+    if (formToUse.assetType === "elevator" && formToUse.actionType === "Replace") {
+      paybackYears = 2.3
+      savings = cost * 0.15 // 15% annual savings
+      recommendation = "Replace"
+    } else if (formToUse.assetType === "hvac" && formToUse.actionType === "Replace") {
+      paybackYears = 3.2
+      savings = cost * 0.18 // 18% annual savings
+      recommendation = "Replace"
+    } else if (formToUse.actionType === "Repair") {
+      paybackYears = 1.8
+      savings = cost * 0.25 // 25% annual savings
+      recommendation = "Repair"
+    } else {
+      paybackYears = 4.5
+      savings = cost * 0.12 // 12% annual savings
+      recommendation = "Repair"
+    }
+
+    // Set the results and show popup
+    setRoiResults({
+      asset: formToUse.assetType,
+      action: formToUse.actionType,
+      cost: formToUse.cost,
+      opex: formToUse.opex,
+      paybackYears,
+      savings,
+      recommendation
+    })
+    setShowRoiPopup(true)
+  }
+
+  // Get current data based on filters
+  const getCurrentData = () => {
+    const propertyData = benchmarkingDataSets[selectedProperty as keyof typeof benchmarkingDataSets] || benchmarkingDataSets["Stanford Graduate School..."]
+    const timeData = propertyData[selectedTimeRange as keyof typeof propertyData] || propertyData["Quarterly"]
+    
+    return Object.keys(timeData).map(category => {
+      const data = timeData[category as keyof typeof timeData]
+      const maxValue = Math.max(data.actual, data.market, data.cleanSheet, data.portfolio)
+      
+      return {
+        category,
+        actual: data.actual,
+        actualWidth: (data.actual / maxValue) * 100,
+        market: data.market,
+        marketWidth: (data.market / maxValue) * 100,
+        cleanSheet: data.cleanSheet,
+        cleanSheetWidth: (data.cleanSheet / maxValue) * 100,
+        portfolio: data.portfolio,
+        portfolioWidth: (data.portfolio / maxValue) * 100,
+        overCleanSheet: data.actual > data.cleanSheet ? 
+          `${Math.round(((data.actual - data.cleanSheet) / data.cleanSheet) * 100)}% over clean sheet` :
+          `${Math.round(((data.cleanSheet - data.actual) / data.cleanSheet) * 100)}% under clean sheet`,
+        recommendations: ["Contract optimization", "Vendor consolidation"]
+      }
+    })
+  }
 
   // Recent Analyses for ROI Calculator
   const recentAnalyses = [
     {
       type: "HVAC System - Building A",
-      result: "2.3 year payback",
-      savings: "4.4 years",
-      status: "Approved"
+      action: "Repair vs Replace",
+      cost: "$8500",
+      payback: "2-3 years",
+      savings: "Better long-term value, energy savings",
+      recommendation: "Replace",
+      status: "Replace"
     },
     {
       type: "Leak Detection System",
-      result: "5.2 year payback",
-      savings: "8.3 years",
-      status: "Approved"
+      action: "Insurance Optimization",
+      cost: "$15000",
+      payback: "4.4 years",
+      savings: "Reduces insurance premiums, prevents water damage",
+      recommendation: "Install",
+      status: "Install"
     }
   ]
 
@@ -2615,47 +3084,79 @@ function SmartInsightsTab() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-gray-300 mb-4 p-3 bg-gray-700 rounded">
-            How much did we spend on HVAC across all properties in Q4?
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-            {[
-              "How much did we spend on HVAC across all properties in Q4?",
-              "Which expenses were reimbursed late from trust accounts?",
-              "What's our total R&M spend vs. benchmark by property?",
-              "Show me all emergency repairs over $5,000 this year",
-              "Which vendors have the highest cost per service call?",
-              "What are our biggest budget variances by category?"
-            ].map((question, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                className="justify-start h-auto p-3 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 text-left"
-                onClick={() => handleAiQuestion(question)}
-              >
-                <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 flex-shrink-0"></span>
-                <span className="text-sm">{question}</span>
-              </Button>
-            ))}
-          </div>
+          {!showAiResults ? (
+            <>
+              <div className="text-sm text-gray-300 mb-4 p-3 bg-gray-700 rounded">
+                How much did we spend on HVAC across all properties in Q4?
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                {[
+                  "How much did we spend on HVAC across all properties in Q4?",
+                  "What's our insurance premium optimization potential?",
+                  "What's our total R&M spend vs. benchmark by property?",
+                  "Show me all emergency repairs over $5,000 this year",
+                  "Which insurance policies need renewal this quarter?",
+                  "What are our biggest budget variances by category?"
+                ].map((question, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    className="justify-start h-auto p-3 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 text-left"
+                    onClick={() => handleAiQuestion(question)}
+                  >
+                    <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 flex-shrink-0"></span>
+                    <span className="text-sm">{question}</span>
+                  </Button>
+                ))}
+              </div>
 
-          <div className="flex gap-3">
-            <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
-              onClick={handleAskAI}
-            >
-              <span className="w-2 h-2 bg-white rounded-full"></span>
-              Ask AI
-            </Button>
-            <Button
-              className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => setShowRoiCalculator(!showRoiCalculator)}
-            >
-              <Calculator className="h-4 w-4 mr-2" />
-              ROI Calculator
-            </Button>
-          </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Ask AI about your property portfolio..."
+                    value={aiDirectInput}
+                    onChange={(e) => setAiDirectInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAskAIDirect()}
+                    className="bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                  onClick={handleAskAIDirect}
+                >
+                  <span className="w-2 h-2 bg-white rounded-full"></span>
+                  Ask AI
+                </Button>
+                <Button
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  onClick={scrollToRoiCalculator}
+                >
+                  <Calculator className="h-4 w-4 mr-2" />
+                  ROI Calculator
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-white">AI Analysis Results</h4>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAiResults(false)}
+                  className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                >
+                  Back to Questions
+                </Button>
+              </div>
+              <div className="p-4 bg-gray-700 rounded-lg">
+                <div className="text-sm text-gray-300 whitespace-pre-line">
+                  {aiResults}
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -2684,8 +3185,6 @@ function SmartInsightsTab() {
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-600">
                   <SelectItem value="Stanford Graduate School..." className="text-white">Stanford Graduate School...</SelectItem>
-                  <SelectItem value="Downtown Office Complex" className="text-white">Downtown Office Complex</SelectItem>
-                  <SelectItem value="Bay Area Plaza" className="text-white">Bay Area Plaza</SelectItem>
                   <SelectItem value="All Properties" className="text-white">All Properties</SelectItem>
                 </SelectContent>
               </Select>
@@ -2697,8 +3196,6 @@ function SmartInsightsTab() {
                 <SelectContent className="bg-gray-800 border-gray-600">
                   <SelectItem value="Quarterly" className="text-white">Quarterly</SelectItem>
                   <SelectItem value="Monthly" className="text-white">Monthly</SelectItem>
-                  <SelectItem value="Annually" className="text-white">Annually</SelectItem>
-                  <SelectItem value="YTD" className="text-white">YTD</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -2727,21 +3224,21 @@ function SmartInsightsTab() {
               </Select>
             </div>
             
-            {benchmarkingData.map((item, index) => (
+            {getCurrentData().map((item, index) => (
               <div key={index} className="space-y-3">
-                                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-white">{item.category}</h4>
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm text-gray-400">Versus: Market Median, Clean Sheet Pro, Chambre Diversified</span>
-                      <span className={`text-sm font-bold px-2 py-1 rounded ${
-                        item.overCleanSheet.includes('under') 
-                          ? 'text-green-400 bg-green-900' 
-                          : 'text-red-400 bg-red-900'
-                      }`}>
-                        {item.overCleanSheet}
-                      </span>
-                    </div>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-white">{item.category}</h4>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-gray-400">Versus: Market Median, Clean Sheet Pro, Chambre Diversified</span>
+                    <span className={`text-sm font-bold px-2 py-1 rounded ${
+                      item.overCleanSheet.includes('under') 
+                        ? 'text-green-400 bg-green-900' 
+                        : 'text-red-400 bg-red-900'
+                    }`}>
+                      {item.overCleanSheet}
+                    </span>
                   </div>
+                </div>
                 
                 <div className="space-y-2">
                   <div className="flex items-center gap-4">
@@ -2803,68 +3300,18 @@ function SmartInsightsTab() {
               </div>
             ))}
           </div>
-          
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button 
-              variant="outline" 
-              className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-              onClick={handleExportCSV}
-            >
-              Export CSV
-            </Button>
-            <Button 
-              variant="outline" 
-              className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-              onClick={handleExportPDF}
-            >
-              Export PDF
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Cost Benchmarking Summary */}
-      <Card className="bg-gray-800 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-white">Cost Benchmarking</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b border-gray-700">
-                <tr>
-                  <th className="text-left py-3 px-4 font-medium text-gray-300">Category</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-300">Market Performance</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-300">Per Sq Ft</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-300">Variance</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-300">Performance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {costBenchmarkingSummary.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-700">
-                    <td className="py-3 px-4 text-white font-medium">{item.category}</td>
-                    <td className="py-3 px-4 text-white">{item.perSqFt}</td>
-                    <td className="py-3 px-4 text-white">{item.perSqFt}</td>
-                    <td className="py-3 px-4 text-white">{item.variance}</td>
-                    <td className="py-3 px-4 text-white">{item.performance}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </CardContent>
       </Card>
 
       {/* ROI Calculator */}
-      <Card className="bg-gray-800 border-gray-700">
+      <Card className="bg-gray-800 border-gray-700" id="roi-calculator-section">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <Calculator className="h-5 w-5 text-green-400" />
             ROI Calculator
           </CardTitle>
           <p className="text-sm text-gray-400">
-            AI-powered returns on property maintenance decisions
+            AI-powered calculations for repair vs replace decisions
           </p>
         </CardHeader>
         <CardContent>
@@ -2876,16 +3323,17 @@ function SmartInsightsTab() {
                   <Label className="text-gray-300">Asset Type</Label>
                   <Select value={roiCalcForm.assetType} onValueChange={(value) => setRoiCalcForm(prev => ({ ...prev, assetType: value }))}>
                     <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                      <SelectValue placeholder="Select asset" />
+                      <SelectValue placeholder="Elevator" />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-800 border-gray-600">
-                      <SelectItem value="hvac" className="text-white">HVAC System</SelectItem>
                       <SelectItem value="elevator" className="text-white">Elevator</SelectItem>
+                      <SelectItem value="hvac" className="text-white">HVAC System</SelectItem>
                       <SelectItem value="plumbing" className="text-white">Plumbing</SelectItem>
                       <SelectItem value="electrical" className="text-white">Electrical</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+                
                 <div>
                   <Label className="text-gray-300">Action Type</Label>
                   <Select value={roiCalcForm.actionType} onValueChange={(value) => setRoiCalcForm(prev => ({ ...prev, actionType: value }))}>
@@ -2893,49 +3341,98 @@ function SmartInsightsTab() {
                       <SelectValue placeholder="Replace" />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-800 border-gray-600">
-                      <SelectItem value="replace" className="text-white">Replace</SelectItem>
-                      <SelectItem value="repair" className="text-white">Repair</SelectItem>
-                      <SelectItem value="upgrade" className="text-white">Upgrade</SelectItem>
-                      <SelectItem value="maintain" className="text-white">Maintain</SelectItem>
+                      <SelectItem value="Replace" className="text-white">Replace</SelectItem>
+                      <SelectItem value="Repair" className="text-white">Repair</SelectItem>
+                      <SelectItem value="Upgrade" className="text-white">Upgrade</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-gray-300">Estimated Cost</Label>
-                  <Input
-                    type="text"
-                    value={roiCalcForm.cost}
-                    onChange={(e) => setRoiCalcForm(prev => ({ ...prev, cost: e.target.value }))}
-                    className="bg-gray-700 border-gray-600 text-white"
-                    placeholder="e.g. $15,000"
-                  />
-                </div>
-                <div>
-                  <Label className="text-gray-300">Current Annual OpEx</Label>
-                  <Input
-                    type="text"
-                    value={roiCalcForm.opex}
-                    onChange={(e) => setRoiCalcForm(prev => ({ ...prev, opex: e.target.value }))}
-                    className="bg-gray-700 border-gray-600 text-white"
-                    placeholder="e.g. $3,500"
-                  />
-                </div>
+              
+              <div>
+                <Label className="text-gray-300">Estimated Cost</Label>
+                <Input
+                  placeholder="e.g., $45,000"
+                  value={roiCalcForm.cost}
+                  onChange={(e) => setRoiCalcForm(prev => ({ ...prev, cost: e.target.value }))}
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
+              </div>
+              
+              <div>
+                <Label className="text-gray-300">Current Annual OpEx (optional)</Label>
+                <Input
+                  placeholder="e.g., $8,500"
+                  value={roiCalcForm.opex}
+                  onChange={(e) => setRoiCalcForm(prev => ({ ...prev, opex: e.target.value }))}
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
               </div>
 
               <div className="space-y-3">
-                <Label className="text-gray-300">AI Risk & Urgency</Label>
+                <Label className="text-gray-300">Or Ask AI Directly</Label>
+                <Input
+                  placeholder="What's the ROI on replacing HVAC in Building A?"
+                  value={aiDirectInput}
+                  onChange={(e) => setAiDirectInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAskAIDirect()}
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-gray-300">Quick Questions</Label>
                 <div className="space-y-2">
-                  <div className="text-sm text-gray-400">
-                    What's the ROI on replacing HVAC in Building A?
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    Should we lease or buy the elevator/elevator replacement?
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    We analyzed 5 rooftop systems, should we repair or replace?
-                  </div>
+                  {[
+                    "What's the ROI on replacing HVAC in Building A?",
+                    "Should we repair or replace the elevator at Stanford GSB?",
+                    "ROI analysis for LED lighting upgrade across all properties",
+                    "Insurance optimization for leak detection system"
+                  ].map((question, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                      onClick={() => {
+                        setAiDirectInput(question)
+                        
+                        // Auto-fill form based on question content
+                        if (question.includes("HVAC") && question.includes("replacing")) {
+                          setRoiCalcForm({
+                            assetType: "hvac",
+                            actionType: "Replace",
+                            cost: "$45,000",
+                            opex: "$8,500"
+                          })
+                        } else if (question.includes("elevator") && question.includes("replace")) {
+                          setRoiCalcForm({
+                            assetType: "elevator",
+                            actionType: "Replace",
+                            cost: "$75,000",
+                            opex: "$12,000"
+                          })
+                        } else if (question.includes("LED lighting")) {
+                          setRoiCalcForm({
+                            assetType: "electrical",
+                            actionType: "Upgrade",
+                            cost: "$25,000",
+                            opex: "$3,200"
+                          })
+                        } else if (question.includes("leak detection")) {
+                          setRoiCalcForm({
+                            assetType: "plumbing",
+                            actionType: "Upgrade",
+                            cost: "$15,000",
+                            opex: "$2,500"
+                          })
+                        }
+                      }}
+                    >
+                      <span className="w-2 h-2 bg-green-400 rounded-full mr-2 flex-shrink-0"></span>
+                      <span className="text-sm">{question}</span>
+                    </Button>
+                  ))}
                 </div>
               </div>
               
@@ -2943,6 +3440,7 @@ function SmartInsightsTab() {
                 className="w-full bg-green-600 hover:bg-green-700 text-white"
                 onClick={handleRoiCalculation}
               >
+                <Calculator className="h-4 w-4 mr-2" />
                 Calculate ROI
               </Button>
             </div>
@@ -2954,10 +3452,21 @@ function SmartInsightsTab() {
                   <div key={index} className="p-3 bg-gray-700 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-white">{analysis.type}</span>
-                      <Badge className="bg-green-600 text-white">{analysis.status}</Badge>
+                      <Badge className={`text-white ${analysis.status === 'Replace' ? 'bg-green-600' : 'bg-green-600'}`}>
+                        {analysis.status}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-gray-400 mb-1">
+                      {analysis.action}
+                    </div>
+                    <div className="text-xs text-gray-400 mb-1">
+                      Cost: {analysis.cost}
+                    </div>
+                    <div className="text-xs text-gray-400 mb-1">
+                      Payback: {analysis.payback}
                     </div>
                     <div className="text-xs text-gray-400">
-                      {analysis.result} • {analysis.savings}
+                      {analysis.savings}
                     </div>
                   </div>
                 ))}
@@ -2966,11 +3475,102 @@ function SmartInsightsTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ROI Calculation Popup */}
+      <Dialog open={showRoiPopup} onOpenChange={setShowRoiPopup}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calculator className="h-5 w-5 text-green-400" />
+              ROI Calculation Results
+            </DialogTitle>
+          </DialogHeader>
+          {roiResults && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-gray-300">Asset Type</Label>
+                  <div className="text-white font-medium">{roiResults.asset}</div>
+                </div>
+                <div>
+                  <Label className="text-gray-300">Action Type</Label>
+                  <div className="text-white font-medium">{roiResults.action}</div>
+                </div>
+                <div>
+                  <Label className="text-gray-300">Estimated Cost</Label>
+                  <div className="text-white font-medium">{roiResults.cost}</div>
+                </div>
+                <div>
+                  <Label className="text-gray-300">Annual OpEx</Label>
+                  <div className="text-white font-medium">{roiResults.opex || 'N/A'}</div>
+                </div>
+              </div>
+              
+              <div className="border-t border-gray-700 pt-4">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="bg-gray-800 rounded-lg p-4">
+                    <div className="text-2xl font-bold text-green-400">{roiResults.paybackYears} years</div>
+                    <div className="text-sm text-gray-300">Payback Period</div>
+                  </div>
+                  <div className="bg-gray-800 rounded-lg p-4">
+                    <div className="text-2xl font-bold text-blue-400">${roiResults.savings.toLocaleString()}</div>
+                    <div className="text-sm text-gray-300">Annual Savings</div>
+                  </div>
+                  <div className="bg-gray-800 rounded-lg p-4">
+                    <div className="text-2xl font-bold text-purple-400">{roiResults.recommendation}</div>
+                    <div className="text-sm text-gray-300">Recommendation</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gray-800 rounded-lg p-4">
+                <div className="text-sm text-gray-300">
+                  <strong>Analysis Summary:</strong> Based on the asset type and action, this investment will provide positive ROI within the calculated timeframe. The recommendation is to {roiResults.recommendation.toLowerCase()} based on cost-benefit analysis and long-term value considerations.
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowRoiPopup(false)}
+                  className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                >
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowRoiPopup(false)
+                    // Add to recent analyses
+                    // This would typically save to a database
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Save Analysis
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
 
-function ReimbursementsTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
+function ReimbursementsTab({ setActiveTab, addMessage }: { 
+  setActiveTab: (tab: string) => void;
+  addMessage: (message: {
+    propertyId: string;
+    propertyName: string;
+    senderId: string;
+    senderName: string;
+    senderRole: string;
+    content: string;
+    threadId: string;
+    type?: string;
+    relatedExpenses?: string[];
+    packetId?: string;
+  }) => void;
+}) {
   const [selectedPacket, setSelectedPacket] = useState<string | null>(null)
   const [showProcessModal, setShowProcessModal] = useState(false)
   const [showExpenseFilterDialog, setShowExpenseFilterDialog] = useState(false)
@@ -3229,21 +3829,19 @@ function ReimbursementsTab({ setActiveTab }: { setActiveTab: (tab: string) => vo
 
   const handleSendMessage = (isFlag: boolean) => {
     if (messageContent.trim() && selectedReimbursementPacket) {
-      // Create a new message in the communications system
-      const message = {
-        id: Date.now().toString(),
+      // Add the message to the shared state
+      addMessage({
         propertyId: selectedReimbursementPacket.id,
+        propertyName: selectedReimbursementPacket.propertyName || "Unknown Property",
         senderId: "owner1",
         senderName: "Property Owner",
         senderRole: "owner",
         content: messageContent,
-        timestamp: new Date(),
-        status: "sent",
         threadId: `thread_${selectedReimbursementPacket.id}`,
         type: isFlag ? "flag" : "inquiry",
         relatedExpenses: selectedExpenseItems,
         packetId: selectedReimbursementPacket.id
-      }
+      })
       
       // Close dialog and navigate to communications tab
       setShowFlagDialog(false)
@@ -3910,10 +4508,11 @@ function ReimbursementsTab({ setActiveTab }: { setActiveTab: (tab: string) => vo
   )
 }
 
-function CommunicationsTab() {
-  const [selectedProperty, setSelectedProperty] = useState("all")
-  const [newMessage, setNewMessage] = useState("")
-  const [messages, setMessages] = useState<{
+function CommunicationsTab({ 
+  messages, 
+  setMessages 
+}: { 
+  messages: {
     id: string;
     propertyId: string;
     propertyName: string;
@@ -3927,44 +4526,25 @@ function CommunicationsTab() {
     type?: string;
     relatedExpenses?: string[];
     packetId?: string;
-  }[]>([
-    {
-      id: "1",
-      propertyId: "redwood",
-      propertyName: "Redwood Shores Office Complex",
-      senderId: "pm1",
-      senderName: "Jessica Chen",
-      senderRole: "pm",
-      content: "Hi! I wanted to update you on the HVAC repair work order. We've received quotes from 3 contractors and are ready to proceed with the work.",
-      timestamp: new Date("2024-01-15T10:30:00Z"),
-      status: "read",
-      threadId: "thread_redwood_1"
-    },
-    {
-      id: "2",
-      propertyId: "redwood",
-      propertyName: "Redwood Shores Office Complex",
-      senderId: "owner1",
-      senderName: "Property Owner",
-      senderRole: "owner",
-      content: "Thanks for the update! Could you please send me the quotes for review? I want to make sure we're getting the best value.",
-      timestamp: new Date("2024-01-15T14:45:00Z"),
-      status: "sent",
-      threadId: "thread_redwood_1"
-    },
-    {
-      id: "3",
-      propertyId: "mission",
-      propertyName: "Mission Bay Tech Campus",
-      senderId: "pm2",
-      senderName: "James Wilson",
-      senderRole: "pm",
-      content: "The plumbing repair has been completed successfully. All systems are now working properly.",
-      timestamp: new Date("2024-01-16T09:15:00Z"),
-      status: "unread",
-      threadId: "thread_mission_1"
-    }
-  ])
+  }[];
+  setMessages: React.Dispatch<React.SetStateAction<{
+    id: string;
+    propertyId: string;
+    propertyName: string;
+    senderId: string;
+    senderName: string;
+    senderRole: string;
+    content: string;
+    timestamp: Date;
+    status: string;
+    threadId: string;
+    type?: string;
+    relatedExpenses?: string[];
+    packetId?: string;
+  }[]>>;
+}) {
+  const [selectedProperty, setSelectedProperty] = useState("all")
+  const [newMessage, setNewMessage] = useState("")
 
   const properties = [
     { id: "all", name: "All Properties" },
