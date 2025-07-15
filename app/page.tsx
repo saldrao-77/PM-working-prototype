@@ -95,7 +95,7 @@ import { cn } from "@/lib/utils"
 import { useRouter } from 'next/navigation'
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { jobsList, activityMilestones, jobNotes, activityFiles, collateralDocuments, documentTypeLabels, propertyOptions, staffOptions, DocumentType, CollateralDocument } from './mockData';
+import { jobsList, activityMilestones, jobNotes, activityFiles, collateralDocuments, documentTypeLabels, propertyOptions, staffOptions, DocumentType, CollateralDocument, bankAccounts, ownerTrustAccounts, invoices, creditCards, teamMembers } from './mockData';
 
 // Sample staff list
 const staffList = [
@@ -957,6 +957,102 @@ export default function PMFinancialDashboard() {
     amount: '',
     expiryDate: ''
   });
+
+  // State for Advanced Payment Tools
+  const [linkAccountsExpanded, setLinkAccountsExpanded] = useState(false);
+  const [invoicePaymentExpanded, setInvoicePaymentExpanded] = useState(false);
+  const [reimburseExpensesExpanded, setReimburseExpensesExpanded] = useState(false);
+  const [selectedTeamMember, setSelectedTeamMember] = useState('');
+  const [selectedBankAccount, setSelectedBankAccount] = useState('');
+  const [paymentType, setPaymentType] = useState<'one-time' | 'installments'>('one-time');
+  const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
+  const [selectedPersonalExpenses, setSelectedPersonalExpenses] = useState<string[]>([]);
+  
+  // Dialog states for Advanced Payment Tools
+  const [linkAccountDialogOpen, setLinkAccountDialogOpen] = useState(false);
+  const [selectedAccountForLinking, setSelectedAccountForLinking] = useState<any>(null);
+  const [expenseDetailsDialogOpen, setExpenseDetailsDialogOpen] = useState(false);
+  const [selectedExpenseForView, setSelectedExpenseForView] = useState<any>(null);
+  const [payNowDialogOpen, setPayNowDialogOpen] = useState(false);
+  const [selectedCardForPayment, setSelectedCardForPayment] = useState<any>(null);
+  const [processPaymentDialogOpen, setProcessPaymentDialogOpen] = useState(false);
+  const [reimbursementReviewDialogOpen, setReimbursementReviewDialogOpen] = useState(false);
+  
+  // Mock state for bank accounts and trust accounts (to simulate updates)
+  const [bankAccountsState, setBankAccountsState] = useState(bankAccounts);
+  const [trustAccountsState, setTrustAccountsState] = useState(ownerTrustAccounts);
+
+  // Helper functions for Advanced Payment Tools
+  const handleLinkAccount = (account: any, shouldLink: boolean) => {
+    setSelectedAccountForLinking({ ...account, actionType: shouldLink ? 'link' : 'unlink' });
+    setLinkAccountDialogOpen(true);
+  };
+
+  const confirmLinkAccount = () => {
+    if (!selectedAccountForLinking) return;
+    
+    const { actionType } = selectedAccountForLinking;
+    const newStatus = actionType === 'link' ? 'linked' : 'not_linked';
+    
+    // Update bank accounts state
+    setBankAccountsState(prev => prev.map(acc => 
+      acc.id === selectedAccountForLinking.id 
+        ? { ...acc, status: newStatus }
+        : acc
+    ));
+    
+    // Update corresponding trust accounts based on bank name matching
+    const bankName = selectedAccountForLinking.name.toLowerCase().split(' ')[0]; // e.g., "wells", "chase", "bank"
+    
+    setTrustAccountsState(prev => prev.map(trust => {
+      const trustBankName = trust.bankName.toLowerCase();
+      const shouldBeLinked = trustBankName.includes(bankName) || bankName.includes(trustBankName.split(' ')[0]);
+      
+      if (shouldBeLinked) {
+        return { 
+          ...trust, 
+          status: newStatus,
+          autoSync: newStatus === 'linked'
+        };
+      }
+      return trust;
+    }));
+    
+    setLinkAccountDialogOpen(false);
+    setSelectedAccountForLinking(null);
+  };
+
+  const handleViewExpense = (invoice: any) => {
+    // Mock expense details
+    setSelectedExpenseForView({
+      ...invoice,
+      expenseDetails: {
+        submittedBy: 'Alice Johnson',
+        submittedDate: '2025-01-15',
+        category: 'Maintenance & Repairs',
+        jobId: 'job1',
+        receiptUrl: '/receipts/sample.pdf',
+        approvalStatus: 'Approved',
+        notes: 'Emergency repair required for property maintenance'
+      }
+    });
+    setExpenseDetailsDialogOpen(true);
+  };
+
+  const handlePayNow = (card: any) => {
+    setSelectedCardForPayment(card);
+    setPayNowDialogOpen(true);
+  };
+
+  const handleProcessPayment = () => {
+    if (selectedInvoices.length === 0) return;
+    setProcessPaymentDialogOpen(true);
+  };
+
+  const handleReviewReimburse = () => {
+    if (selectedPersonalExpenses.length === 0 || !selectedTeamMember) return;
+    setReimbursementReviewDialogOpen(true);
+  };
 
   // Handle URL parameters for tab navigation and role detection
   useEffect(() => {
@@ -5271,6 +5367,913 @@ export default function PMFinancialDashboard() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+
+                {/* Advanced Payment Tools Section */}
+                <div className="mt-8 mb-32">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                      🔧 Advanced Payment Tools
+                    </h3>
+                    <div className="text-sm text-gray-400">
+                      Enhanced payment management features
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Link Accounts Card */}
+                    <Card className="bg-gray-800 border-gray-700">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-white flex items-center gap-2">
+                            <LinkIcon className="h-5 w-5 text-blue-400" />
+                            Link Accounts
+                          </CardTitle>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setLinkAccountsExpanded(!linkAccountsExpanded)}
+                            className="text-gray-400 hover:text-white"
+                          >
+                            <ChevronDown className={`h-4 w-4 transition-transform ${linkAccountsExpanded ? 'rotate-180' : ''}`} />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <Collapsible open={linkAccountsExpanded}>
+                        <CollapsibleContent>
+                          <CardContent>
+                            <div className="space-y-6">
+                              {/* Property Manager Bank Account Section */}
+                              <div>
+                                <h4 className="text-lg font-semibold text-white mb-4">Property Manager Bank Account</h4>
+                                <Button 
+                                  className="bg-blue-600 hover:bg-blue-700 text-white mb-4"
+                                  onClick={() => {
+                                    // Mock functionality - show success message
+                                    alert('Bank account linking initiated. You will be redirected to your bank\'s secure portal.');
+                                  }}
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Link Property Manager Bank Account
+                                </Button>
+                                
+                                {/* Current Bank Accounts */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {bankAccountsState.map((account) => (
+                                    <Card key={account.id} className="bg-gray-700 border-gray-600">
+                                      <CardContent className="p-4">
+                                        <div className="flex justify-between items-start mb-2">
+                                          <div>
+                                            <div className="text-sm font-medium text-white">{account.name}</div>
+                                            <div className="text-xs text-gray-400">{account.accountNumber}</div>
+                                          </div>
+                                          <Badge className={account.status === 'linked' ? "bg-green-600 text-white" : "bg-gray-600 text-white"}>
+                                            {account.status === 'linked' ? 'Linked' : 'Not Linked'}
+                                          </Badge>
+                                        </div>
+                                        <div className="text-lg font-bold text-white mb-2">
+                                          ${account.balance.toLocaleString()}
+                                        </div>
+                                        <div className="flex gap-2">
+                                          {account.status === 'linked' ? (
+                                            <Button 
+                                              size="sm" 
+                                              variant="outline" 
+                                              className="text-red-400 border-red-600 hover:bg-red-600 hover:text-white"
+                                              onClick={() => handleLinkAccount(account, false)}
+                                            >
+                                              Unlink
+                                            </Button>
+                                          ) : (
+                                            <Button 
+                                              size="sm" 
+                                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                                              onClick={() => handleLinkAccount(account, true)}
+                                            >
+                                              Link
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Owner Trust Accounts Section */}
+                              <div>
+                                <div className="flex items-center justify-between mb-4">
+                                  <h4 className="text-lg font-semibold text-white">Owner Trust Accounts</h4>
+                                  <div className="text-sm text-gray-400">
+                                    Auto-synced with Property Manager accounts
+                                  </div>
+                                </div>
+                                <div className="space-y-3">
+                                  {trustAccountsState.map((trust) => (
+                                    <div key={trust.id} className="flex items-center justify-between p-4 bg-gray-700 rounded-lg border border-gray-600">
+                                      <div className="flex items-center gap-4">
+                                        <div className={`w-3 h-3 rounded-full ${trust.status === 'linked' ? 'bg-green-400' : 'bg-gray-500'}`} />
+                                        <div>
+                                          <div className="text-white font-medium">{trust.propertyName}</div>
+                                          <div className="text-sm text-gray-400">{trust.ownerName} • {trust.bankName} {trust.accountNumber}</div>
+                                          {trust.status === 'linked' && trust.autoSync && (
+                                            <div className="text-xs text-green-400 mt-1">
+                                              🔄 Auto-sync enabled
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="text-right">
+                                        <div className="text-white font-bold">${trust.balance.toLocaleString()}</div>
+                                        <Badge className={trust.status === 'linked' ? "bg-green-600 text-white" : "bg-gray-600 text-white"}>
+                                          {trust.status === 'linked' ? 'Linked' : 'Not Linked'}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="mt-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded">
+                                  <div className="text-sm text-blue-300">
+                                    💡 Trust accounts automatically link/unlink when you connect matching Property Manager bank accounts
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </Card>
+
+                    {/* Invoice & Bill Payment Card */}
+                    <Card className="bg-gray-800 border-gray-700">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-white flex items-center gap-2">
+                            💸 Pay Invoices & Credit Card Bills
+                          </CardTitle>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setInvoicePaymentExpanded(!invoicePaymentExpanded)}
+                            className="text-gray-400 hover:text-white"
+                          >
+                            <ChevronDown className={`h-4 w-4 transition-transform ${invoicePaymentExpanded ? 'rotate-180' : ''}`} />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <Collapsible open={invoicePaymentExpanded}>
+                        <CollapsibleContent>
+                          <CardContent>
+                            <div className="space-y-6">
+                              {/* Payment Type Toggle */}
+                              <div className="flex items-center gap-4 mb-4">
+                                <span className="text-white">Payment Type:</span>
+                                <Tabs value={paymentType} onValueChange={(value) => setPaymentType(value as 'one-time' | 'installments')}>
+                                  <TabsList className="bg-gray-700">
+                                    <TabsTrigger value="one-time" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                                      One-Time Payment
+                                    </TabsTrigger>
+                                    <TabsTrigger value="installments" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                                      Installments
+                                    </TabsTrigger>
+                                  </TabsList>
+                                </Tabs>
+                              </div>
+
+                              {/* Invoices Table */}
+                              <div>
+                                <div className="flex items-center justify-between mb-3">
+                                  <h4 className="text-lg font-semibold text-white">Pending Invoices</h4>
+                                  <div className="flex gap-2">
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="text-blue-400 border-blue-600 hover:bg-blue-600 hover:text-white"
+                                      onClick={() => setSelectedInvoices(invoices.map(inv => inv.id))}
+                                    >
+                                      Select All
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="text-gray-400 border-gray-600 hover:bg-gray-600 hover:text-white"
+                                      onClick={() => setSelectedInvoices([])}
+                                    >
+                                      Clear All
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="bg-gray-700 rounded-lg overflow-hidden">
+                                  <table className="w-full text-sm">
+                                    <thead>
+                                      <tr className="bg-gray-800 border-b border-gray-600">
+                                        <th className="text-left p-3 text-gray-300">
+                                          <input 
+                                            type="checkbox" 
+                                            onChange={(e) => {
+                                              if (e.target.checked) {
+                                                setSelectedInvoices(invoices.map(inv => inv.id));
+                                              } else {
+                                                setSelectedInvoices([]);
+                                              }
+                                            }}
+                                            className="rounded"
+                                          />
+                                        </th>
+                                        <th className="text-left p-3 text-gray-300">Vendor</th>
+                                        <th className="text-left p-3 text-gray-300">Amount</th>
+                                        <th className="text-left p-3 text-gray-300">Due Date</th>
+                                        <th className="text-left p-3 text-gray-300">Origin</th>
+                                        <th className="text-left p-3 text-gray-300">Property</th>
+                                        <th className="text-left p-3 text-gray-300">Actions</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {invoices.map((invoice) => (
+                                        <tr key={invoice.id} className="border-b border-gray-600/50">
+                                          <td className="p-3">
+                                            <input 
+                                              type="checkbox" 
+                                              checked={selectedInvoices.includes(invoice.id)}
+                                              onChange={(e) => {
+                                                if (e.target.checked) {
+                                                  setSelectedInvoices([...selectedInvoices, invoice.id]);
+                                                } else {
+                                                  setSelectedInvoices(selectedInvoices.filter(id => id !== invoice.id));
+                                                }
+                                              }}
+                                              className="rounded"
+                                            />
+                                          </td>
+                                          <td className="p-3 text-white">{invoice.vendor}</td>
+                                          <td className="p-3 text-white">${invoice.amount.toLocaleString()}</td>
+                                          <td className="p-3 text-gray-300">{invoice.dueDate}</td>
+                                          <td className="p-3">
+                                            <Badge className={invoice.origin === 'Direct' ? "bg-blue-600 text-white" : "bg-green-600 text-white"}>
+                                              {invoice.origin}
+                                            </Badge>
+                                          </td>
+                                          <td className="p-3 text-gray-300">{invoice.propertyName}</td>
+                                          <td className="p-3">
+                                            <Button 
+                                              size="sm" 
+                                              variant="outline" 
+                                              className="text-blue-400 border-blue-600 hover:bg-blue-600 hover:text-white"
+                                              onClick={() => handleViewExpense(invoice)}
+                                            >
+                                              View Expense
+                                            </Button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+
+                              {/* Credit Card Bills */}
+                              <div>
+                                <h4 className="text-lg font-semibold text-white mb-3">Credit Card Bills</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {creditCards.map((card) => (
+                                    <Card key={card.id} className="bg-gray-700 border-gray-600">
+                                      <CardContent className="p-4">
+                                        <div className="flex justify-between items-start mb-2">
+                                          <div>
+                                            <div className="text-sm font-medium text-white">{card.name}</div>
+                                            <div className="text-xs text-gray-400">****{card.lastFour}</div>
+                                            <Badge className={card.type === 'internal' ? "bg-blue-600 text-white mt-1" : "bg-orange-600 text-white mt-1"}>
+                                              {card.type === 'internal' ? 'Internal' : 'External'}
+                                            </Badge>
+                                          </div>
+                                        </div>
+                                        <div className="text-lg font-bold text-white mb-2">
+                                          ${card.balance.toFixed(2)}
+                                        </div>
+                                        <div className="text-xs text-gray-400 mb-3">
+                                          Due: {card.dueDate}
+                                        </div>
+                                        <Button 
+                                          size="sm" 
+                                          className="bg-green-600 hover:bg-green-700 text-white w-full"
+                                          onClick={() => handlePayNow(card)}
+                                        >
+                                          <DollarSign className="h-4 w-4 mr-2" />
+                                          Pay Now
+                                        </Button>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Payment Actions */}
+                              {selectedInvoices.length > 0 && (
+                                <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="text-white font-medium">
+                                        {selectedInvoices.length} invoice{selectedInvoices.length !== 1 ? 's' : ''} selected
+                                      </div>
+                                      <div className="text-sm text-blue-300">
+                                        Total: ${invoices.filter(inv => selectedInvoices.includes(inv.id)).reduce((sum, inv) => sum + inv.amount, 0).toLocaleString()}
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Select value={selectedBankAccount} onValueChange={setSelectedBankAccount}>
+                                        <SelectTrigger className="w-48 bg-gray-800 border-gray-600 text-white">
+                                          <SelectValue placeholder="Select payment account" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-gray-800 border-gray-600 z-50">
+                                          {bankAccountsState.filter(acc => acc.status === 'linked').map(account => (
+                                            <SelectItem key={account.id} value={account.id} className="text-white">
+                                              {account.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                      <Button 
+                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                        onClick={handleProcessPayment}
+                                      >
+                                        <DollarSign className="h-4 w-4 mr-2" />
+                                        Process Payment{selectedInvoices.length > 1 ? 's' : ''}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </Card>
+
+                    {/* Reimburse Personal Expenses Card */}
+                    <Card className="bg-gray-800 border-gray-700">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-white flex items-center gap-2">
+                            🔁 Reimburse Team Members
+                          </CardTitle>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setReimburseExpensesExpanded(!reimburseExpensesExpanded)}
+                            className="text-gray-400 hover:text-white"
+                          >
+                            <ChevronDown className={`h-4 w-4 transition-transform ${reimburseExpensesExpanded ? 'rotate-180' : ''}`} />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <Collapsible open={reimburseExpensesExpanded}>
+                        <CollapsibleContent>
+                          <CardContent>
+                            <div className="space-y-6">
+                              {/* Team Member Selection */}
+                              <div>
+                                <Label htmlFor="team-member" className="text-sm text-gray-400 mb-2 block">
+                                  Select Team Member
+                                </Label>
+                                <Select value={selectedTeamMember} onValueChange={setSelectedTeamMember}>
+                                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                                    <SelectValue placeholder="Choose a team member" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-gray-800 border-gray-600 z-50">
+                                    {teamMembers.map(member => (
+                                      <SelectItem key={member.id} value={member.id} className="text-white">
+                                        {member.name} - {member.role}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Personal Expenses Table */}
+                              {selectedTeamMember && (() => {
+                                const member = teamMembers.find(m => m.id === selectedTeamMember);
+                                if (!member) return null;
+                                
+                                return (
+                                  <div>
+                                    <div className="flex items-center justify-between mb-3">
+                                      <h4 className="text-lg font-semibold text-white">
+                                        Personal Expenses - {member.name}
+                                      </h4>
+                                      <div className="flex gap-2">
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline" 
+                                          className="text-green-400 border-green-600 hover:bg-green-600 hover:text-white"
+                                          onClick={() => setSelectedPersonalExpenses(member.personalExpenses.map(exp => exp.id))}
+                                        >
+                                          Select All
+                                        </Button>
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline" 
+                                          className="text-gray-400 border-gray-600 hover:bg-gray-600 hover:text-white"
+                                          onClick={() => setSelectedPersonalExpenses([])}
+                                        >
+                                          Clear All
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    <div className="bg-gray-700 rounded-lg overflow-hidden">
+                                      <table className="w-full text-sm">
+                                        <thead>
+                                          <tr className="bg-gray-800 border-b border-gray-600">
+                                            <th className="text-left p-3 text-gray-300">
+                                              <input 
+                                                type="checkbox" 
+                                                onChange={(e) => {
+                                                  if (e.target.checked) {
+                                                    setSelectedPersonalExpenses(member.personalExpenses.map(exp => exp.id));
+                                                  } else {
+                                                    setSelectedPersonalExpenses([]);
+                                                  }
+                                                }}
+                                                className="rounded"
+                                              />
+                                            </th>
+                                            <th className="text-left p-3 text-gray-300">Date</th>
+                                            <th className="text-left p-3 text-gray-300">Vendor</th>
+                                            <th className="text-left p-3 text-gray-300">Description</th>
+                                            <th className="text-left p-3 text-gray-300">Property</th>
+                                            <th className="text-left p-3 text-gray-300">Amount</th>
+                                            <th className="text-left p-3 text-gray-300">Receipt</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {member.personalExpenses.map((expense) => (
+                                            <tr key={expense.id} className="border-b border-gray-600/50">
+                                              <td className="p-3">
+                                                <input 
+                                                  type="checkbox" 
+                                                  checked={selectedPersonalExpenses.includes(expense.id)}
+                                                  onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                      setSelectedPersonalExpenses([...selectedPersonalExpenses, expense.id]);
+                                                    } else {
+                                                      setSelectedPersonalExpenses(selectedPersonalExpenses.filter(id => id !== expense.id));
+                                                    }
+                                                  }}
+                                                  className="rounded"
+                                                />
+                                              </td>
+                                              <td className="p-3 text-gray-300">{expense.date}</td>
+                                              <td className="p-3 text-white">{expense.vendor}</td>
+                                              <td className="p-3 text-gray-300">{expense.description}</td>
+                                              <td className="p-3 text-gray-300">{expense.propertyName}</td>
+                                              <td className="p-3 text-white">${expense.amount.toFixed(2)}</td>
+                                              <td className="p-3">
+                                                {expense.receipt ? (
+                                                  <Badge className="bg-green-600 text-white">
+                                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                                    Yes
+                                                  </Badge>
+                                                ) : (
+                                                  <Badge className="bg-red-600 text-white">
+                                                    <X className="h-3 w-3 mr-1" />
+                                                    No
+                                                  </Badge>
+                                                )}
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Reimbursement Actions */}
+                              {selectedPersonalExpenses.length > 0 && selectedTeamMember && (() => {
+                                const member = teamMembers.find(m => m.id === selectedTeamMember);
+                                const selectedExpenses = member?.personalExpenses.filter(exp => selectedPersonalExpenses.includes(exp.id)) || [];
+                                const totalAmount = selectedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+                                
+                                return (
+                                  <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
+                                    <div className="space-y-4">
+                                      <div className="flex items-center justify-between">
+                                        <div>
+                                          <div className="text-white font-medium">
+                                            {selectedPersonalExpenses.length} expense{selectedPersonalExpenses.length !== 1 ? 's' : ''} selected for {member?.name}
+                                          </div>
+                                          <div className="text-sm text-green-300">
+                                            Total: ${totalAmount.toFixed(2)}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="flex items-center gap-4">
+                                        <div className="flex-1">
+                                          <Label htmlFor="reimbursement-account" className="text-sm text-gray-400 mb-2 block">
+                                            Payment Account
+                                          </Label>
+                                          <Select value={selectedBankAccount} onValueChange={setSelectedBankAccount}>
+                                            <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                                              <SelectValue placeholder="Select bank account" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-gray-800 border-gray-600 z-50">
+                                              {bankAccountsState.filter(acc => acc.status === 'linked').map(account => (
+                                                <SelectItem key={account.id} value={account.id} className="text-white">
+                                                  {account.name} ({account.type})
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                        
+                                        <Button 
+                                          className="bg-green-600 hover:bg-green-700 text-white mt-6"
+                                          onClick={handleReviewReimburse}
+                                        >
+                                          <User className="h-4 w-4 mr-2" />
+                                          Review & Reimburse
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </Card>
+                  </div>
+
+                  {/* Dialog Components for Advanced Payment Tools */}
+                  
+                  {/* Link Account Dialog */}
+                  <Dialog open={linkAccountDialogOpen} onOpenChange={setLinkAccountDialogOpen}>
+                    <DialogContent className="bg-gray-900 border-gray-700 text-white">
+                      <DialogHeader>
+                        <DialogTitle>
+                          {selectedAccountForLinking?.actionType === 'link' ? 'Link Bank Account' : 'Unlink Bank Account'}
+                        </DialogTitle>
+                        <DialogDescription>
+                          {selectedAccountForLinking?.actionType === 'link' 
+                            ? 'Confirm linking this bank account for payments and reimbursements.'
+                            : 'Are you sure you want to unlink this bank account? This will affect payment processing.'}
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      {selectedAccountForLinking && (
+                        <div className="py-4">
+                          <div className="bg-gray-800 p-4 rounded-lg">
+                            <div className="text-white font-medium">{selectedAccountForLinking.name}</div>
+                            <div className="text-gray-400 text-sm">{selectedAccountForLinking.accountNumber}</div>
+                            <div className="text-white text-lg font-bold mt-2">
+                              ${selectedAccountForLinking.balance?.toLocaleString()}
+                            </div>
+                          </div>
+                          
+                          {selectedAccountForLinking.actionType === 'link' && (
+                            <div className="mt-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded">
+                              <div className="text-sm text-blue-300">
+                                💡 Linking this account will automatically sync related owner trust accounts
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setLinkAccountDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={confirmLinkAccount}
+                          className={selectedAccountForLinking?.actionType === 'link' 
+                            ? "bg-blue-600 hover:bg-blue-700" 
+                            : "bg-red-600 hover:bg-red-700"}
+                        >
+                          {selectedAccountForLinking?.actionType === 'link' ? 'Link Account' : 'Unlink Account'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Expense Details Dialog */}
+                  <Dialog open={expenseDetailsDialogOpen} onOpenChange={setExpenseDetailsDialogOpen}>
+                    <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Expense Details</DialogTitle>
+                        <DialogDescription>
+                          Review expense information and related records
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      {selectedExpenseForView && (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <Card className="bg-gray-800 border-gray-700">
+                              <CardContent className="p-4">
+                                <div className="text-sm text-gray-400">Invoice Details</div>
+                                <div className="text-white font-medium">{selectedExpenseForView.vendor}</div>
+                                <div className="text-lg font-bold text-white">
+                                  ${selectedExpenseForView.amount?.toLocaleString()}
+                                </div>
+                                <div className="text-sm text-gray-400">Due: {selectedExpenseForView.dueDate}</div>
+                                <div className="text-sm text-gray-400">Invoice: {selectedExpenseForView.invoiceNumber}</div>
+                              </CardContent>
+                            </Card>
+                            
+                            <Card className="bg-gray-800 border-gray-700">
+                              <CardContent className="p-4">
+                                <div className="text-sm text-gray-400">Expense Record</div>
+                                <div className="text-white font-medium">{selectedExpenseForView.expenseDetails?.category}</div>
+                                <div className="text-sm text-gray-400">Submitted by: {selectedExpenseForView.expenseDetails?.submittedBy}</div>
+                                <div className="text-sm text-gray-400">Date: {selectedExpenseForView.expenseDetails?.submittedDate}</div>
+                                <Badge className="bg-green-600 text-white mt-2">
+                                  {selectedExpenseForView.expenseDetails?.approvalStatus}
+                                </Badge>
+                              </CardContent>
+                            </Card>
+                          </div>
+                          
+                          <div className="bg-gray-800 p-4 rounded-lg">
+                            <div className="text-sm text-gray-400 mb-2">Description</div>
+                            <div className="text-white">{selectedExpenseForView.description}</div>
+                            
+                            {selectedExpenseForView.expenseDetails?.notes && (
+                              <>
+                                <div className="text-sm text-gray-400 mt-3 mb-2">Notes</div>
+                                <div className="text-gray-300">{selectedExpenseForView.expenseDetails.notes}</div>
+                              </>
+                            )}
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <Button variant="outline" className="text-blue-400 border-blue-600 hover:bg-blue-600 hover:text-white">
+                              <Receipt className="h-4 w-4 mr-2" />
+                              View Receipt
+                            </Button>
+                            <Button variant="outline" className="text-green-400 border-green-600 hover:bg-green-600 hover:text-white">
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              View Work Order
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setExpenseDetailsDialogOpen(false)}>
+                          Close
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Pay Now Dialog */}
+                  <Dialog open={payNowDialogOpen} onOpenChange={setPayNowDialogOpen}>
+                    <DialogContent className="bg-gray-900 border-gray-700 text-white">
+                      <DialogHeader>
+                        <DialogTitle>Pay Credit Card Bill</DialogTitle>
+                        <DialogDescription>
+                          Confirm payment for this credit card bill
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      {selectedCardForPayment && (
+                        <div className="space-y-4">
+                          <div className="bg-gray-800 p-4 rounded-lg">
+                            <div className="text-white font-medium">{selectedCardForPayment.name}</div>
+                            <div className="text-gray-400 text-sm">****{selectedCardForPayment.lastFour}</div>
+                            <div className="text-2xl font-bold text-white mt-2">
+                              ${selectedCardForPayment.balance?.toFixed(2)}
+                            </div>
+                            <div className="text-red-400 text-sm">Due: {selectedCardForPayment.dueDate}</div>
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="payment-account" className="text-sm text-gray-400 mb-2 block">
+                              Payment Account
+                            </Label>
+                            <Select value={selectedBankAccount} onValueChange={setSelectedBankAccount}>
+                              <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                                <SelectValue placeholder="Select payment account" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-gray-800 border-gray-600 z-50">
+                                {bankAccountsState.filter(acc => acc.status === 'linked').map(account => (
+                                  <SelectItem key={account.id} value={account.id} className="text-white">
+                                    {account.name} - ${account.balance.toLocaleString()}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="bg-green-900/20 border border-green-500/30 rounded p-3">
+                            <div className="text-sm text-green-300">
+                              ✅ Payment will be processed immediately and reflected in your account within 1-2 business days
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setPayNowDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => {
+                            setPayNowDialogOpen(false);
+                            alert('Payment processed successfully!');
+                          }}
+                          disabled={!selectedBankAccount}
+                        >
+                          <DollarSign className="h-4 w-4 mr-2" />
+                          Confirm Payment
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Process Payment Dialog */}
+                  <Dialog open={processPaymentDialogOpen} onOpenChange={setProcessPaymentDialogOpen}>
+                    <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Process Invoice Payments</DialogTitle>
+                        <DialogDescription>
+                          Review and confirm payment for selected invoices
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="space-y-4">
+                        <div className="bg-gray-800 p-4 rounded-lg">
+                          <div className="text-white font-medium mb-2">Payment Summary</div>
+                          <div className="text-2xl font-bold text-white">
+                            ${invoices.filter(inv => selectedInvoices.includes(inv.id)).reduce((sum, inv) => sum + inv.amount, 0).toLocaleString()}
+                          </div>
+                          <div className="text-sm text-gray-400">
+                            {selectedInvoices.length} invoice{selectedInvoices.length !== 1 ? 's' : ''} • {paymentType} payment
+                          </div>
+                        </div>
+                        
+                        <div className="bg-gray-800 rounded-lg overflow-hidden">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="bg-gray-700">
+                                <th className="text-left p-3 text-gray-300">Vendor</th>
+                                <th className="text-left p-3 text-gray-300">Amount</th>
+                                <th className="text-left p-3 text-gray-300">Due Date</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {invoices.filter(inv => selectedInvoices.includes(inv.id)).map(invoice => (
+                                <tr key={invoice.id} className="border-b border-gray-600/50">
+                                  <td className="p-3 text-white">{invoice.vendor}</td>
+                                  <td className="p-3 text-white">${invoice.amount.toLocaleString()}</td>
+                                  <td className="p-3 text-gray-300">{invoice.dueDate}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="payment-account" className="text-sm text-gray-400 mb-2 block">
+                            Payment Account
+                          </Label>
+                          <Select value={selectedBankAccount} onValueChange={setSelectedBankAccount}>
+                            <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                              <SelectValue placeholder="Select payment account" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-gray-800 border-gray-600 z-50">
+                              {bankAccountsState.filter(acc => acc.status === 'linked').map(account => (
+                                <SelectItem key={account.id} value={account.id} className="text-white">
+                                  {account.name} - ${account.balance.toLocaleString()}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setProcessPaymentDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => {
+                            setProcessPaymentDialogOpen(false);
+                            setSelectedInvoices([]);
+                            alert(`Successfully processed ${selectedInvoices.length} payment${selectedInvoices.length !== 1 ? 's' : ''}!`);
+                          }}
+                          disabled={!selectedBankAccount}
+                        >
+                          <DollarSign className="h-4 w-4 mr-2" />
+                          Process Payment{selectedInvoices.length > 1 ? 's' : ''}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Reimbursement Review Dialog */}
+                  <Dialog open={reimbursementReviewDialogOpen} onOpenChange={setReimbursementReviewDialogOpen}>
+                    <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Review Reimbursement</DialogTitle>
+                        <DialogDescription>
+                          Confirm reimbursement for team member expenses
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      {selectedTeamMember && (() => {
+                        const member = teamMembers.find(m => m.id === selectedTeamMember);
+                        const selectedExpenses = member?.personalExpenses.filter(exp => selectedPersonalExpenses.includes(exp.id)) || [];
+                        const totalAmount = selectedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+                        
+                        return (
+                          <div className="space-y-4">
+                            <div className="bg-gray-800 p-4 rounded-lg">
+                              <div className="text-white font-medium">{member?.name}</div>
+                              <div className="text-gray-400 text-sm">{member?.role} • {member?.email}</div>
+                              <div className="text-2xl font-bold text-white mt-2">
+                                ${totalAmount.toFixed(2)}
+                              </div>
+                              <div className="text-sm text-gray-400">
+                                {selectedExpenses.length} expense{selectedExpenses.length !== 1 ? 's' : ''} selected
+                              </div>
+                            </div>
+                            
+                            <div className="bg-gray-800 rounded-lg overflow-hidden">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="bg-gray-700">
+                                    <th className="text-left p-3 text-gray-300">Date</th>
+                                    <th className="text-left p-3 text-gray-300">Vendor</th>
+                                    <th className="text-left p-3 text-gray-300">Amount</th>
+                                    <th className="text-left p-3 text-gray-300">Property</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {selectedExpenses.map(expense => (
+                                    <tr key={expense.id} className="border-b border-gray-600/50">
+                                      <td className="p-3 text-gray-300">{expense.date}</td>
+                                      <td className="p-3 text-white">{expense.vendor}</td>
+                                      <td className="p-3 text-white">${expense.amount.toFixed(2)}</td>
+                                      <td className="p-3 text-gray-300">{expense.propertyName}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                            
+                            <div>
+                              <Label htmlFor="reimbursement-account" className="text-sm text-gray-400 mb-2 block">
+                                Payment Account
+                              </Label>
+                              <Select value={selectedBankAccount} onValueChange={setSelectedBankAccount}>
+                                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                                  <SelectValue placeholder="Select payment account" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-gray-800 border-gray-600 z-50">
+                                  {bankAccountsState.filter(acc => acc.status === 'linked').map(account => (
+                                    <SelectItem key={account.id} value={account.id} className="text-white">
+                                      {account.name} - ${account.balance.toLocaleString()}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div className="bg-blue-900/20 border border-blue-500/30 rounded p-3">
+                              <div className="text-sm text-blue-300">
+                                💡 Reimbursement will be processed via ACH and typically takes 1-3 business days
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setReimbursementReviewDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => {
+                            setReimbursementReviewDialogOpen(false);
+                            setSelectedPersonalExpenses([]);
+                            setSelectedTeamMember('');
+                            alert('Reimbursement processed successfully!');
+                          }}
+                          disabled={!selectedBankAccount}
+                        >
+                          <User className="h-4 w-4 mr-2" />
+                          Process Reimbursement
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </>
             )}
             {activeTab === "wallet" && (

@@ -506,4 +506,210 @@ export const staffOptions = [
   { id: 'staff4', name: 'Alice Johnson' },
   { id: 'staff5', name: 'Bob Wilson' },
   { id: 'staff6', name: 'Central Office' }
+];
+
+// Mock data for Advanced Payment Tools
+
+// Bank accounts data
+export const bankAccounts = [
+  {
+    id: 'bank1',
+    name: 'Wells Fargo Business Account',
+    accountNumber: '****1234',
+    routingNumber: '121000248',
+    status: 'linked',
+    balance: 25000,
+    type: 'checking'
+  },
+  {
+    id: 'bank2',
+    name: 'Chase Business Savings',
+    accountNumber: '****5678',
+    routingNumber: '021000021',
+    status: 'linked',
+    balance: 150000,
+    type: 'savings'
+  },
+  {
+    id: 'bank3',
+    name: 'Bank of America Business',
+    accountNumber: '****9012',
+    routingNumber: '026009593',
+    status: 'not_linked',
+    balance: 0,
+    type: 'checking'
+  }
+];
+
+// Owner trust accounts data
+export const ownerTrustAccounts = [
+  {
+    id: 'trust1',
+    propertyName: 'Stanford GSB',
+    ownerName: 'John Smith',
+    accountNumber: '****3456',
+    bankName: 'Wells Fargo',
+    status: 'linked',
+    autoSync: true,
+    balance: 45000
+  },
+  {
+    id: 'trust2',
+    propertyName: 'Sunnyvale 432',
+    ownerName: 'Mike Chen',
+    accountNumber: '****7890',
+    bankName: 'Chase',
+    status: 'linked',
+    autoSync: true,
+    balance: 32000
+  },
+  {
+    id: 'trust3',
+    propertyName: 'Downtown Lofts',
+    ownerName: 'Alex Rodriguez',
+    accountNumber: '****2345',
+    bankName: 'Bank of America',
+    status: 'not_linked',
+    autoSync: false,
+    balance: 0
+  }
+];
+
+// Invoices data
+export const invoices = [
+  {
+    id: 'inv1',
+    vendor: 'ABC Plumbing',
+    amount: 1250.00,
+    dueDate: '2025-02-15',
+    origin: 'Direct',
+    status: 'pending',
+    description: 'Emergency plumbing repair - Stanford GSB',
+    linkedExpenseId: 'exp1',
+    propertyName: 'Stanford GSB',
+    invoiceNumber: 'INV-2025-001'
+  },
+  {
+    id: 'inv2',
+    vendor: 'HVAC Solutions Inc',
+    amount: 2500.00,
+    dueDate: '2025-02-20',
+    origin: 'PM',
+    status: 'pending',
+    description: 'Annual HVAC maintenance service',
+    linkedExpenseId: 'exp2',
+    propertyName: 'Stanford GSB',
+    invoiceNumber: 'INV-2025-002'
+  },
+  {
+    id: 'inv3',
+    vendor: 'Electrical Works LLC',
+    amount: 875.50,
+    dueDate: '2025-02-10',
+    origin: 'Direct',
+    status: 'pending',
+    description: 'Electrical panel upgrade - Sunnyvale 432',
+    linkedExpenseId: 'exp3',
+    propertyName: 'Sunnyvale 432',
+    invoiceNumber: 'INV-2025-003'
+  }
+];
+
+// Credit card data
+export const creditCards = [
+  {
+    id: 'cc1',
+    name: 'Company Amex Gold',
+    lastFour: '1234',
+    type: 'internal',
+    balance: 3240.50,
+    dueDate: '2025-02-15',
+    linkedAccount: 'bank1'
+  },
+  {
+    id: 'cc2',
+    name: 'Chase Business Card',
+    lastFour: '5678',
+    type: 'internal',
+    balance: 1850.75,
+    dueDate: '2025-02-20',
+    linkedAccount: 'bank2'
+  },
+  {
+    id: 'cc3',
+    name: 'External Vendor Card',
+    lastFour: '9012',
+    type: 'external',
+    balance: 425.00,
+    dueDate: '2025-02-12',
+    linkedAccount: null
+  }
+];
+
+// Team members for reimbursement
+export const teamMembers = [
+  {
+    id: 'team1',
+    name: 'Alice Johnson',
+    role: 'Technician',
+    email: 'alice.johnson@company.com',
+    personalExpenses: [
+      {
+        id: 'exp1',
+        date: '2025-01-15',
+        vendor: 'Home Depot',
+        amount: 67.50,
+        description: 'Emergency plumbing supplies',
+        status: 'pending_reimbursement',
+        receipt: true,
+        propertyName: 'Stanford GSB'
+      },
+      {
+        id: 'exp2',
+        date: '2025-01-18',
+        vendor: 'AutoZone',
+        amount: 45.25,
+        description: 'Van maintenance supplies',
+        status: 'pending_reimbursement',
+        receipt: true,
+        propertyName: 'General'
+      }
+    ]
+  },
+  {
+    id: 'team2',
+    name: 'Bob Wilson',
+    role: 'Technician',
+    email: 'bob.wilson@company.com',
+    personalExpenses: [
+      {
+        id: 'exp3',
+        date: '2025-01-20',
+        vendor: 'Lowes',
+        amount: 124.75,
+        description: 'Electrical supplies for emergency repair',
+        status: 'pending_reimbursement',
+        receipt: true,
+        propertyName: 'Sunnyvale 432'
+      }
+    ]
+  },
+  {
+    id: 'team3',
+    name: 'Sarah Chen',
+    role: 'Property Manager',
+    email: 'sarah.chen@company.com',
+    personalExpenses: [
+      {
+        id: 'exp4',
+        date: '2025-01-12',
+        vendor: 'Office Depot',
+        amount: 89.99,
+        description: 'Office supplies for property management',
+        status: 'pending_reimbursement',
+        receipt: true,
+        propertyName: 'General'
+      }
+    ]
+  }
 ]; 
