@@ -363,7 +363,7 @@ export default function OwnerDashboard() {
 
           <div className="p-6">
             {/* Tab Content */}
-            {activeTab === "dashboard" && <DashboardTab />}
+            {activeTab === "dashboard" && <DashboardTab setActiveTab={setActiveTab} />}
             {activeTab === "expenses" && <ExpensesTab />}
             {activeTab === "properties" && <PropertiesTab />}
             {activeTab === "forecasting" && <ForecastingTab setActiveTab={setActiveTab} addMessage={addMessage} />}
@@ -423,54 +423,145 @@ export default function OwnerDashboard() {
 }
 
 // Dashboard Tab Component
-function DashboardTab() {
+function DashboardTab({ setActiveTab }: { setActiveTab?: (tab: string) => void }) {
+  // Calculate percentage of year elapsed (same as properties tab)
+  const yearElapsed = 0.58
+
+  // Properties data (same as properties tab)
+  const properties = [
+    {
+      id: 1,
+      name: "Stanford Graduate School of Business",
+      ytdSpent: 2.2,
+      annualBudget: 4.3,
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
+    },
+    {
+      id: 2,
+      name: "Mission Bay Tech Campus",
+      ytdSpent: 3.4,
+      annualBudget: 5.4,
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
+    },
+    {
+      id: 3,
+      name: "Redwood Shores Office Complex",
+      ytdSpent: 1.9,
+      annualBudget: 3.8,
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
+    },
+    {
+      id: 4,
+      name: "Palo Alto Research Center",
+      ytdSpent: 1.5,
+      annualBudget: 3.0,
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
+    },
+    {
+      id: 5,
+      name: "South Bay Industrial Park",
+      ytdSpent: 2.9,
+      annualBudget: 4.8,
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
+    }
+  ]
+
+  // Portfolio calculations
+  const totalBudget = properties.reduce((sum, prop) => sum + prop.annualBudget, 0)
+  const totalSpent = properties.reduce((sum, prop) => sum + prop.ytdSpent, 0)
+  const totalExpected = properties.reduce((sum, prop) => sum + prop.expectedSpend, 0)
+  const propertiesUnderBudget = properties.filter(prop => prop.isUnderBudget).length
+  const propertiesOverBudget = properties.length - propertiesUnderBudget
+  const portfolioVariance = (totalSpent / totalExpected) * 100
+  const portfolioVarianceAmount = totalSpent - totalExpected
+  const isPortfolioUnderBudget = portfolioVariance < 100
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-        {/* YTD Budget Pace */}
+        {/* Portfolio Budget Variance */}
         <Card className="bg-gray-800 border-gray-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-400">YTD Budget Pace</h3>
-              <Info className="h-4 w-4 text-gray-500" />
+              <h3 className="text-sm font-medium text-gray-400">Portfolio Budget Variance</h3>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-gray-500 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-sm">
+                      <div className="font-medium">Portfolio Calculation:</div>
+                      <div>Total YTD Spend: ${totalSpent.toFixed(1)}M</div>
+                      <div>Total Expected (58% of year): ${totalExpected.toFixed(1)}M</div>
+                      <div>Total Variance: ${portfolioVarianceAmount.toFixed(1)}M</div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="flex items-center space-x-2">
-              <AlertTriangle className="h-4 w-4 text-red-400" />
-              <span className="text-sm text-white">On pace to</span>
+              {isPortfolioUnderBudget ? (
+                <CheckCircle className="h-4 w-4 text-green-400" />
+              ) : (
+                <AlertTriangle className="h-4 w-4 text-red-400" />
+              )}
+              <span className="text-sm text-white">
+                {isPortfolioUnderBudget ? 'Under budget' : 'Over budget'}
+              </span>
             </div>
             <div className="mt-1">
-              <span className="text-lg font-bold text-white">overspend</span>
-              <span className="text-sm text-red-400 ml-1">by $729K</span>
+              <span className={`text-lg font-bold ${isPortfolioUnderBudget ? 'text-green-400' : 'text-red-400'}`}>
+                {isPortfolioUnderBudget ? '-' : '+'}{Math.abs(100 - portfolioVariance).toFixed(1)}%
+              </span>
             </div>
             <div className="mt-2 text-xs text-gray-400">
-              <div>Pacing: 134%</div>
-              <div>51% of year complete</div>
-              <div>(July 8th)</div>
-              <div>$14.7M of $21.3M budget</div>
+              <div>${totalSpent.toFixed(1)}M of ${totalBudget.toFixed(1)}M budget</div>
+              <div>58% of year complete</div>
+              <div>{propertiesUnderBudget} under • {propertiesOverBudget} over</div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Monthly Budget Pace */}
+        {/* Properties Performance */}
         <Card className="bg-gray-800 border-gray-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-400">Monthly Budget Pace</h3>
-              <Info className="h-4 w-4 text-gray-500" />
+              <h3 className="text-sm font-medium text-gray-400">Properties Performance</h3>
+              <Home className="h-4 w-4 text-blue-400" />
             </div>
             <div className="flex items-center space-x-2">
-              <AlertTriangle className="h-4 w-4 text-red-400" />
-              <span className="text-sm text-white">Behind</span>
+              <CheckCircle className="h-4 w-4 text-green-400" />
+              <span className="text-sm text-white">Majority under budget</span>
             </div>
             <div className="mt-1">
-              <span className="text-lg font-bold text-white">pace</span>
-              <span className="text-sm text-red-400 ml-1">by 276%</span>
+              <span className="text-lg font-bold text-green-400">{propertiesUnderBudget}</span>
+              <span className="text-sm text-white ml-1">of {properties.length} properties</span>
             </div>
             <div className="mt-2 text-xs text-gray-400">
-              <div>Pacing: 378%</div>
-              <div>19% of month complete</div>
-              <div>(July 8th)</div>
-              <div>$1.3M of $1.8M July budget</div>
+              <div>{propertiesUnderBudget} under budget</div>
+              <div>{propertiesOverBudget} over budget</div>
+              <div>Strong expense management</div>
             </div>
           </CardContent>
         </Card>
@@ -482,7 +573,7 @@ function DashboardTab() {
               <h3 className="text-sm font-medium text-gray-400">Cost Savings Opportunities</h3>
               <DollarSign className="h-4 w-4 text-green-400" />
             </div>
-            <div className="text-2xl font-bold text-green-400">$425K</div>
+            <div className="text-2xl font-bold text-green-400">$4.2M</div>
             <div className="text-xs text-gray-400 mt-1">
               <div>Identified savings potential</div>
             </div>
@@ -545,6 +636,7 @@ function DashboardTab() {
               amount="$2,500"
               status="urgent"
               button="Review"
+              setActiveTab={setActiveTab}
             />
             <ActionItem
               title="Elevator modernization - safety compliance"
@@ -552,6 +644,7 @@ function DashboardTab() {
               amount="$45,000"
               status="urgent"
               button="Review"
+              setActiveTab={setActiveTab}
             />
             <ActionItem
               title="LED lighting upgrade - Building A"
@@ -559,6 +652,7 @@ function DashboardTab() {
               amount="$12,000"
               status="low"
               button="Review"
+              setActiveTab={setActiveTab}
             />
             <ActionItem
               title="Security system upgrade"
@@ -566,6 +660,7 @@ function DashboardTab() {
               amount="$8,900"
               status="medium"
               button="Review"
+              setActiveTab={setActiveTab}
             />
             <ActionItem
               title="Weekend emergency lockout service"
@@ -573,6 +668,7 @@ function DashboardTab() {
               amount="$2,800"
               status="urgent"
               button="Review"
+              setActiveTab={setActiveTab}
             />
             <ActionItem
               title="Major HVAC component replacement"
@@ -580,6 +676,7 @@ function DashboardTab() {
               amount="$5,200"
               status="urgent"
               button="Review"
+              setActiveTab={setActiveTab}
             />
           </CardContent>
         </Card>
@@ -593,109 +690,26 @@ function DashboardTab() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <PropertyExpenseStatus
-              name="Stanford Graduate School of Business"
-              ytd="$132k"
-              budget="$4.3M"
-              avg="41%"
-              spent="$2.9M"
-              behindPace="32%"
-            />
-            <PropertyExpenseStatus
-              name="Mission Bay Tech Campus"
-              ytd="$116k"
-              budget="$5.4M"
-              avg="39%"
-              spent="$3.6M"
-              behindPace="31%"
-            />
-            <PropertyExpenseStatus
-              name="Redwood Shores Office Complex"
-              ytd="$128k"
-              budget="$3.8M"
-              avg="44%"
-              spent="$2.7M"
-              behindPace="36%"
-            />
-            <PropertyExpenseStatus
-              name="Palo Alto Research Center"
-              ytd="$117k"
-              budget="$3.0M"
-              avg="54%"
-              spent="$2.1M"
-              behindPace="37%"
-            />
-            <PropertyExpenseStatus
-              name="South Bay Industrial Park"
-              ytd="$126k"
-              budget="$4.8M"
-              avg="29%"
-              spent="$3.4M"
-              behindPace="39%"
-            />
+            {/* Content removed */}
           </CardContent>
         </Card>
       </div>
 
-      {/* Portfolio Budget Analysis */}
-      <Card className="bg-gray-800 border-gray-700">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-white">Portfolio Budget Analysis</CardTitle>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="bg-blue-600 border-blue-600 text-white">
-                Monthly
-              </Button>
-              <Button size="sm" variant="outline" className="border-gray-600 text-gray-300">
-                Yearly
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <BudgetAnalysisRow
-            property="Stanford Graduate School of Business"
-            amount="$2.8M / $4.3M"
-            status="Behind pace by 31%"
-            pacing="Monthly Pacing"
-          />
-          <BudgetAnalysisRow
-            property="Mission Bay Tech Campus"
-            amount="$3.8M / $5.4M"
-            status="Behind pace by 31%"
-            pacing="Monthly Pacing"
-          />
-          <BudgetAnalysisRow
-            property="Redwood Shores Office Complex"
-            amount="$2.7M / $3.8M"
-            status="Behind pace by 36%"
-            pacing="Monthly Pacing"
-          />
-          <BudgetAnalysisRow
-            property="Palo Alto Research Center"
-            amount="$2.1M / $3.0M"
-            status="Behind pace by 37%"
-            pacing="Monthly Pacing"
-          />
-          <BudgetAnalysisRow
-            property="South Bay Industrial Park"
-            amount="$3.4M / $4.8M"
-            status="Behind pace by 39%"
-            pacing="Monthly Pacing"
-          />
-        </CardContent>
-      </Card>
+
     </div>
   )
 }
 
+
+
 // Helper Components
-function ActionItem({ title, property, amount, status, button }: {
+function ActionItem({ title, property, amount, status, button, setActiveTab }: {
   title: string
   property: string
   amount: string
   status: 'urgent' | 'medium' | 'low'
   button: string
+  setActiveTab?: (tab: string) => void
 }) {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -703,6 +717,12 @@ function ActionItem({ title, property, amount, status, button }: {
       case 'medium': return 'bg-yellow-500'
       case 'low': return 'bg-green-500'
       default: return 'bg-gray-500'
+    }
+  }
+
+  const handleReview = () => {
+    if (setActiveTab) {
+      setActiveTab('expenses')
     }
   }
 
@@ -715,57 +735,59 @@ function ActionItem({ title, property, amount, status, button }: {
           <div className="text-xs text-gray-400">{property} • {amount}</div>
         </div>
       </div>
-      <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+      <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={handleReview}>
         {button}
       </Button>
     </div>
   )
 }
 
-function PropertyExpenseStatus({ name, ytd, budget, avg, spent, behindPace }: {
+function PropertyExpenseStatus({ name, ytdSpent, budget, isUnderBudget, variancePercentage, varianceAmount }: {
   name: string
-  ytd: string
-  budget: string
-  avg: string
-  spent: string
-  behindPace: string
+  ytdSpent: number
+  budget: number
+  isUnderBudget: boolean
+  variancePercentage: number
+  varianceAmount: number
 }) {
+  // Calculate YTD and July percentages (ytdSpent and budget are already in millions)
+  const ytdPercentage = Math.round((ytdSpent / budget) * 100)
+  const julyPercentage = Math.round(ytdPercentage * 1.7) // Simulate July being higher pace
+  
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-medium text-white">{name}</div>
-        <Badge className="bg-red-500 text-white text-xs">
-          Behind pace by {behindPace}
+    <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-white font-medium">{name}</div>
+        <Badge className="bg-red-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          Behind pace by {Math.abs(variancePercentage).toFixed(0)}%
         </Badge>
       </div>
-      <div className="text-xs text-gray-400">
-        YTD: {ytd} • Avg: {avg} • Budget: {budget} • Spent: {spent}
+      
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <div className="text-gray-400 text-sm">
+            YTD: <span className="text-red-400 font-medium">{ytdPercentage}%</span>
+          </div>
+          <div className="text-gray-400 text-sm">
+            Budget: <span className="text-white">${budget.toFixed(1)}M</span>
+          </div>
+        </div>
+        
+        <div className="space-y-1">
+          <div className="text-gray-400 text-sm">
+            July: <span className="text-red-400 font-medium">{julyPercentage}%</span>
+          </div>
+          <div className="text-gray-400 text-sm">
+            Spent: <span className="text-white">${ytdSpent.toFixed(1)}M</span>
+          </div>
+        </div>
       </div>
     </div>
   )
 }
 
-function BudgetAnalysisRow({ property, amount, status, pacing }: {
-  property: string
-  amount: string
-  status: string
-  pacing: string
-}) {
-  return (
-    <div className="flex items-center justify-between p-3 bg-gray-900 rounded">
-      <div className="flex-1">
-        <div className="text-sm font-medium text-white">{property}</div>
-        <div className="text-xs text-gray-400">{amount}</div>
-      </div>
-      <div className="flex items-center gap-2">
-        <Badge className="bg-red-500 text-white text-xs">
-          {status}
-        </Badge>
-        <span className="text-xs text-gray-400">{pacing}</span>
-      </div>
-    </div>
-  )
-}
+
 
 // Expenses Tab Component
 function ExpensesTab() {
