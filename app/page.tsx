@@ -1728,6 +1728,122 @@ export default function PMFinancialDashboard() {
   const pendingBillableSpend = 2850.00;  // Awaiting reimbursement (pending + billable)
   const issuesSpend = 4500.00;  // Issues/needs review (no job assignment)
 
+  // Budget tracking calculations (similar to owner dashboard)
+  const yearElapsed = 0.58; // 58% of year complete
+
+  // Properties data with budget information (same as owner dashboard)
+  const allProperties = [
+    {
+      id: 1,
+      name: "Stanford Graduate School of Business",
+      type: "Academic",
+      size: "285,000 sq ft",
+      ytdSpent: 2.2, // In millions
+      annualBudget: 4.3, // In millions
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
+    },
+    {
+      id: 2,
+      name: "Mission Bay Tech Campus",
+      type: "Office",
+      size: "450,000 sq ft",
+      ytdSpent: 3.4, // In millions
+      annualBudget: 5.4, // In millions
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
+    },
+    {
+      id: 3,
+      name: "Redwood Shores Office Complex",
+      type: "Office",
+      size: "320,000 sq ft",
+      ytdSpent: 1.9, // In millions
+      annualBudget: 3.8, // In millions
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
+    },
+    {
+      id: 4,
+      name: "Palo Alto Research Center",
+      type: "Research",
+      size: "200,000 sq ft",
+      ytdSpent: 1.5, // In millions
+      annualBudget: 3.0, // In millions
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
+    },
+    {
+      id: 5,
+      name: "South Bay Industrial Park",
+      type: "Industrial",
+      size: "600,000 sq ft",
+      ytdSpent: 2.9, // In millions
+      annualBudget: 4.8, // In millions
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
+    }
+  ];
+
+  // Role-based property filtering
+  const getPropertiesForRole = (role: string) => {
+    if (role === 'pm') {
+      // PM sees subset of properties
+      return allProperties.filter(p => p.id === 1 || p.id === 2); // Stanford GSB and Mission Bay
+    } else {
+      // Central Office sees all properties
+      return allProperties;
+    }
+  };
+
+  // Calculate budget metrics for role
+  const getBudgetMetricsForRole = (role: string) => {
+    const properties = getPropertiesForRole(role);
+    const totalBudget = properties.reduce((sum, prop) => sum + prop.annualBudget, 0);
+    const totalSpent = properties.reduce((sum, prop) => sum + prop.ytdSpent, 0);
+    const totalExpected = properties.reduce((sum, prop) => sum + prop.expectedSpend, 0);
+    const propertiesUnderBudget = properties.filter(prop => prop.isUnderBudget).length;
+    const propertiesOverBudget = properties.length - propertiesUnderBudget;
+    const portfolioVariance = (totalSpent / totalExpected) * 100;
+    const portfolioVarianceAmount = totalSpent - totalExpected;
+    const isPortfolioUnderBudget = portfolioVariance < 100;
+
+    return {
+      properties,
+      totalBudget,
+      totalSpent,
+      totalExpected,
+      propertiesUnderBudget,
+      propertiesOverBudget,
+      portfolioVariance,
+      portfolioVarianceAmount,
+      isPortfolioUnderBudget
+    };
+  };
+
+  // Spend by type calculations (for Central Office only)
+  const spendByTypeData = {
+    creditCard: 12500.00, // Credit card expenses
+    invoice: 6250.00, // Invoice/check payments
+    cashback: 187.50, // Cashback earned (1.5% of credit card spend)
+    get creditCardPercentage() { return (this.creditCard / (this.creditCard + this.invoice)) * 100 }
+  };
+
   function handleSmartAssistSend() {
     if (!smartAssistInput.trim()) return;
     setSmartAssistChat((prev) => [
@@ -4069,6 +4185,113 @@ export default function PMFinancialDashboard() {
                     </div>
                   </div>
                 )}
+                {/* Budget Tracking - PM and Central Office Only */}
+                {(role === 'pm' || role === 'centralOffice') && (() => {
+                  const budgetMetrics = getBudgetMetricsForRole(role);
+                  return (
+                    <div className="mb-2 mt-8">
+                      <h4 className="text-lg font-semibold text-white mb-2">Budget Tracking</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                        <Card className="bg-gray-800 border-gray-700">
+                          <CardContent className="p-4">
+                            <div className="text-gray-400 text-xs mb-1">Portfolio Budget Variance</div>
+                            <div className={`text-3xl font-bold ${budgetMetrics.isPortfolioUnderBudget ? 'text-green-400' : 'text-red-400'}`}>
+                              {budgetMetrics.isPortfolioUnderBudget ? '-' : '+'}{Math.abs(100 - budgetMetrics.portfolioVariance).toFixed(1)}%
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                              ${budgetMetrics.totalSpent.toFixed(1)}M of ${budgetMetrics.totalBudget.toFixed(1)}M budget
+                            </div>
+                          </CardContent>
+                        </Card>
+                        <Card className="bg-gray-800 border-gray-700">
+                          <CardContent className="p-4">
+                            <div className="text-gray-400 text-xs mb-1"># Properties Tracking to Budget</div>
+                            <div className="text-3xl font-bold text-green-400">
+                              {budgetMetrics.propertiesUnderBudget}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                              of {budgetMetrics.properties.length} properties under budget
+                            </div>
+                          </CardContent>
+                        </Card>
+                        <Card className="bg-gray-800 border-gray-700">
+                          <CardContent className="p-4">
+                            <div className="text-gray-400 text-xs mb-1">Total Spend vs Budget</div>
+                            <div className={`text-3xl font-bold ${budgetMetrics.isPortfolioUnderBudget ? 'text-green-400' : 'text-red-400'}`}>
+                              {budgetMetrics.isPortfolioUnderBudget ? 'Under' : 'Over'}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                              {budgetMetrics.isPortfolioUnderBudget ? 'Under' : 'Over'} by ${Math.abs(budgetMetrics.portfolioVarianceAmount).toFixed(1)}M
+                            </div>
+                          </CardContent>
+                        </Card>
+                        <Card className="bg-gray-800 border-gray-700">
+                          <CardContent className="p-4">
+                            <div className="text-gray-400 text-xs mb-1">Properties Over Budget</div>
+                            <div className="text-3xl font-bold text-red-400">
+                              {budgetMetrics.propertiesOverBudget}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                              properties need attention
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                  );
+                })()}
+                                 {/* Spend by Type - Central Office Only */}
+                 {role === 'centralOffice' && (
+                   <div className="mb-2 mt-8">
+                     <h4 className="text-lg font-semibold text-white mb-2">Spend by Type</h4>
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                       <Card className="bg-gray-800 border-gray-700">
+                         <CardContent className="p-4">
+                           <div className="text-gray-400 text-xs mb-1">Credit Card Spend</div>
+                           <div className="text-3xl font-bold text-blue-400">
+                             ${spendByTypeData.creditCard.toLocaleString(undefined, {minimumFractionDigits:2})}
+                           </div>
+                           <div className="text-xs text-gray-400 mt-1">
+                             {spendByTypeData.creditCardPercentage.toFixed(0)}% of total spend
+                           </div>
+                         </CardContent>
+                       </Card>
+                       <Card className="bg-gray-800 border-gray-700">
+                         <CardContent className="p-4">
+                           <div className="text-gray-400 text-xs mb-1">% of Spend on CC</div>
+                           <div className="text-3xl font-bold text-cyan-400">
+                             {spendByTypeData.creditCardPercentage.toFixed(1)}%
+                           </div>
+                           <div className="text-xs text-gray-400 mt-1">
+                             Credit card vs total spend
+                           </div>
+                         </CardContent>
+                       </Card>
+                       <Card className="bg-gray-800 border-gray-700">
+                         <CardContent className="p-4">
+                           <div className="text-gray-400 text-xs mb-1">Invoice / Check Spend</div>
+                           <div className="text-3xl font-bold text-purple-400">
+                             ${spendByTypeData.invoice.toLocaleString(undefined, {minimumFractionDigits:2})}
+                           </div>
+                           <div className="text-xs text-gray-400 mt-1">
+                             {(100 - spendByTypeData.creditCardPercentage).toFixed(0)}% of total spend
+                           </div>
+                         </CardContent>
+                       </Card>
+                       <Card className="bg-gray-800 border-gray-700">
+                         <CardContent className="p-4">
+                           <div className="text-gray-400 text-xs mb-1">Cashback Earned</div>
+                           <div className="text-3xl font-bold text-green-400">
+                             ${spendByTypeData.cashback.toLocaleString(undefined, {minimumFractionDigits:2})}
+                           </div>
+                           <div className="text-xs text-gray-400 mt-1">
+                             1.5% cashback rate
+                           </div>
+                         </CardContent>
+                       </Card>
+                     </div>
+                   </div>
+                 )}
                 {/* Recent Activity Notifications */}
                 <div className="mb-2 mt-8">
                   <h4 className="text-lg font-semibold text-white mb-2">
