@@ -4696,6 +4696,7 @@ function CommunicationsTab({
 }) {
   const [selectedProperty, setSelectedProperty] = useState("all")
   const [newMessage, setNewMessage] = useState("")
+  const [selectedCommThread, setSelectedCommThread] = useState<string | null>(null)
 
   const properties = [
     { id: "all", name: "All Properties" },
@@ -4768,88 +4769,194 @@ function CommunicationsTab({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {Object.values(groupedMessages).map((thread: any) => (
-          <Card key={thread.threadId} className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5" />
-                  <span>{thread.propertyName}</span>
-                </div>
-                <Badge className={
-                  thread.lastMessage.status === "unread" ? "bg-blue-600" : "bg-gray-600"
-                }>
-                  {thread.messages.length} messages
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4 max-h-96 overflow-y-auto mb-4">
-                {thread.messages.map((message: any) => (
-                  <div
-                    key={message.id}
-                    className={`flex gap-3 ${
-                      message.senderRole === 'owner' ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[70%] rounded-lg px-4 py-3 ${
-                        message.type === 'flag'
-                          ? 'bg-red-600/20 border border-red-500/30 text-red-100'
-                          : message.senderRole === 'owner'
-                          ? 'bg-green-600 text-white'
-                          : message.senderRole === 'pm'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-700 text-gray-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium">
-                          {message.senderName}
-                        </span>
-                        {message.type === 'flag' && (
-                          <Badge className="bg-red-500/20 text-red-300 text-xs">
-                            <Flag className="h-3 w-3 mr-1" />
-                            Flagged
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm leading-relaxed">{message.content}</p>
-                      <p className="text-xs opacity-70 mt-2">
-                        {message.timestamp.toLocaleDateString()} at{' '}
-                        {message.timestamp.toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </p>
-                    </div>
+      {/* Gmail/Apple Mail Style Layout */}
+      <div className="flex h-[700px] bg-gray-900 rounded-lg border border-gray-700">
+        {/* Left Sidebar - Inbox */}
+        <div className="w-1/3 border-r border-gray-700 flex flex-col">
+          <div className="p-4 border-b border-gray-700">
+            <h4 className="text-white font-medium">Inbox</h4>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {Object.values(groupedMessages).map((thread: any) => (
+              <div
+                key={thread.threadId}
+                className={`p-4 border-b border-gray-800 cursor-pointer hover:bg-gray-800 transition-colors ${
+                  selectedCommThread === thread.threadId ? 'bg-gray-800 border-l-4 border-l-blue-500' : ''
+                }`}
+                onClick={() => setSelectedCommThread(thread.threadId)}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    {thread.type === "property_agnostic" || thread.type === "nudge" ? (
+                      <Building className="h-4 w-4 text-blue-400" />
+                    ) : (
+                      <Home className="h-4 w-4 text-green-400" />
+                    )}
+                    <span className="font-medium text-white text-sm truncate">
+                      {thread.propertyName}
+                    </span>
                   </div>
-                ))}
-              </div>
-
-              <div className="border-t border-gray-700 pt-4">
-                <div className="flex gap-2">
-                  <Textarea
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..."
-                    className="flex-1 bg-gray-800 border-gray-600 text-white resize-none"
-                    rows={3}
-                  />
-                  <Button
-                    onClick={() => handleSendMessage(thread.propertyId, thread.threadId)}
-                    className="bg-green-600 hover:bg-green-700 text-white self-end"
-                    disabled={!newMessage.trim()}
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    Send
-                  </Button>
+                  {thread.lastMessage.status === "unread" && (
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  )}
+                </div>
+                <div className="text-xs text-gray-400 mb-1">
+                  {thread.lastMessage.senderName}
+                </div>
+                <p className="text-sm text-gray-300 line-clamp-2 mb-2">
+                  {thread.lastMessage.content}
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">
+                    {thread.lastMessage.timestamp.toLocaleDateString()}
+                  </span>
+                  <Badge className="bg-gray-700 text-gray-300 text-xs">
+                    {thread.messages.length}
+                  </Badge>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+            ))}
+
+            {Object.keys(groupedMessages).length === 0 && (
+              <div className="p-8 text-center">
+                <MessageSquare className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-500 text-sm">No messages</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Panel - Conversation View */}
+        <div className="flex-1 flex flex-col">
+          {selectedCommThread ? (() => {
+            const thread = Object.values(groupedMessages).find((t: any) => t.threadId === selectedCommThread) as any;
+
+            if (!thread) return null;
+
+            return (
+              <>
+                {/* Thread Header */}
+                <div className="p-4 border-b border-gray-700">
+                  <div className="flex items-center gap-2 mb-1">
+                    {thread.type === "property_agnostic" || thread.type === "nudge" ? (
+                      <Building className="h-5 w-5 text-blue-400" />
+                    ) : (
+                      <Home className="h-5 w-5 text-green-400" />
+                    )}
+                    <h4 className="text-white font-medium">{thread.propertyName}</h4>
+                    {thread.type === "nudge" && (
+                      <Badge className="bg-orange-600 text-white text-xs">Nudge</Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-400">{thread.messages.length} messages</p>
+                </div>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {thread.messages
+                    .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+                    .map((message: any) => (
+                      <div
+                        key={message.id}
+                        className={`flex gap-3 ${
+                          message.senderRole === 'owner' ? 'justify-end' : 'justify-start'
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[70%] rounded-lg px-4 py-3 ${
+                            message.type === 'flag'
+                              ? 'bg-red-600/20 border border-red-500/30 text-red-100'
+                              : message.type === 'nudge'
+                              ? 'bg-orange-600/20 border border-orange-500/30 text-orange-100'
+                              : message.senderRole === 'owner'
+                              ? 'bg-green-600 text-white'
+                              : message.senderRole === 'pm'
+                              ? 'bg-blue-600 text-white'
+                              : message.senderRole === 'centralOffice'
+                              ? 'bg-purple-600 text-white'
+                              : 'bg-gray-700 text-gray-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-medium">
+                              {message.senderName}
+                            </span>
+                            {message.type === 'flag' && (
+                              <Badge className="bg-red-500/20 text-red-300 text-xs">
+                                <Flag className="h-3 w-3 mr-1" />
+                                Flagged
+                              </Badge>
+                            )}
+                            {message.type === 'nudge' && (
+                              <Badge className="bg-orange-500/20 text-orange-300 text-xs">
+                                <Send className="h-3 w-3 mr-1" />
+                                Nudge
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm leading-relaxed whitespace-pre-line">{message.content}</p>
+                          <p className="text-xs opacity-70 mt-2">
+                            {message.timestamp.toLocaleDateString()} at{' '}
+                            {message.timestamp.toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+
+                {/* Reply Box */}
+                <div className="border-t border-gray-700 p-4">
+                  <div className="flex gap-2">
+                    <Textarea
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Type your reply..."
+                      className="flex-1 bg-gray-800 border-gray-600 text-white resize-none"
+                      rows={3}
+                    />
+                    <Button
+                      onClick={() => {
+                        if (newMessage.trim()) {
+                          const message = {
+                            id: Date.now().toString(),
+                            propertyId: thread.propertyId,
+                            propertyName: thread.propertyName,
+                            senderId: "owner1",
+                            senderName: "Property Owner",
+                            senderRole: "owner",
+                            content: newMessage,
+                            timestamp: new Date(),
+                            status: "sent",
+                            threadId: thread.threadId,
+                            type: thread.type
+                          };
+                          setMessages([...messages, message]);
+                          setNewMessage("");
+                        }
+                      }}
+                      className="bg-green-600 hover:bg-green-700 text-white self-end"
+                      disabled={!newMessage.trim()}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Send
+                    </Button>
+                  </div>
+                </div>
+              </>
+            );
+          })() : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h4 className="text-lg font-medium text-gray-300 mb-2">Select a conversation</h4>
+                <p className="text-gray-500">Choose a thread from the inbox to start messaging</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

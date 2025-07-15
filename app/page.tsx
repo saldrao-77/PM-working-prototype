@@ -88,7 +88,8 @@ import {
   Archive,
   Calendar as CalendarIcon,
   ExternalLink as LinkIcon,
-  Flag
+  Flag,
+  Calculator
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from 'next/navigation'
@@ -501,7 +502,6 @@ export default function PMFinancialDashboard() {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
   const [reportDialogOpen, setReportDialogOpen] = useState(false)
   const [selectedProperty, setSelectedProperty] = useState<any>(null)
-  const [newMessage, setNewMessage] = useState("")
   const [selectedThread, setSelectedThread] = useState<string | null>(null)
   const [approvalFilter, setApprovalFilter] = useState("all")
   const [approvalSearch, setApprovalSearch] = useState("")
@@ -701,6 +701,57 @@ export default function PMFinancialDashboard() {
     brand: 'Chase' as EnhancedCard['brand'],
     assignedStaff: [] as string[]
   });
+
+  // Nudge dialog states
+  const [nudgeDialogOpen, setNudgeDialogOpen] = useState(false);
+  const [selectedNudgeTransaction, setSelectedNudgeTransaction] = useState<any>(null);
+  const [nudgeMessage, setNudgeMessage] = useState('');
+
+  // Communications state
+  const [messages, setMessages] = useState([
+    {
+      id: "1",
+      propertyId: "stanford",
+      propertyName: "Stanford Graduate School of Business",
+      senderId: "owner1",
+      senderName: "Property Owner",
+      senderRole: "owner",
+      content: "Hi! I need an update on the HVAC maintenance work order. When can we expect it to be completed?",
+      timestamp: new Date("2024-01-20T10:00:00"),
+      status: "unread",
+      threadId: "thread_stanford_1",
+      type: "property_specific"
+    },
+    {
+      id: "2",
+      propertyId: "central",
+      propertyName: "Central Office",
+      senderId: "co1",
+      senderName: "Central Office",
+      senderRole: "centralOffice",
+      content: "Please review the updated expense policy for vendor restrictions. New limits have been set for office supplies.",
+      timestamp: new Date("2024-01-19T14:30:00"),
+      status: "unread",
+      threadId: "thread_central_1",
+      type: "property_agnostic"
+    },
+    {
+      id: "3",
+      propertyId: "stanford",
+      propertyName: "Stanford Graduate School of Business",
+      senderId: "tech1",
+      senderName: "Alice Johnson",
+      senderRole: "technician",
+      content: "I've completed the plumbing repair at Stanford GSB. All fixtures are working properly now.",
+      timestamp: new Date("2024-01-18T16:45:00"),
+      status: "read",
+      threadId: "thread_stanford_2",
+      type: "property_specific"
+    }
+  ]);
+  const [communicationMessage, setCommunicationMessage] = useState("");
+  const [selectedPropertyFilter, setSelectedPropertyFilter] = useState("all");
+  const [selectedCommThread, setSelectedCommThread] = useState<string | null>(null);
 
   // Expense Requests state
   const [expenseRequests, setExpenseRequests] = useState<ExpenseRequest[]>(mockExpenseRequests);
@@ -1569,9 +1620,11 @@ export default function PMFinancialDashboard() {
           { id: 'activity', label: 'Activity Log', icon: Zap },
           { id: 'wallet', label: 'Expenses', icon: CreditCard },
           { id: 'transactions', label: 'Transactions', icon: FileText },
+          { id: 'smart-insights', label: 'Smart Insights', icon: Bot },
           { id: 'collateral', label: 'Collateral Hub', icon: FileArchive },
           { id: 'properties', label: 'Properties', icon: Home },
           { id: 'staff', label: 'Technicians', icon: User },
+          { id: 'communications', label: 'Communications', icon: MessageSquare },
         ]
       : role === 'centralOffice'
       ? [
@@ -1582,15 +1635,18 @@ export default function PMFinancialDashboard() {
           { id: 'payments', label: 'Payments', icon: DollarSign },
           { id: 'policy', label: 'Expense Requests', icon: MessageSquare },
           { id: 'transactions', label: 'Transactions', icon: FileText },
+          { id: 'smart-insights', label: 'Smart Insights', icon: Bot },
           { id: 'collateral', label: 'Collateral Hub', icon: FileArchive },
           { id: 'properties', label: 'Properties', icon: Home },
           { id: 'staff', label: 'Technicians', icon: User },
+          { id: 'communications', label: 'Communications', icon: MessageSquare },
         ]
       : [
           { id: 'dashboard', label: 'Dashboard', icon: Folder },
           { id: 'workorders', label: 'Work Orders', icon: FileText },
           { id: 'technicianExpenses', label: 'My Expenses', icon: CreditCard },
           { id: 'profile', label: 'Profile', icon: User },
+          { id: 'communications', label: 'Communications', icon: MessageSquare },
         ];
 
   // Sample properties for dropdown
@@ -2007,6 +2063,781 @@ export default function PMFinancialDashboard() {
   const technicianNonBillableSpend = technicianTxnsThisMonth.filter(txn => !txn.billable).reduce((sum, txn) => sum + txn.amount, 0);
   const technicianUncategorized = technicianTxnsThisMonth.filter(txn => !txn.jobId || txn.status === 'pending');
   const technicianUncategorizedSpend = technicianUncategorized.reduce((sum, txn) => sum + txn.amount, 0);
+
+  // Smart Insights Component
+  function SmartInsightsTab({ role }: { role: string }) {
+    const [roiCalcForm, setRoiCalcForm] = useState({
+      assetType: "",
+      actionType: "",
+      cost: "",
+      opex: ""
+    })
+    const [aiQuery, setAiQuery] = useState("")
+    const [aiDirectInput, setAiDirectInput] = useState("")
+    const [aiResults, setAiResults] = useState<string>("")
+    const [showAiResults, setShowAiResults] = useState(false)
+    const [showRoiPopup, setShowRoiPopup] = useState(false)
+    const [roiResults, setRoiResults] = useState<any>(null)
+    
+    // Filter states that actually work
+    const [selectedProperty, setSelectedProperty] = useState(role === 'pm' ? "Stanford Graduate School..." : "Stanford Graduate School...")
+    const [selectedTimeRange, setSelectedTimeRange] = useState("Quarterly")
+    const [selectedRegion, setSelectedRegion] = useState("Bay Area")
+    const [selectedViewType, setSelectedViewType] = useState("$/sqft")
+
+    // Base data for different filter combinations
+    const benchmarkingDataSets = {
+      "Stanford Graduate School...": {
+        "Quarterly": {
+          "HVAC": { actual: 8400, market: 11800, cleanSheet: 8200, portfolio: 8600 },
+          "Elevator": { actual: 6300, market: 8100, cleanSheet: 6500, portfolio: 6400 },
+          "Fire Safety": { actual: 4100, market: 5900, cleanSheet: 4200, portfolio: 4300 },
+          "Plumbing": { actual: 5900, market: 7800, cleanSheet: 5800, portfolio: 6100 },
+          "General R&M": { actual: 11800, market: 15200, cleanSheet: 11500, portfolio: 12000 }
+        },
+        "Monthly": {
+          "HVAC": { actual: 2800, market: 3930, cleanSheet: 2733, portfolio: 2867 },
+          "Elevator": { actual: 2100, market: 2700, cleanSheet: 2167, portfolio: 2133 },
+          "Fire Safety": { actual: 1367, market: 1967, cleanSheet: 1400, portfolio: 1433 },
+          "Plumbing": { actual: 1967, market: 2600, cleanSheet: 1933, portfolio: 2033 },
+          "General R&M": { actual: 3933, market: 5067, cleanSheet: 3833, portfolio: 4000 }
+        }
+      },
+      "Mission Bay Tech Campus": {
+        "Quarterly": {
+          "HVAC": { actual: 9200, market: 12800, cleanSheet: 9000, portfolio: 9400 },
+          "Elevator": { actual: 6800, market: 8600, cleanSheet: 6600, portfolio: 6900 },
+          "Fire Safety": { actual: 4400, market: 6200, cleanSheet: 4300, portfolio: 4500 },
+          "Plumbing": { actual: 6200, market: 8100, cleanSheet: 6000, portfolio: 6300 },
+          "General R&M": { actual: 12500, market: 16200, cleanSheet: 12200, portfolio: 12800 }
+        },
+        "Monthly": {
+          "HVAC": { actual: 3067, market: 4267, cleanSheet: 3000, portfolio: 3133 },
+          "Elevator": { actual: 2267, market: 2867, cleanSheet: 2200, portfolio: 2300 },
+          "Fire Safety": { actual: 1467, market: 2067, cleanSheet: 1433, portfolio: 1500 },
+          "Plumbing": { actual: 2067, market: 2700, cleanSheet: 2000, portfolio: 2100 },
+          "General R&M": { actual: 4167, market: 5400, cleanSheet: 4067, portfolio: 4267 }
+        }
+      },
+      "All Properties": {
+        "Quarterly": {
+          "HVAC": { actual: 10200, market: 13800, cleanSheet: 9800, portfolio: 10400 },
+          "Elevator": { actual: 7500, market: 9200, cleanSheet: 7200, portfolio: 7600 },
+          "Fire Safety": { actual: 5200, market: 7100, cleanSheet: 4900, portfolio: 5300 },
+          "Plumbing": { actual: 6800, market: 8900, cleanSheet: 6500, portfolio: 7100 },
+          "General R&M": { actual: 13500, market: 17200, cleanSheet: 13000, portfolio: 13800 }
+        },
+        "Monthly": {
+          "HVAC": { actual: 3400, market: 4600, cleanSheet: 3267, portfolio: 3467 },
+          "Elevator": { actual: 2500, market: 3067, cleanSheet: 2400, portfolio: 2533 },
+          "Fire Safety": { actual: 1733, market: 2367, cleanSheet: 1633, portfolio: 1767 },
+          "Plumbing": { actual: 2267, market: 2967, cleanSheet: 2167, portfolio: 2367 },
+          "General R&M": { actual: 4500, market: 5733, cleanSheet: 4333, portfolio: 4600 }
+        }
+      }
+    }
+
+    const handleAiQuestion = (question: string) => {
+      setAiQuery(question)
+      setShowAiResults(true)
+      // Simulate AI response processing
+      setTimeout(() => {
+        setAiResults(`AI Analysis for: "${question}"\n\nBased on your portfolio data, here are the key insights:\n\n• Current spend analysis shows patterns across your properties\n• Cost optimization opportunities identified\n• Recommended actions for immediate implementation\n\nThis analysis is based on your current portfolio performance and benchmarking data.`)
+      }, 1000)
+    }
+
+    const handleAskAIDirect = () => {
+      if (aiDirectInput.trim()) {
+        handleAiQuestion(aiDirectInput)
+        setAiDirectInput("")
+      }
+    }
+
+    const scrollToRoiCalculator = () => {
+      document.getElementById('roi-calculator-section')?.scrollIntoView({ behavior: 'smooth' })
+    }
+
+    const handleRoiCalculation = () => {
+      let formToUse = roiCalcForm
+      
+      // If form fields are empty but AI input has content, try to auto-fill from AI input
+      if ((!roiCalcForm.assetType || !roiCalcForm.actionType || !roiCalcForm.cost) && aiDirectInput.trim()) {
+        const input = aiDirectInput.toLowerCase()
+        let autoFilledForm = { ...roiCalcForm }
+        
+        // Auto-detect asset type
+        if (input.includes("hvac") || input.includes("heating") || input.includes("cooling")) {
+          autoFilledForm.assetType = "hvac"
+        } else if (input.includes("elevator")) {
+          autoFilledForm.assetType = "elevator"
+        } else if (input.includes("plumbing") || input.includes("leak")) {
+          autoFilledForm.assetType = "plumbing"
+        } else if (input.includes("electrical") || input.includes("lighting")) {
+          autoFilledForm.assetType = "electrical"
+        }
+        
+        // Auto-detect action type
+        if (input.includes("replace") || input.includes("replacing")) {
+          autoFilledForm.actionType = "Replace"
+        } else if (input.includes("repair") || input.includes("repairing")) {
+          autoFilledForm.actionType = "Repair"
+        } else if (input.includes("upgrade") || input.includes("upgrading")) {
+          autoFilledForm.actionType = "Upgrade"
+        }
+        
+        // Set default cost based on asset type
+        if (!autoFilledForm.cost) {
+          if (autoFilledForm.assetType === "hvac") {
+            autoFilledForm.cost = "$45,000"
+            autoFilledForm.opex = "$8,500"
+          } else if (autoFilledForm.assetType === "elevator") {
+            autoFilledForm.cost = "$75,000"
+            autoFilledForm.opex = "$12,000"
+          } else if (autoFilledForm.assetType === "plumbing") {
+            autoFilledForm.cost = "$15,000"
+            autoFilledForm.opex = "$2,500"
+          } else if (autoFilledForm.assetType === "electrical") {
+            autoFilledForm.cost = "$25,000"
+            autoFilledForm.opex = "$3,200"
+          } else {
+            autoFilledForm.cost = "$30,000"
+            autoFilledForm.opex = "$5,000"
+          }
+        }
+        
+        // Check if we have enough info now
+        if (!autoFilledForm.assetType || !autoFilledForm.actionType || !autoFilledForm.cost) {
+          alert("Please fill in all required fields (Asset Type, Action Type, and Estimated Cost) or provide more specific information in the AI input field.")
+          return
+        }
+        
+        // Use the auto-filled form for calculation
+        formToUse = autoFilledForm
+        setRoiCalcForm(autoFilledForm)
+      } else if (!roiCalcForm.assetType || !roiCalcForm.actionType || !roiCalcForm.cost) {
+        alert("Please fill in all required fields (Asset Type, Action Type, and Estimated Cost) or use the Quick Questions to auto-fill the form.")
+        return
+      }
+
+      // Use the determined form for calculations
+      const cost = parseFloat(formToUse.cost.replace(/[^0-9.-]+/g, ""))
+      const opex = parseFloat(formToUse.opex.replace(/[^0-9.-]+/g, "")) || 0
+      
+      // Calculate ROI based on asset type and action
+      let paybackYears = 0
+      let savings = 0
+      let recommendation = ""
+
+      if (formToUse.assetType === "elevator" && formToUse.actionType === "Replace") {
+        paybackYears = 2.3
+        savings = cost * 0.15 // 15% annual savings
+        recommendation = "Replace"
+      } else if (formToUse.assetType === "hvac" && formToUse.actionType === "Replace") {
+        paybackYears = 3.2
+        savings = cost * 0.18 // 18% annual savings
+        recommendation = "Replace"
+      } else if (formToUse.actionType === "Repair") {
+        paybackYears = 1.8
+        savings = cost * 0.25 // 25% annual savings
+        recommendation = "Repair"
+      } else {
+        paybackYears = 4.5
+        savings = cost * 0.12 // 12% annual savings
+        recommendation = "Repair"
+      }
+
+      // Set the results and show popup
+      setRoiResults({
+        asset: formToUse.assetType,
+        action: formToUse.actionType,
+        cost: formToUse.cost,
+        opex: formToUse.opex,
+        paybackYears,
+        savings,
+        recommendation
+      })
+      setShowRoiPopup(true)
+    }
+
+    // Get current data based on filters
+    const getCurrentData = () => {
+      const propertyData = benchmarkingDataSets[selectedProperty as keyof typeof benchmarkingDataSets] || benchmarkingDataSets["Stanford Graduate School..."]
+      const timeData = propertyData[selectedTimeRange as keyof typeof propertyData] || propertyData["Quarterly"]
+      
+      return Object.keys(timeData).map(category => {
+        const data = timeData[category as keyof typeof timeData]
+        const maxValue = Math.max(data.actual, data.market, data.cleanSheet, data.portfolio)
+        
+        return {
+          category,
+          actual: data.actual,
+          actualWidth: (data.actual / maxValue) * 100,
+          market: data.market,
+          marketWidth: (data.market / maxValue) * 100,
+          cleanSheet: data.cleanSheet,
+          cleanSheetWidth: (data.cleanSheet / maxValue) * 100,
+          portfolio: data.portfolio,
+          portfolioWidth: (data.portfolio / maxValue) * 100,
+          overCleanSheet: data.actual > data.cleanSheet ? 
+            `${Math.round(((data.actual - data.cleanSheet) / data.cleanSheet) * 100)}% over clean sheet` :
+            `${Math.round(((data.cleanSheet - data.actual) / data.cleanSheet) * 100)}% under clean sheet`,
+          recommendations: ["Contract optimization", "Vendor consolidation"]
+        }
+      })
+    }
+
+    // Property options based on role
+    const getPropertyOptions = () => {
+      if (role === 'pm') {
+        // PM sees only properties they manage
+        return [
+          { value: "Stanford Graduate School...", label: "Stanford Graduate School..." },
+          { value: "Mission Bay Tech Campus", label: "Mission Bay Tech Campus" }
+        ]
+      } else {
+        // Central Office sees all properties (same as owner)
+        return [
+          { value: "Stanford Graduate School...", label: "Stanford Graduate School..." },
+          { value: "Mission Bay Tech Campus", label: "Mission Bay Tech Campus" },
+          { value: "All Properties", label: "All Properties" }
+        ]
+      }
+    }
+
+    // Recent Analyses for ROI Calculator
+    const recentAnalyses = [
+      {
+        type: "HVAC System - Building A",
+        action: "Repair vs Replace",
+        cost: "$8500",
+        payback: "2-3 years",
+        savings: "Better long-term value, energy savings",
+        recommendation: "Replace",
+        status: "Replace"
+      },
+      {
+        type: "Leak Detection System",
+        action: "Insurance Optimization",
+        cost: "$15000",
+        payback: "4.4 years",
+        savings: "Reduces insurance premiums, prevents water damage",
+        recommendation: "Install",
+        status: "Install"
+      }
+    ]
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-white">Smart Insights</h2>
+        </div>
+
+        {/* Portfolio Performance */}
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white">Portfolio Performance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-blue-400 mb-2">69%</div>
+                <div className="text-sm text-gray-300">Expense Budget Utilized</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-green-400 mb-2">{role === 'pm' ? '$2.1M' : '$6.6M'}</div>
+                <div className="text-sm text-gray-300">Total $ Saved vs Clean Sheet</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-red-400 mb-2">{role === 'pm' ? '1' : '3'}</div>
+                <div className="text-sm text-gray-300">Properties Over Budget</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Ask AI Smart Analysis */}
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+              Ask AI Smart Analysis
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!showAiResults ? (
+              <>
+                <div className="text-sm text-gray-300 mb-4 p-3 bg-gray-700 rounded">
+                  How much did we spend on HVAC across all properties in Q4?
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                  {[
+                    "How much did we spend on HVAC across all properties in Q4?",
+                    "What's our insurance premium optimization potential?",
+                    "What's our total R&M spend vs. benchmark by property?",
+                    "Show me all emergency repairs over $5,000 this year",
+                    "Which insurance policies need renewal this quarter?",
+                    "What are our biggest budget variances by category?"
+                  ].map((question, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      className="justify-start h-auto p-3 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 text-left"
+                      onClick={() => handleAiQuestion(question)}
+                    >
+                      <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 flex-shrink-0"></span>
+                      <span className="text-sm">{question}</span>
+                    </Button>
+                  ))}
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Ask AI about your property portfolio..."
+                      value={aiDirectInput}
+                      onChange={(e) => setAiDirectInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAskAIDirect()}
+                      className="bg-gray-700 border-gray-600 text-white"
+                    />
+                  </div>
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                    onClick={handleAskAIDirect}
+                  >
+                    <span className="w-2 h-2 bg-white rounded-full"></span>
+                    Ask AI
+                  </Button>
+                  <Button
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    onClick={scrollToRoiCalculator}
+                  >
+                    <Calculator className="h-4 w-4 mr-2" />
+                    ROI Calculator
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-white">AI Analysis Results</h4>
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAiResults(false)}
+                    className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                  >
+                    Back to Questions
+                  </Button>
+                </div>
+                <div className="p-4 bg-gray-700 rounded-lg">
+                  <div className="text-sm text-gray-300 whitespace-pre-line">
+                    {aiResults}
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Interactive Cost Benchmarking */}
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white">Interactive Cost Benchmarking</CardTitle>
+            <p className="text-sm text-gray-400">
+              Compare your spend against market and clean-sheet benchmarks
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {/* Filter Dropdowns */}
+              <div className="grid grid-cols-4 gap-4 text-center text-sm font-medium text-gray-300 mb-4">
+                <div>Properties</div>
+                <div>Time Range</div>
+                <div>Region</div>
+                <div>View Type</div>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-4 mb-6">
+                <Select value={selectedProperty} onValueChange={setSelectedProperty}>
+                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-600">
+                    {getPropertyOptions().map(property => (
+                      <SelectItem key={property.value} value={property.value} className="text-white">
+                        {property.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
+                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-600">
+                    <SelectItem value="Quarterly" className="text-white">Quarterly</SelectItem>
+                    <SelectItem value="Monthly" className="text-white">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-600">
+                    <SelectItem value="Bay Area" className="text-white">Bay Area</SelectItem>
+                    <SelectItem value="Los Angeles" className="text-white">Los Angeles</SelectItem>
+                    <SelectItem value="San Diego" className="text-white">San Diego</SelectItem>
+                    <SelectItem value="California" className="text-white">California</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={selectedViewType} onValueChange={setSelectedViewType}>
+                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-600">
+                    <SelectItem value="$/sqft" className="text-white">$/sqft</SelectItem>
+                    <SelectItem value="Total $" className="text-white">Total $</SelectItem>
+                    <SelectItem value="% of Budget" className="text-white">% of Budget</SelectItem>
+                    <SelectItem value="Variance" className="text-white">Variance</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {getCurrentData().map((item, index) => (
+                <div key={index} className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-white">{item.category}</h4>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-gray-400">Versus: Market Median, Clean Sheet Pro, Chambre Diversified</span>
+                      <span className={`text-sm font-bold px-2 py-1 rounded ${
+                        item.overCleanSheet.includes('under') 
+                          ? 'text-green-400 bg-green-900' 
+                          : 'text-red-400 bg-red-900'
+                      }`}>
+                        {item.overCleanSheet}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 text-xs text-gray-400">Actual</div>
+                      <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
+                        <div 
+                          className="bg-blue-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
+                          style={{ width: `${item.actualWidth}%` }}
+                        >
+                          ${item.actual.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 text-xs text-gray-400">Market</div>
+                      <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
+                        <div 
+                          className="bg-gray-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
+                          style={{ width: `${item.marketWidth}%` }}
+                        >
+                          ${item.market.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 text-xs text-gray-400">Clean Sheet</div>
+                      <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
+                        <div 
+                          className="bg-green-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
+                          style={{ width: `${item.cleanSheetWidth}%` }}
+                        >
+                          ${item.cleanSheet.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 text-xs text-gray-400">Portfolio</div>
+                      <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
+                        <div 
+                          className="bg-purple-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
+                          style={{ width: `${item.portfolioWidth}%` }}
+                        >
+                          ${item.portfolio.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    {item.recommendations.map((rec, recIndex) => (
+                      <Badge key={recIndex} className="bg-orange-500 text-white hover:bg-orange-600 cursor-pointer">
+                        {rec}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ROI Calculator */}
+        <Card className="bg-gray-800 border-gray-700" id="roi-calculator-section">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Calculator className="h-5 w-5 text-green-400" />
+              ROI Calculator
+            </CardTitle>
+            <p className="text-sm text-gray-400">
+              AI-powered calculations for repair vs replace decisions
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h4 className="font-medium text-white">Calculation Inputs</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-300">Asset Type</Label>
+                    <Select value={roiCalcForm.assetType} onValueChange={(value) => setRoiCalcForm(prev => ({ ...prev, assetType: value }))}>
+                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                        <SelectValue placeholder="Elevator" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-600">
+                        <SelectItem value="elevator" className="text-white">Elevator</SelectItem>
+                        <SelectItem value="hvac" className="text-white">HVAC System</SelectItem>
+                        <SelectItem value="plumbing" className="text-white">Plumbing</SelectItem>
+                        <SelectItem value="electrical" className="text-white">Electrical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-gray-300">Action Type</Label>
+                    <Select value={roiCalcForm.actionType} onValueChange={(value) => setRoiCalcForm(prev => ({ ...prev, actionType: value }))}>
+                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                        <SelectValue placeholder="Replace" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-600">
+                        <SelectItem value="Replace" className="text-white">Replace</SelectItem>
+                        <SelectItem value="Repair" className="text-white">Repair</SelectItem>
+                        <SelectItem value="Upgrade" className="text-white">Upgrade</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label className="text-gray-300">Estimated Cost</Label>
+                  <Input
+                    placeholder="e.g., $45,000"
+                    value={roiCalcForm.cost}
+                    onChange={(e) => setRoiCalcForm(prev => ({ ...prev, cost: e.target.value }))}
+                    className="bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+                
+                <div>
+                  <Label className="text-gray-300">Current Annual OpEx (optional)</Label>
+                  <Input
+                    placeholder="e.g., $8,500"
+                    value={roiCalcForm.opex}
+                    onChange={(e) => setRoiCalcForm(prev => ({ ...prev, opex: e.target.value }))}
+                    className="bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-gray-300">Or Ask AI Directly</Label>
+                  <Input
+                    placeholder="What's the ROI on replacing HVAC in Building A?"
+                    value={aiDirectInput}
+                    onChange={(e) => setAiDirectInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAskAIDirect()}
+                    className="bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-gray-300">Quick Questions</Label>
+                  <div className="space-y-2">
+                    {[
+                      "What's the ROI on replacing HVAC in Building A?",
+                      "Should we repair or replace the elevator at Stanford GSB?",
+                      "ROI analysis for LED lighting upgrade across all properties",
+                      "Insurance optimization for leak detection system"
+                    ].map((question, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                        onClick={() => {
+                          setAiDirectInput(question)
+                          
+                          // Auto-fill form based on question content
+                          if (question.includes("HVAC") && question.includes("replacing")) {
+                            setRoiCalcForm({
+                              assetType: "hvac",
+                              actionType: "Replace",
+                              cost: "$45,000",
+                              opex: "$8,500"
+                            })
+                          } else if (question.includes("elevator") && question.includes("replace")) {
+                            setRoiCalcForm({
+                              assetType: "elevator",
+                              actionType: "Replace",
+                              cost: "$75,000",
+                              opex: "$12,000"
+                            })
+                          } else if (question.includes("LED lighting")) {
+                            setRoiCalcForm({
+                              assetType: "electrical",
+                              actionType: "Upgrade",
+                              cost: "$25,000",
+                              opex: "$3,200"
+                            })
+                          } else if (question.includes("leak detection")) {
+                            setRoiCalcForm({
+                              assetType: "plumbing",
+                              actionType: "Upgrade",
+                              cost: "$15,000",
+                              opex: "$2,500"
+                            })
+                          }
+                        }}
+                      >
+                        <span className="w-2 h-2 bg-green-400 rounded-full mr-2 flex-shrink-0"></span>
+                        <span className="text-sm">{question}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                
+                <Button 
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  onClick={handleRoiCalculation}
+                >
+                  <Calculator className="h-4 w-4 mr-2" />
+                  Calculate ROI
+                </Button>
+              </div>
+              
+              <div className="space-y-4">
+                <h4 className="font-medium text-white">Recent Analyses</h4>
+                <div className="space-y-3">
+                  {recentAnalyses.map((analysis, index) => (
+                    <div key={index} className="p-3 bg-gray-700 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-white">{analysis.type}</span>
+                        <Badge className={`text-white ${analysis.status === 'Replace' ? 'bg-green-600' : 'bg-green-600'}`}>
+                          {analysis.status}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-gray-400 mb-1">
+                        {analysis.action}
+                      </div>
+                      <div className="text-xs text-gray-400 mb-1">
+                        Cost: {analysis.cost}
+                      </div>
+                      <div className="text-xs text-gray-400 mb-1">
+                        Payback: {analysis.payback}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {analysis.savings}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ROI Calculation Popup */}
+        <Dialog open={showRoiPopup} onOpenChange={setShowRoiPopup}>
+          <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Calculator className="h-5 w-5 text-green-400" />
+                ROI Calculation Results
+              </DialogTitle>
+            </DialogHeader>
+            {roiResults && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-300">Asset Type</Label>
+                    <div className="text-white font-medium">{roiResults.asset}</div>
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Action Type</Label>
+                    <div className="text-white font-medium">{roiResults.action}</div>
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Estimated Cost</Label>
+                    <div className="text-white font-medium">{roiResults.cost}</div>
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Annual OpEx</Label>
+                    <div className="text-white font-medium">{roiResults.opex || 'N/A'}</div>
+                  </div>
+                </div>
+                
+                <div className="border-t border-gray-700 pt-4">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="bg-gray-800 rounded-lg p-4">
+                      <div className="text-2xl font-bold text-green-400">{roiResults.paybackYears} years</div>
+                      <div className="text-sm text-gray-300">Payback Period</div>
+                    </div>
+                    <div className="bg-gray-800 rounded-lg p-4">
+                      <div className="text-2xl font-bold text-blue-400">${roiResults.savings.toLocaleString()}</div>
+                      <div className="text-sm text-gray-300">Annual Savings</div>
+                    </div>
+                    <div className="bg-gray-800 rounded-lg p-4">
+                      <div className="text-2xl font-bold text-purple-400">{roiResults.recommendation}</div>
+                      <div className="text-sm text-gray-300">Recommendation</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-800 rounded-lg p-4">
+                  <div className="text-sm text-gray-300">
+                    <strong>Analysis Summary:</strong> Based on the asset type and action, this investment will provide positive ROI within the calculated timeframe. The recommendation is to {roiResults.recommendation.toLowerCase()} based on cost-benefit analysis and long-term value considerations.
+                  </div>
+                </div>
+                
+                <div className="flex justify-end gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowRoiPopup(false)}
+                    className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                  >
+                    Close
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      setShowRoiPopup(false)
+                      // Add to recent analyses
+                      // This would typically save to a database
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    Save Analysis
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    )
+  }
 
   // Helper to calculate YTD spending for a property
   // Card management functions
@@ -5070,6 +5901,7 @@ export default function PMFinancialDashboard() {
                                 <th className="text-left py-3 px-4 font-semibold text-white">Billable</th>
                                 <th className="text-left py-3 px-4 font-semibold text-white">Status</th>
                                 <th className="text-left py-3 px-4 font-semibold text-white">AI Flag</th>
+                                <th className="text-left py-3 px-4 font-semibold text-white">Actions</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -5114,6 +5946,48 @@ export default function PMFinancialDashboard() {
                                       <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-red-700 text-red-100">
                                         {aiFlag}
                                       </span>
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="bg-orange-600 border-orange-600 text-white hover:bg-orange-700 hover:border-orange-700 flex items-center gap-1"
+                                        onClick={() => {
+                                          setSelectedNudgeTransaction(txn);
+                                          const missingItems = [];
+                                          const flaggedReason = transactionReviewFlags[txn.id];
+                                          
+                                          // Check specific AI flag first, then check for missing items
+                                          if (flaggedReason) {
+                                            if (flaggedReason.toLowerCase().includes('receipt')) {
+                                              missingItems.push('receipt');
+                                            }
+                                            if (flaggedReason.toLowerCase().includes('memo')) {
+                                              missingItems.push('memo');
+                                            }
+                                            if (flaggedReason.toLowerCase().includes('property') || flaggedReason.toLowerCase().includes('assignment')) {
+                                              missingItems.push('property/job assignment');
+                                            }
+                                            if (flaggedReason.toLowerCase().includes('unusual') || flaggedReason.toLowerCase().includes('amount')) {
+                                              missingItems.push('justification for unusual amount');
+                                            }
+                                          } else {
+                                            // Fallback to standard checks
+                                            if (!txn.receipt) missingItems.push('receipt');
+                                            if (!txn.memo) missingItems.push('memo');
+                                            if (!txn.jobId) missingItems.push('property/job assignment');
+                                          }
+                                          
+                                          const job = jobs.find(j => j.id === txn.jobId);
+                                          const property = job ? properties.find(p => p.name === job.property) : undefined;
+                                          
+                                          setNudgeMessage(`Hi ${txn.madeBy},\n\nI'm reviewing the transaction from ${txn.vendor} for $${txn.amount.toFixed(2)} on ${txn.date} and need the following information to complete the review:\n\n${missingItems.map(item => `• Missing ${item}`).join('\n')}\n\n${property ? `Property: ${property.name}` : 'Property: Not assigned'}\n${job ? `Work Order: ${job.description}` : 'Work Order: Not assigned'}\n\nCould you please provide this information at your earliest convenience?\n\nThanks!`);
+                                          setNudgeDialogOpen(true);
+                                        }}
+                                      >
+                                        <Send className="h-3 w-3" />
+                                        Nudge
+                                      </Button>
                                     </td>
                                   </tr>
                                 );
@@ -6745,6 +7619,279 @@ export default function PMFinancialDashboard() {
                 </div>
               </>
             )}
+            {activeTab === "communications" && (
+              <>
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Communications</h3>
+                    <p className="text-sm text-gray-400">Messaging with property owners, technicians, and central office</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Select value={selectedPropertyFilter} onValueChange={setSelectedPropertyFilter}>
+                      <SelectTrigger className="w-64 bg-gray-800 border-gray-600 text-white">
+                        <SelectValue placeholder="Filter by property" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-600">
+                        <SelectItem value="all" className="text-white">All Messages</SelectItem>
+                        <SelectItem value="central" className="text-white">Central Office</SelectItem>
+                        {properties.map(property => (
+                          <SelectItem key={property.id} value={property.id} className="text-white">
+                            {property.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Gmail/Apple Mail Style Layout */}
+                <div className="flex h-[700px] bg-gray-900 rounded-lg border border-gray-700">
+                  {/* Left Sidebar - Inbox */}
+                  <div className="w-1/3 border-r border-gray-700 flex flex-col">
+                    <div className="p-4 border-b border-gray-700">
+                      <h4 className="text-white font-medium">Inbox</h4>
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
+                      {(() => {
+                        const filteredMessages = messages.filter(msg => {
+                          if (selectedPropertyFilter === "all") return true;
+                          if (selectedPropertyFilter === "central") return msg.type === "property_agnostic";
+                          return msg.propertyId === selectedPropertyFilter;
+                        });
+
+                        const groupedThreads = filteredMessages.reduce((acc, message) => {
+                          const key = message.threadId;
+                          if (!acc[key]) {
+                            acc[key] = {
+                              threadId: message.threadId,
+                              propertyId: message.propertyId,
+                              propertyName: message.propertyName,
+                              type: message.type,
+                              lastMessage: message,
+                              messages: [],
+                              unreadCount: 0
+                            };
+                          }
+                          acc[key].messages.push(message);
+                          if (message.timestamp > acc[key].lastMessage.timestamp) {
+                            acc[key].lastMessage = message;
+                          }
+                          if (message.status === "unread") {
+                            acc[key].unreadCount++;
+                          }
+                          return acc;
+                        }, {} as any);
+
+                        return Object.values(groupedThreads)
+                          .sort((a: any, b: any) => new Date(b.lastMessage.timestamp).getTime() - new Date(a.lastMessage.timestamp).getTime())
+                          .map((thread: any) => (
+                            <div
+                              key={thread.threadId}
+                              className={`p-4 border-b border-gray-800 cursor-pointer hover:bg-gray-800 transition-colors ${
+                                selectedCommThread === thread.threadId ? 'bg-gray-800 border-l-4 border-l-blue-500' : ''
+                              }`}
+                              onClick={() => setSelectedCommThread(thread.threadId)}
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  {thread.type === "property_agnostic" || thread.type === "nudge" ? (
+                                    <Building className="h-4 w-4 text-blue-400" />
+                                  ) : (
+                                    <Home className="h-4 w-4 text-green-400" />
+                                  )}
+                                  <span className="font-medium text-white text-sm truncate">
+                                    {thread.propertyName}
+                                  </span>
+                                </div>
+                                {thread.unreadCount > 0 && (
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-400 mb-1">
+                                {thread.lastMessage.senderName}
+                              </div>
+                              <p className="text-sm text-gray-300 line-clamp-2 mb-2">
+                                {thread.lastMessage.content}
+                              </p>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-500">
+                                  {new Date(thread.lastMessage.timestamp).toLocaleDateString()}
+                                </span>
+                                <Badge className="bg-gray-700 text-gray-300 text-xs">
+                                  {thread.messages.length}
+                                </Badge>
+                              </div>
+                            </div>
+                          ));
+                      })()}
+
+                      {messages.length === 0 && (
+                        <div className="p-8 text-center">
+                          <MessageSquare className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-gray-500 text-sm">No messages</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Panel - Conversation View */}
+                  <div className="flex-1 flex flex-col">
+                    {selectedCommThread ? (() => {
+                                             const thread = (() => {
+                         const filteredMessages = messages.filter(msg => {
+                           if (selectedPropertyFilter === "all") return true;
+                           if (selectedPropertyFilter === "central") return msg.type === "property_agnostic";
+                           return msg.propertyId === selectedPropertyFilter;
+                         });
+
+                         const groupedThreads = filteredMessages.reduce((acc, message) => {
+                           const key = message.threadId;
+                           if (!acc[key]) {
+                             acc[key] = {
+                               threadId: message.threadId,
+                               propertyId: message.propertyId,
+                               propertyName: message.propertyName,
+                               type: message.type,
+                               lastMessage: message,
+                               messages: [],
+                               unreadCount: 0
+                             };
+                           }
+                           acc[key].messages.push(message);
+                           if (message.timestamp > acc[key].lastMessage.timestamp) {
+                             acc[key].lastMessage = message;
+                           }
+                           if (message.status === "unread") {
+                             acc[key].unreadCount++;
+                           }
+                           return acc;
+                         }, {} as any);
+
+                         return Object.values(groupedThreads).find((t: any) => t.threadId === selectedCommThread) as any;
+                       })();
+
+                      if (!thread) return null;
+
+                      return (
+                        <>
+                          {/* Thread Header */}
+                          <div className="p-4 border-b border-gray-700">
+                            <div className="flex items-center gap-2 mb-1">
+                              {thread.type === "property_agnostic" || thread.type === "nudge" ? (
+                                <Building className="h-5 w-5 text-blue-400" />
+                              ) : (
+                                <Home className="h-5 w-5 text-green-400" />
+                              )}
+                              <h4 className="text-white font-medium">{thread.propertyName}</h4>
+                              {thread.type === "nudge" && (
+                                <Badge className="bg-orange-600 text-white text-xs">Nudge</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-400">{thread.messages.length} messages</p>
+                          </div>
+
+                          {/* Messages */}
+                          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            {thread.messages
+                              .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+                              .map((message: any) => (
+                                <div
+                                  key={message.id}
+                                  className={`flex gap-3 ${
+                                    message.senderRole === role ? 'justify-end' : 'justify-start'
+                                  }`}
+                                >
+                                  <div
+                                    className={`max-w-[70%] rounded-lg px-4 py-3 ${
+                                      message.type === 'nudge'
+                                        ? 'bg-orange-600/20 border border-orange-500/30 text-orange-100'
+                                        : message.senderRole === role
+                                        ? 'bg-blue-600 text-white'
+                                        : message.senderRole === 'owner'
+                                        ? 'bg-green-600 text-white'
+                                        : message.senderRole === 'centralOffice'
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-gray-700 text-gray-200'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-xs font-medium">
+                                        {message.senderName}
+                                      </span>
+                                      {message.type === 'nudge' && (
+                                        <Badge className="bg-orange-500/20 text-orange-300 text-xs">
+                                          <Send className="h-3 w-3 mr-1" />
+                                          Nudge
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-sm leading-relaxed whitespace-pre-line">{message.content}</p>
+                                    <p className="text-xs opacity-70 mt-2">
+                                      {new Date(message.timestamp).toLocaleDateString()} at{' '}
+                                      {new Date(message.timestamp).toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+
+                          {/* Reply Box */}
+                          <div className="border-t border-gray-700 p-4">
+                            <div className="flex gap-2">
+                              <Textarea
+                                value={communicationMessage}
+                                onChange={(e) => setCommunicationMessage(e.target.value)}
+                                placeholder="Type your reply..."
+                                className="flex-1 bg-gray-800 border-gray-600 text-white resize-none"
+                                rows={3}
+                              />
+                              <Button
+                                onClick={() => {
+                                  if (communicationMessage.trim()) {
+                                    const newMessage = {
+                                      id: Date.now().toString(),
+                                      propertyId: thread.propertyId,
+                                      propertyName: thread.propertyName,
+                                      senderId: role === 'pm' ? 'pm1' : role === 'technician' ? 'tech1' : 'co1',
+                                      senderName: role === 'pm' ? 'Property Manager' : role === 'technician' ? 'Technician' : 'Central Office',
+                                      senderRole: role,
+                                      content: communicationMessage,
+                                      timestamp: new Date(),
+                                      status: "sent",
+                                      threadId: thread.threadId,
+                                      type: thread.type
+                                    };
+                                    setMessages(prev => [...prev, newMessage]);
+                                    setCommunicationMessage("");
+                                  }
+                                }}
+                                className="bg-blue-600 hover:bg-blue-700 text-white self-end"
+                                disabled={!communicationMessage.trim()}
+                              >
+                                <Send className="h-4 w-4 mr-2" />
+                                Send
+                              </Button>
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })() : (
+                      <div className="flex-1 flex items-center justify-center">
+                        <div className="text-center">
+                          <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <h4 className="text-lg font-medium text-gray-300 mb-2">Select a conversation</h4>
+                          <p className="text-gray-500">Choose a thread from the inbox to start messaging</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+            {activeTab === "smart-insights" && <SmartInsightsTab role={role} />}
             {/* Floating Smart Assist Button */}
             <button
               className="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg p-4 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -8763,6 +9910,99 @@ export default function PMFinancialDashboard() {
                     onClick={() => setExpensePolicyDialogOpen(false)}
                   >
                     Close
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Nudge Dialog */}
+            <Dialog open={nudgeDialogOpen} onOpenChange={setNudgeDialogOpen}>
+              <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Nudge Responsible Party</DialogTitle>
+                  <DialogDescription className="text-gray-400">
+                    Send a message requesting missing information for this transaction
+                  </DialogDescription>
+                </DialogHeader>
+                {selectedNudgeTransaction && (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
+                      <h4 className="text-sm font-medium text-white mb-2">Transaction Details</h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <span className="text-gray-400">Date:</span>
+                        <span className="text-white">{selectedNudgeTransaction.date}</span>
+                        <span className="text-gray-400">Vendor:</span>
+                        <span className="text-white">{selectedNudgeTransaction.vendor}</span>
+                        <span className="text-gray-400">Amount:</span>
+                        <span className="text-white">${selectedNudgeTransaction.amount?.toFixed(2)}</span>
+                        <span className="text-gray-400">Made By:</span>
+                        <span className="text-white">{selectedNudgeTransaction.madeBy}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-300">Message</Label>
+                      <Textarea
+                        value={nudgeMessage}
+                        onChange={(e) => setNudgeMessage(e.target.value)}
+                        className="bg-gray-800 border-gray-600 text-white h-40"
+                        placeholder="Enter your message..."
+                      />
+                    </div>
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    className="border-gray-600 text-gray-300"
+                    onClick={() => setNudgeDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                    onClick={() => {
+                      if (selectedNudgeTransaction && nudgeMessage.trim()) {
+                        // Create new message thread
+                        const newMessage = {
+                          id: Date.now().toString(),
+                          propertyId: selectedNudgeTransaction.jobId ? 
+                            (() => {
+                              const job = jobs.find(j => j.id === selectedNudgeTransaction.jobId);
+                              const property = job ? properties.find(p => p.name === job.property) : undefined;
+                              return property ? property.id : 'unassigned';
+                            })() : 'unassigned',
+                          propertyName: selectedNudgeTransaction.jobId ? 
+                            (() => {
+                              const job = jobs.find(j => j.id === selectedNudgeTransaction.jobId);
+                              const property = job ? properties.find(p => p.name === job.property) : undefined;
+                              return property ? property.name : 'Unassigned Property';
+                            })() : 'Unassigned Property',
+                          senderId: "centralOffice1",
+                          senderName: "Central Office",
+                          senderRole: "centralOffice",
+                          content: nudgeMessage,
+                          timestamp: new Date(),
+                          status: "sent",
+                          threadId: `thread_nudge_${selectedNudgeTransaction.id}_${Date.now()}`,
+                          type: "nudge",
+                          relatedTransactionId: selectedNudgeTransaction.id
+                        };
+                        
+                        // Add to messages
+                        setMessages(prev => [...prev, newMessage]);
+                        
+                        // Navigate to communications tab
+                        setActiveTab('communications');
+                        
+                        // Reset and close
+                        setNudgeDialogOpen(false);
+                        setSelectedNudgeTransaction(null);
+                        setNudgeMessage('');
+                      }
+                    }}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Send Nudge
                   </Button>
                 </DialogFooter>
               </DialogContent>
