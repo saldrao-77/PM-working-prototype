@@ -432,6 +432,8 @@ function DashboardTab({ setActiveTab }: { setActiveTab?: (tab: string) => void }
     {
       id: 1,
       name: "Stanford Graduate School of Business",
+      type: "Academic",
+      size: "285,000 sq ft",
       ytdSpent: 2.2,
       annualBudget: 4.3,
       get expectedSpend() { return this.annualBudget * yearElapsed },
@@ -443,6 +445,8 @@ function DashboardTab({ setActiveTab }: { setActiveTab?: (tab: string) => void }
     {
       id: 2,
       name: "Mission Bay Tech Campus",
+      type: "Office",
+      size: "450,000 sq ft",
       ytdSpent: 3.4,
       annualBudget: 5.4,
       get expectedSpend() { return this.annualBudget * yearElapsed },
@@ -454,6 +458,8 @@ function DashboardTab({ setActiveTab }: { setActiveTab?: (tab: string) => void }
     {
       id: 3,
       name: "Redwood Shores Office Complex",
+      type: "Office",
+      size: "320,000 sq ft",
       ytdSpent: 1.9,
       annualBudget: 3.8,
       get expectedSpend() { return this.annualBudget * yearElapsed },
@@ -465,6 +471,8 @@ function DashboardTab({ setActiveTab }: { setActiveTab?: (tab: string) => void }
     {
       id: 4,
       name: "Palo Alto Research Center",
+      type: "Research",
+      size: "200,000 sq ft",
       ytdSpent: 1.5,
       annualBudget: 3.0,
       get expectedSpend() { return this.annualBudget * yearElapsed },
@@ -476,6 +484,8 @@ function DashboardTab({ setActiveTab }: { setActiveTab?: (tab: string) => void }
     {
       id: 5,
       name: "South Bay Industrial Park",
+      type: "Industrial",
+      size: "600,000 sq ft",
       ytdSpent: 2.9,
       annualBudget: 4.8,
       get expectedSpend() { return this.annualBudget * yearElapsed },
@@ -690,7 +700,82 @@ function DashboardTab({ setActiveTab }: { setActiveTab?: (tab: string) => void }
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Content removed */}
+            {/* Portfolio Summary */}
+            <div className="grid grid-cols-3 gap-4 p-4 bg-gray-900 rounded-lg">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-400">{propertiesUnderBudget}</div>
+                <div className="text-sm text-gray-400">Under Budget</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-400">{propertiesOverBudget}</div>
+                <div className="text-sm text-gray-400">Over Budget</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white">${totalBudget.toFixed(1)}M</div>
+                <div className="text-sm text-gray-400">Total Budget</div>
+              </div>
+            </div>
+
+            {/* Properties Breakdown */}
+            <div className="space-y-3">
+              {properties.map((property) => (
+                <div key={property.id} className="flex items-center justify-between p-3 bg-gray-900 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${property.isUnderBudget ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <div>
+                      <div className="text-sm font-medium text-white">{property.name}</div>
+                      <div className="text-xs text-gray-400">{property.type} • {property.size}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`text-sm font-medium ${property.isUnderBudget ? 'text-green-400' : 'text-red-400'}`}>
+                      {property.isUnderBudget ? '-' : '+'}{property.variancePercentage.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      ${property.ytdSpent.toFixed(1)}M YTD / ${property.annualBudget.toFixed(1)}M Annual
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Portfolio Variance Summary */}
+            <div className="p-4 bg-gray-900 rounded-lg border border-gray-700">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-400">Portfolio Variance</span>
+                <span className={`text-lg font-bold ${isPortfolioUnderBudget ? 'text-green-400' : 'text-red-400'}`}>
+                  {isPortfolioUnderBudget ? '-' : '+'}{Math.abs(100 - portfolioVariance).toFixed(1)}%
+                </span>
+              </div>
+              <div className="text-xs text-gray-400">
+                Total YTD Spend: ${totalSpent.toFixed(1)}M • Expected YTD: ${totalExpected.toFixed(1)}M • Variance: ${portfolioVarianceAmount.toFixed(1)}M
+              </div>
+            </div>
+
+            {/* Top Manager Performance */}
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-gray-400">Property Manager Performance</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2 bg-gray-900 rounded">
+                  <div className="text-xs text-green-400">Best Performance</div>
+                  <div className="text-sm text-white">Sarah Chen</div>
+                  <div className="text-xs text-gray-400">Stanford GSB • -11.6%</div>
+                </div>
+                <div className="p-2 bg-gray-900 rounded">
+                  <div className="text-xs text-red-400">Needs Attention</div>
+                  <div className="text-sm text-white">Angela Martinez</div>
+                  <div className="text-xs text-gray-400">Industrial Park • +4.3%</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <Button 
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setActiveTab?.('properties')}
+            >
+              View All Properties
+            </Button>
           </CardContent>
         </Card>
       </div>
