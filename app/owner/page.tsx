@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Progress } from "@/components/ui/progress"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { 
   DollarSign, 
   FileText, 
@@ -1934,6 +1935,9 @@ function ExpensesTab() {
 }
 
 function PropertiesTab() {
+  // Calculate percentage of year elapsed (assuming July, so ~58% of year)
+  const yearElapsed = 0.58
+
   const properties = [
     {
       id: 1,
@@ -1946,10 +1950,13 @@ function PropertiesTab() {
       },
       type: "Academic",
       size: "285,000 sq ft",
-      budgetPacing: 132,
-      behindPace: 32,
-      ytdSpent: "$2.8M",
-      annualBudget: "$4.3M"
+      ytdSpent: 2.2, // In millions - UNDER budget
+      annualBudget: 4.3, // In millions
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
     },
     {
       id: 2,
@@ -1962,10 +1969,13 @@ function PropertiesTab() {
       },
       type: "Office",
       size: "450,000 sq ft",
-      budgetPacing: 131,
-      behindPace: 31,
-      ytdSpent: "$3.8M",
-      annualBudget: "$5.4M"
+      ytdSpent: 3.4, // In millions - OVER budget
+      annualBudget: 5.4, // In millions
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
     },
     {
       id: 3,
@@ -1978,10 +1988,13 @@ function PropertiesTab() {
       },
       type: "Office",
       size: "320,000 sq ft",
-      budgetPacing: 138,
-      behindPace: 38,
-      ytdSpent: "$2.7M",
-      annualBudget: "$3.8M"
+      ytdSpent: 1.9, // In millions - UNDER budget
+      annualBudget: 3.8, // In millions
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
     },
     {
       id: 4,
@@ -1994,10 +2007,13 @@ function PropertiesTab() {
       },
       type: "Research",
       size: "200,000 sq ft",
-      budgetPacing: 137,
-      behindPace: 37,
-      ytdSpent: "$2.1M",
-      annualBudget: "$3.0M"
+      ytdSpent: 1.5, // In millions - UNDER budget
+      annualBudget: 3.0, // In millions
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
     },
     {
       id: 5,
@@ -2010,10 +2026,13 @@ function PropertiesTab() {
       },
       type: "Industrial",
       size: "600,000 sq ft",
-      budgetPacing: 139,
-      behindPace: 39,
-      ytdSpent: "$3.4M",
-      annualBudget: "$4.8M"
+      ytdSpent: 2.9, // In millions - OVER budget
+      annualBudget: 4.8, // In millions
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
     }
   ]
 
@@ -2021,13 +2040,18 @@ function PropertiesTab() {
     console.log(`Viewing expenses for property ${propertyId}`)
   }
 
+  const totalBudget = properties.reduce((sum, prop) => sum + prop.annualBudget, 0)
+  const totalSpent = properties.reduce((sum, prop) => sum + prop.ytdSpent, 0)
+  const propertiesUnderBudget = properties.filter(prop => prop.isUnderBudget).length
+  const propertiesOverBudget = properties.length - propertiesUnderBudget
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white">Properties</h2>
         <div className="text-sm text-gray-400">
-          5 properties • $21.3M total budget
+          {propertiesUnderBudget} under budget • {propertiesOverBudget} over budget • ${totalBudget.toFixed(1)}M total budget
         </div>
       </div>
 
@@ -2043,19 +2067,70 @@ function PropertiesTab() {
                   </CardTitle>
                   <p className="text-sm text-gray-400">{property.address}</p>
                 </div>
-                <Badge className="bg-red-500 text-white text-xs ml-2">
-                  Behind pace by {property.behindPace}%
+                <Badge className={`${property.isUnderBudget ? 'bg-green-500' : 'bg-red-500'} text-white text-xs ml-2`}>
+                  {property.isUnderBudget ? 'Under' : 'Over'} budget by {property.variancePercentage.toFixed(1)}%
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Budget Variance - Primary Metric */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium text-gray-300">Budget Variance</h4>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-gray-500 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <div className="text-sm">
+                          <div className="font-medium">Calculation:</div>
+                          <div>YTD Spend: ${property.ytdSpent.toFixed(1)}M</div>
+                          <div>Expected (58% of year): ${property.expectedSpend.toFixed(1)}M</div>
+                          <div>Variance: ${property.varianceAmount.toFixed(1)}M ({property.isUnderBudget ? 'under' : 'over'} budget)</div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                
+                {/* Budget Variance Display */}
+                <div className="text-center">
+                  <div className={`text-3xl font-bold ${property.isUnderBudget ? 'text-green-400' : 'text-red-400'} mb-2`}>
+                    {property.isUnderBudget ? '-' : '+'}{property.variancePercentage.toFixed(1)}%
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    {property.isUnderBudget ? 'Under' : 'Over'} budget by ${Math.abs(property.varianceAmount).toFixed(1)}M
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-700 rounded-full h-3">
+                  <div 
+                    className={`${property.isUnderBudget ? 'bg-green-500' : 'bg-red-500'} h-3 rounded-full`}
+                    style={{ width: `${Math.min(property.budgetVariance, 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Key Metrics */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <div className="text-sm text-gray-400">YTD Spend</div>
+                  <div className="text-lg font-bold text-white">${property.ytdSpent.toFixed(1)}M</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-sm text-gray-400">Annual Budget</div>
+                  <div className="text-lg font-bold text-white">${property.annualBudget.toFixed(1)}M</div>
+                </div>
+              </div>
+
               {/* Property Manager */}
               <div className="space-y-2">
                 <h4 className="text-sm font-medium text-gray-300">Property Manager</h4>
                 <div className="text-sm text-white">
                   <div className="font-medium">{property.manager.name}</div>
                   <div className="text-gray-400">{property.manager.email}</div>
-                  <div className="text-gray-400">{property.manager.phone}</div>
                 </div>
               </div>
 
@@ -2068,37 +2143,6 @@ function PropertiesTab() {
                 <div>
                   <h4 className="text-sm font-medium text-gray-300 mb-1">Size</h4>
                   <p className="text-sm text-white">{property.size}</p>
-                </div>
-              </div>
-
-              {/* Budget Pacing */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium text-gray-300">Budget Pacing</h4>
-                  <Info className="h-4 w-4 text-gray-500" />
-                </div>
-                <div className="text-2xl font-bold text-red-400">{property.budgetPacing}%</div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-red-500 h-2 rounded-full"
-                    style={{ width: `${Math.min(property.budgetPacing, 100)}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between text-xs text-gray-400">
-                  <span>Behind pace by {property.behindPace}%</span>
-                  <span>Trending up</span>
-                </div>
-              </div>
-
-              {/* YTD vs Budget */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium text-gray-300">YTD Spend</h4>
-                  <h4 className="text-sm font-medium text-gray-300">Annual Budget</h4>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-white">{property.ytdSpent}</span>
-                  <span className="text-lg font-bold text-white">{property.annualBudget}</span>
                 </div>
               </div>
 
