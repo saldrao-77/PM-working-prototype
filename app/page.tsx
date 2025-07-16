@@ -38,6 +38,7 @@ import {
   CheckCircle,
   AlertCircle,
   Zap,
+  Flag,
   ExternalLink,
   FolderSyncIcon as Sync,
   Database,
@@ -89,7 +90,6 @@ import {
   Archive,
   Calendar as CalendarIcon,
   ExternalLink as LinkIcon,
-  Flag,
   Calculator
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -118,6 +118,13 @@ type Transaction = {
   cardHolder?: string // Add card holder information
   memo?: string
   receipt?: string
+  expenseType?: 'credit_card' | 'invoice' // Track expense type
+  invoiceNumber?: string // For invoice expenses
+  dueDate?: string // For invoice expenses
+  supportingDocs?: string[] // Array of uploaded document names
+  flaggedForApproval?: boolean // Whether invoice is flagged for C.O./owner approval
+  flaggedTo?: 'co' | 'owner' // Who the invoice is flagged to
+  flaggedReason?: string // Reason for flagging
 }
 
 // Enhanced Card Types
@@ -174,7 +181,8 @@ const transactionsList: Transaction[] = [
     madeBy: 'John Smith',
     cardHolder: 'John Smith',
     memo: 'HVAC parts',
-    receipt: 'receipt1.pdf'
+    receipt: 'receipt1.pdf',
+    expenseType: 'credit_card'
   },
   {
     id: 'txn2',
@@ -187,7 +195,8 @@ const transactionsList: Transaction[] = [
     madeBy: 'Sarah Johnson',
     cardHolder: 'Sarah Johnson',
     memo: 'Paint supplies',
-    receipt: 'receipt2.pdf'
+    receipt: 'receipt2.pdf',
+    expenseType: 'credit_card'
   },
   {
     id: 'txn3',
@@ -200,7 +209,8 @@ const transactionsList: Transaction[] = [
     madeBy: 'Alice Johnson',
     cardHolder: 'Alice Johnson',
     memo: 'Tools',
-    receipt: 'receipt3.pdf'
+    receipt: 'receipt3.pdf',
+    expenseType: 'credit_card'
   },
   {
     id: 'txn4',
@@ -213,7 +223,8 @@ const transactionsList: Transaction[] = [
     madeBy: 'Mike Chen',
     cardHolder: 'Mike Chen',
     memo: 'Office supplies',
-    receipt: 'receipt4.pdf'
+    receipt: 'receipt4.pdf',
+    expenseType: 'credit_card'
   },
   {
     id: 'txn5',
@@ -226,7 +237,95 @@ const transactionsList: Transaction[] = [
     madeBy: 'Lisa Wong',
     cardHolder: 'Lisa Wong',
     memo: 'Paper and ink',
-    receipt: 'receipt5.pdf'
+    receipt: 'receipt5.pdf',
+    expenseType: 'credit_card'
+  },
+  // Invoice Expenses
+  {
+    id: 'inv1',
+    date: '2025-01-20',
+    vendor: 'ABC Electrical Services',
+    amount: 2500.00,
+    status: 'pending',
+    billable: true,
+    jobId: 'job5',
+    madeBy: 'Property Manager',
+    expenseType: 'invoice',
+    invoiceNumber: 'INV-2025-001',
+    dueDate: '2025-02-19',
+    memo: 'Electrical panel upgrade for Sunnyvale 432',
+    supportingDocs: ['invoice-ABC-001.pdf', 'work-authorization.pdf'],
+    flaggedForApproval: false
+  },
+  {
+    id: 'inv2',
+    date: '2025-01-18',
+    vendor: 'Premier HVAC Solutions',
+    amount: 3200.00,
+    status: 'pending',
+    billable: true,
+    jobId: 'job1',
+    madeBy: 'Property Manager',
+    expenseType: 'invoice',
+    invoiceNumber: 'HVAC-2025-0045',
+    dueDate: '2025-02-17',
+    memo: 'Annual HVAC maintenance and repair',
+    supportingDocs: ['hvac-invoice-045.pdf', 'maintenance-report.pdf'],
+    flaggedForApproval: true,
+    flaggedTo: 'owner',
+    flaggedReason: 'Amount exceeds $3000 limit - requires owner approval'
+  },
+  {
+    id: 'inv3',
+    date: '2025-01-22',
+    vendor: 'Professional Cleaning Co',
+    amount: 850.00,
+    status: 'reconciled',
+    billable: false,
+    jobId: 'job3',
+    madeBy: 'Property Manager',
+    expenseType: 'invoice',
+    invoiceNumber: 'PCC-2025-078',
+    dueDate: '2025-02-21',
+    memo: 'Deep cleaning after lobby renovation',
+    supportingDocs: ['cleaning-invoice-078.pdf'],
+    flaggedForApproval: false
+  },
+  {
+    id: 'inv4',
+    date: '2025-01-21',
+    vendor: 'City Building Inspector',
+    amount: 450.00,
+    status: 'pending',
+    billable: true,
+    jobId: 'job4',
+    madeBy: 'Property Manager',
+    expenseType: 'invoice',
+    invoiceNumber: 'CBI-2025-123',
+    dueDate: '2025-02-05',
+    memo: 'Kitchen renovation permit and inspection fees',
+    supportingDocs: ['permit-invoice-123.pdf', 'inspection-schedule.pdf'],
+    flaggedForApproval: true,
+    flaggedTo: 'co',
+    flaggedReason: 'Government fee - requires Central Office processing'
+  },
+  {
+    id: 'inv5',
+    date: '2025-01-17',
+    vendor: 'Luxury Countertops Inc',
+    amount: 4200.00,
+    status: 'pending',
+    billable: true,
+    jobId: 'job4',
+    madeBy: 'Property Manager',
+    expenseType: 'invoice',
+    invoiceNumber: 'LCI-2025-890',
+    dueDate: '2025-03-15',
+    memo: 'Quartz countertop installation for kitchen renovation',
+    supportingDocs: ['countertop-invoice-890.pdf', 'installation-photos.pdf', 'warranty-cert.pdf'],
+    flaggedForApproval: true,
+    flaggedTo: 'owner',
+    flaggedReason: 'High-value purchase over $4000 - owner approval required per policy'
   }
 ]
 
@@ -605,6 +704,14 @@ export default function PMFinancialDashboard() {
   // Add state for new expense dialog
   const [newExpenseDialogOpen, setNewExpenseDialogOpen] = useState(false);
   
+  // Add state for invoice flagging
+  const [flagInvoiceDialogOpen, setFlagInvoiceDialogOpen] = useState(false);
+  const [selectedInvoiceForFlagging, setSelectedInvoiceForFlagging] = useState<Transaction | null>(null);
+  const [flagInvoiceForm, setFlagInvoiceForm] = useState({
+    flaggedTo: 'co' as 'co' | 'owner',
+    reason: ''
+  });
+  
   // Add state for main expense form (for adding new expenses)
   const [mainExpenseForm, setMainExpenseForm] = useState({
     vendor: '',
@@ -612,7 +719,11 @@ export default function PMFinancialDashboard() {
     madeBy: '',
     billable: true,
     memo: '',
-    receipt: ''
+    receipt: '',
+    expenseType: 'credit_card' as 'credit_card' | 'invoice',
+    invoiceNumber: '',
+    dueDate: '',
+    supportingDocs: [] as File[]
   });
   
   // Add state for editing expense in form
@@ -968,6 +1079,7 @@ export default function PMFinancialDashboard() {
   const [paymentType, setPaymentType] = useState<'one-time' | 'installments'>('one-time');
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [selectedPersonalExpenses, setSelectedPersonalExpenses] = useState<string[]>([]);
+  const [activePaymentTab, setActivePaymentTab] = useState<'credit-cards' | 'invoices'>('credit-cards');
   
   // Dialog states for Advanced Payment Tools
   const [linkAccountDialogOpen, setLinkAccountDialogOpen] = useState(false);
@@ -992,12 +1104,17 @@ export default function PMFinancialDashboard() {
   const [reportType, setReportType] = useState("trust-reconciliation");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [emailReportDialogOpen, setEmailReportDialogOpen] = useState(false);
+  const [downloadReportDialogOpen, setDownloadReportDialogOpen] = useState(false);
   const [reportEmailForm, setReportEmailForm] = useState({
     recipientName: '',
     recipientEmail: '',
     message: '',
     format: 'csv' as 'csv' | 'pdf'
   });
+  const [reportDownloadForm, setReportDownloadForm] = useState({
+    format: 'csv' as 'csv' | 'pdf'
+  });
+  const [selectedRecentReport, setSelectedRecentReport] = useState<any>(null);
 
   // Helper functions for Advanced Payment Tools
   const handleLinkAccount = (account: any, shouldLink: boolean) => {
@@ -1127,28 +1244,47 @@ export default function PMFinancialDashboard() {
       return;
     }
 
-    setIsGeneratingReport(true);
-    
-    // Simulate report generation
-    const selectedReportType = reportTypes.find(r => r.id === reportType);
-    const timestamp = new Date().toISOString();
-    
-    const filters = {
-      dateRange: reportDateRange.from && reportDateRange.to ? `${reportDateRange.from} to ${reportDateRange.to}` : "All time",
-      properties: reportSelectedProperties.length > 0 ? reportSelectedProperties.join(", ") : "All properties",
-      glCodes: reportSelectedGLCodes.length > 0 ? reportSelectedGLCodes.join(", ") : "All GL codes",
-      expenseStatus: reportSelectedExpenseStatus.length > 0 ? reportSelectedExpenseStatus.join(", ") : "All statuses",
-      trustAccount: reportSelectedTrustAccount === "all" ? "All trust accounts" : reportSelectedTrustAccount
-    };
+    // Show download confirmation popup
+    setReportDownloadForm({ format });
+    setDownloadReportDialogOpen(true);
+  };
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
+  const handleDownloadReport = async () => {
+    if (!reportDownloadForm.format) return;
+
+    setIsGeneratingReport(true);
+    setDownloadReportDialogOpen(false);
     
-    setIsGeneratingReport(false);
-    
-    // Mock download
-    const fileName = `${reportType}-report-${new Date().toISOString().split('T')[0]}.${format}`;
-    alert(`Report generated and downloaded: ${fileName}`);
+    // Simulate download
+    if (selectedRecentReport) {
+      // Downloading a recent report
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setIsGeneratingReport(false);
+      const fileName = `${selectedRecentReport.name.replace(/\s+/g, '-').toLowerCase()}-${selectedRecentReport.generatedOn.split(' ')[0]}.${selectedRecentReport.format}`;
+      alert(`Recent report downloaded: ${fileName}`);
+      setSelectedRecentReport(null);
+    } else {
+      // Generating and downloading a new report
+      const selectedReportType = reportTypes.find(r => r.id === reportType);
+      const timestamp = new Date().toISOString();
+      
+      const filters = {
+        dateRange: reportDateRange.from && reportDateRange.to ? `${reportDateRange.from} to ${reportDateRange.to}` : "All time",
+        properties: reportSelectedProperties.length > 0 ? reportSelectedProperties.join(", ") : "All properties",
+        glCodes: reportSelectedGLCodes.length > 0 ? reportSelectedGLCodes.join(", ") : "All GL codes",
+        expenseStatus: reportSelectedExpenseStatus.length > 0 ? reportSelectedExpenseStatus.join(", ") : "All statuses",
+        trustAccount: reportSelectedTrustAccount === "all" ? "All trust accounts" : reportSelectedTrustAccount
+      };
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      setIsGeneratingReport(false);
+      
+      // Mock download
+      const fileName = `${reportType}-report-${new Date().toISOString().split('T')[0]}.${reportDownloadForm.format}`;
+      alert(`Report generated and downloaded: ${fileName}`);
+    }
   };
 
   const handleEmailReport = async () => {
@@ -1162,8 +1298,15 @@ export default function PMFinancialDashboard() {
     setIsGeneratingReport(false);
     setEmailReportDialogOpen(false);
     
-    const selectedReportType = reportTypes.find(r => r.id === reportType);
-    alert(`Report "${selectedReportType?.name}" has been emailed to ${reportEmailForm.recipientName} (${reportEmailForm.recipientEmail})`);
+    if (selectedRecentReport) {
+      // Emailing a recent report
+      alert(`Recent report "${selectedRecentReport.name}" has been emailed to ${reportEmailForm.recipientName} (${reportEmailForm.recipientEmail})`);
+      setSelectedRecentReport(null);
+    } else {
+      // Emailing a newly generated report
+      const selectedReportType = reportTypes.find(r => r.id === reportType);
+      alert(`Report "${selectedReportType?.name}" has been emailed to ${reportEmailForm.recipientName} (${reportEmailForm.recipientEmail})`);
+    }
     
     // Reset form
     setReportEmailForm({
@@ -1204,6 +1347,19 @@ export default function PMFinancialDashboard() {
     setReportSelectedGLCodes([]);
     setReportSelectedExpenseStatus([]);
     setReportSelectedTrustAccount("all");
+  };
+
+  // Handlers for Recent Reports buttons
+  const handleRecentReportDownload = (report: any) => {
+    setSelectedRecentReport(report);
+    setReportDownloadForm({ format: report.format });
+    setDownloadReportDialogOpen(true);
+  };
+
+  const handleRecentReportEmail = (report: any) => {
+    setSelectedRecentReport(report);
+    setReportEmailForm(prev => ({ ...prev, format: report.format }));
+    setEmailReportDialogOpen(true);
   };
 
   // Handle URL parameters for tab navigation and role detection
@@ -1608,10 +1764,49 @@ export default function PMFinancialDashboard() {
     { id: 't2', number: '**** 3344', holder: technicianName, balance: 800, status: 'active' },
   ];
   // Mock transactions for technician
-  const technicianTransactions = [
-    { id: 't1', date: '2025-01-15', vendor: 'Home Depot', amount: 120.5, status: 'pending', jobId: 'job1', billable: true, madeBy: 'Alice Johnson', cardHolder: 'Alice Johnson', memo: undefined, receipt: undefined },
-    { id: 't2', date: '2025-01-14', vendor: 'Lowe\'s', amount: 89.99, status: 'reconciled', jobId: 'job1', billable: false, madeBy: 'Alice Johnson', cardHolder: 'Alice Johnson', memo: undefined, receipt: undefined },
-    { id: 't3', date: '2025-01-13', vendor: 'Ace Hardware', amount: 45.00, status: 'pending', jobId: 'job1', billable: true, madeBy: 'Alice Johnson', cardHolder: 'Alice Johnson', memo: undefined, receipt: undefined },
+  const technicianTransactions: Transaction[] = [
+    { 
+      id: 't1', 
+      date: '2025-01-15', 
+      vendor: 'Home Depot', 
+      amount: 120.5, 
+      status: 'pending', 
+      jobId: 'job1', 
+      billable: true, 
+      madeBy: 'Alice Johnson', 
+      cardHolder: 'Alice Johnson', 
+      memo: 'HVAC parts',
+      receipt: 'receipt-t1.pdf',
+      expenseType: 'credit_card'
+    },
+    { 
+      id: 't2', 
+      date: '2025-01-14', 
+      vendor: 'Lowe\'s', 
+      amount: 89.99, 
+      status: 'reconciled', 
+      jobId: 'job1', 
+      billable: false, 
+      madeBy: 'Alice Johnson', 
+      cardHolder: 'Alice Johnson', 
+      memo: 'Paint supplies',
+      receipt: 'receipt-t2.pdf',
+      expenseType: 'credit_card'
+    },
+    { 
+      id: 't3', 
+      date: '2025-01-13', 
+      vendor: 'Ace Hardware', 
+      amount: 45.00, 
+      status: 'pending', 
+      jobId: 'job1', 
+      billable: true, 
+      madeBy: 'Alice Johnson', 
+      cardHolder: 'Alice Johnson', 
+      memo: 'Hardware supplies',
+      receipt: 'receipt-t3.pdf',
+      expenseType: 'credit_card'
+    },
   ];
 
   const getStatusBadge = (status: string) => {
@@ -2243,7 +2438,7 @@ export default function PMFinancialDashboard() {
   };
 
   // Helper to filter expenses by role (for technicians, only show their own expenses)
-  const filterExpensesByRole = (expenses: (Transaction | typeof technicianTransactions[0])[]) => {
+  const filterExpensesByRole = (expenses: Transaction[]) => {
     return expenses.filter(txn => {
       if (role === 'technician') {
         // For technicians, only show expenses from their own cards
@@ -3292,6 +3487,49 @@ export default function PMFinancialDashboard() {
     setExpenseRequests(prev => prev.map(req => 
       req.id === requestId ? { ...req, status: 'denied' as const } : req
     ));
+  };
+
+  // Invoice flagging function
+  const handleFlagInvoice = () => {
+    if (!selectedInvoiceForFlagging) return;
+
+    // Update the transaction to mark it as flagged
+    setTransactions(prev => prev.map(txn =>
+      txn.id === selectedInvoiceForFlagging.id 
+        ? { 
+            ...txn, 
+            flaggedForApproval: true, 
+            flaggedTo: flagInvoiceForm.flaggedTo,
+            flaggedReason: flagInvoiceForm.reason
+          } 
+        : txn
+    ));
+
+    // Create a new expense request
+    const newExpenseRequest: ExpenseRequest = {
+      id: `req-${Date.now()}`,
+      technicianName: selectedInvoiceForFlagging.madeBy,
+      expenseId: selectedInvoiceForFlagging.id,
+      question: `Invoice payment approval required: ${flagInvoiceForm.reason}`,
+      amount: selectedInvoiceForFlagging.amount,
+      vendor: selectedInvoiceForFlagging.vendor,
+      date: selectedInvoiceForFlagging.date,
+      urgency: selectedInvoiceForFlagging.amount > 2000 ? 'high' : 'normal',
+      status: 'pending',
+      type: 'approval_required',
+      createdAt: new Date().toISOString(),
+      aiSuggestion: `This invoice from ${selectedInvoiceForFlagging.vendor} for $${selectedInvoiceForFlagging.amount} has been flagged for ${flagInvoiceForm.flaggedTo === 'co' ? 'Central Office' : 'Owner'} approval. ${flagInvoiceForm.reason}`,
+      category: 'Invoice Payment',
+      property: selectedInvoiceForFlagging.jobId ? jobsList.find(j => j.id === selectedInvoiceForFlagging.jobId)?.property : undefined,
+      workOrder: selectedInvoiceForFlagging.jobId
+    };
+
+    setExpenseRequests(prev => [...prev, newExpenseRequest]);
+
+    // Reset dialog state
+    setFlagInvoiceDialogOpen(false);
+    setSelectedInvoiceForFlagging(null);
+    setFlagInvoiceForm({ flaggedTo: 'co', reason: '' });
   };
 
   const getUrgencyColor = (urgency: string) => {
@@ -5655,209 +5893,214 @@ export default function PMFinancialDashboard() {
                       </Collapsible>
                     </Card>
 
-                    {/* Invoice & Bill Payment Card */}
+                    {/* Payment Tabs - Credit Cards and Invoices */}
                     <Card className="bg-gray-800 border-gray-700">
                       <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-white flex items-center gap-2">
-                            💸 Pay Invoices & Credit Card Bills
-                          </CardTitle>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setInvoicePaymentExpanded(!invoicePaymentExpanded)}
-                            className="text-gray-400 hover:text-white"
-                          >
-                            <ChevronDown className={`h-4 w-4 transition-transform ${invoicePaymentExpanded ? 'rotate-180' : ''}`} />
-                          </Button>
-                        </div>
+                        <CardTitle className="text-white flex items-center gap-2">
+                          💸 Payments
+                        </CardTitle>
                       </CardHeader>
-                      <Collapsible open={invoicePaymentExpanded}>
-                        <CollapsibleContent>
-                          <CardContent>
-                            <div className="space-y-6">
-                              {/* Payment Type Toggle */}
-                              <div className="flex items-center gap-4 mb-4">
-                                <span className="text-white">Payment Type:</span>
-                                <Tabs value={paymentType} onValueChange={(value) => setPaymentType(value as 'one-time' | 'installments')}>
-                                  <TabsList className="bg-gray-700">
-                                    <TabsTrigger value="one-time" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-                                      One-Time Payment
-                                    </TabsTrigger>
-                                    <TabsTrigger value="installments" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-                                      Installments
-                                    </TabsTrigger>
-                                  </TabsList>
-                                </Tabs>
-                              </div>
+                      <CardContent>
+                        <Tabs value={activePaymentTab} onValueChange={(value) => setActivePaymentTab(value as 'credit-cards' | 'invoices')}>
+                          <TabsList className="bg-gray-700 mb-6">
+                            <TabsTrigger value="credit-cards" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                              <CreditCard className="h-4 w-4 mr-2" />
+                              Credit Card Bills
+                            </TabsTrigger>
+                            <TabsTrigger value="invoices" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                              <FileText className="h-4 w-4 mr-2" />
+                              Pending Invoices
+                            </TabsTrigger>
+                          </TabsList>
 
-                              {/* Invoices Table */}
-                              <div>
-                                <div className="flex items-center justify-between mb-3">
-                                  <h4 className="text-lg font-semibold text-white">Pending Invoices</h4>
-                                  <div className="flex gap-2">
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline" 
-                                      className="text-blue-400 border-blue-600 hover:bg-blue-600 hover:text-white"
-                                      onClick={() => setSelectedInvoices(invoices.map(inv => inv.id))}
-                                    >
-                                      Select All
-                                    </Button>
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline" 
-                                      className="text-gray-400 border-gray-600 hover:bg-gray-600 hover:text-white"
-                                      onClick={() => setSelectedInvoices([])}
-                                    >
-                                      Clear All
-                                    </Button>
-                                  </div>
+                          <TabsContent value="credit-cards" className="space-y-6">
+                            <div>
+                              <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-lg font-semibold text-white">Credit Card Bills</h4>
+                                <div className="text-sm text-gray-400">
+                                  {creditCards.length} card{creditCards.length !== 1 ? 's' : ''} • Total: ${creditCards.reduce((sum, card) => sum + card.balance, 0).toFixed(2)}
                                 </div>
-                                <div className="bg-gray-700 rounded-lg overflow-hidden">
-                                  <table className="w-full text-sm">
-                                    <thead>
-                                      <tr className="bg-gray-800 border-b border-gray-600">
-                                        <th className="text-left p-3 text-gray-300">
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {creditCards.map((card) => (
+                                  <Card key={card.id} className="bg-gray-700 border-gray-600">
+                                    <CardContent className="p-4">
+                                      <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                          <div className="text-sm font-medium text-white">{card.name}</div>
+                                          <div className="text-xs text-gray-400">****{card.lastFour}</div>
+                                          <Badge className={card.type === 'internal' ? "bg-blue-600 text-white mt-1" : "bg-orange-600 text-white mt-1"}>
+                                            {card.type === 'internal' ? 'Internal' : 'External'}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                      <div className="text-lg font-bold text-white mb-2">
+                                        ${card.balance.toFixed(2)}
+                                      </div>
+                                      <div className="text-xs text-gray-400 mb-3">
+                                        Due: {card.dueDate}
+                                      </div>
+                                      <Button 
+                                        size="sm" 
+                                        className="bg-green-600 hover:bg-green-700 text-white w-full"
+                                        onClick={() => handlePayNow(card)}
+                                      >
+                                        <DollarSign className="h-4 w-4 mr-2" />
+                                        Pay Now
+                                      </Button>
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="invoices" className="space-y-6">
+                            {/* Payment Type Toggle */}
+                            <div className="flex items-center gap-4 mb-4">
+                              <span className="text-white">Payment Type:</span>
+                              <Tabs value={paymentType} onValueChange={(value) => setPaymentType(value as 'one-time' | 'installments')}>
+                                <TabsList className="bg-gray-700">
+                                  <TabsTrigger value="one-time" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                                    One-Time Payment
+                                  </TabsTrigger>
+                                  <TabsTrigger value="installments" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                                    Installments
+                                  </TabsTrigger>
+                                </TabsList>
+                              </Tabs>
+                            </div>
+
+                            {/* Invoices Table */}
+                            <div>
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-lg font-semibold text-white">Pending Invoices</h4>
+                                <div className="flex gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-blue-400 border-blue-600 hover:bg-blue-600 hover:text-white"
+                                    onClick={() => setSelectedInvoices(invoices.map(inv => inv.id))}
+                                  >
+                                    Select All
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-gray-400 border-gray-600 hover:bg-gray-600 hover:text-white"
+                                    onClick={() => setSelectedInvoices([])}
+                                  >
+                                    Clear All
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="bg-gray-700 rounded-lg overflow-hidden">
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="bg-gray-800 border-b border-gray-600">
+                                      <th className="text-left p-3 text-gray-300">
+                                        <input 
+                                          type="checkbox" 
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              setSelectedInvoices(invoices.map(inv => inv.id));
+                                            } else {
+                                              setSelectedInvoices([]);
+                                            }
+                                          }}
+                                          className="rounded"
+                                        />
+                                      </th>
+                                      <th className="text-left p-3 text-gray-300">Vendor</th>
+                                      <th className="text-left p-3 text-gray-300">Amount</th>
+                                      <th className="text-left p-3 text-gray-300">Due Date</th>
+                                      <th className="text-left p-3 text-gray-300">Origin</th>
+                                      <th className="text-left p-3 text-gray-300">Property</th>
+                                      <th className="text-left p-3 text-gray-300">Actions</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {invoices.map((invoice) => (
+                                      <tr key={invoice.id} className="border-b border-gray-600/50">
+                                        <td className="p-3">
                                           <input 
                                             type="checkbox" 
+                                            checked={selectedInvoices.includes(invoice.id)}
                                             onChange={(e) => {
                                               if (e.target.checked) {
-                                                setSelectedInvoices(invoices.map(inv => inv.id));
+                                                setSelectedInvoices([...selectedInvoices, invoice.id]);
                                               } else {
-                                                setSelectedInvoices([]);
+                                                setSelectedInvoices(selectedInvoices.filter(id => id !== invoice.id));
                                               }
                                             }}
                                             className="rounded"
                                           />
-                                        </th>
-                                        <th className="text-left p-3 text-gray-300">Vendor</th>
-                                        <th className="text-left p-3 text-gray-300">Amount</th>
-                                        <th className="text-left p-3 text-gray-300">Due Date</th>
-                                        <th className="text-left p-3 text-gray-300">Origin</th>
-                                        <th className="text-left p-3 text-gray-300">Property</th>
-                                        <th className="text-left p-3 text-gray-300">Actions</th>
+                                        </td>
+                                        <td className="p-3 text-white">{invoice.vendor}</td>
+                                        <td className="p-3 text-white">${invoice.amount.toLocaleString()}</td>
+                                        <td className="p-3 text-gray-300">{invoice.dueDate}</td>
+                                        <td className="p-3">
+                                          <Badge className={invoice.origin === 'Direct' ? "bg-blue-600 text-white" : "bg-green-600 text-white"}>
+                                            {invoice.origin}
+                                          </Badge>
+                                        </td>
+                                        <td className="p-3 text-gray-300">{invoice.propertyName}</td>
+                                        <td className="p-3">
+                                          <Button 
+                                            size="sm" 
+                                            variant="outline" 
+                                            className="text-blue-400 border-blue-600 hover:bg-blue-600 hover:text-white"
+                                            onClick={() => handleViewExpense(invoice)}
+                                          >
+                                            View Expense
+                                          </Button>
+                                        </td>
                                       </tr>
-                                    </thead>
-                                    <tbody>
-                                      {invoices.map((invoice) => (
-                                        <tr key={invoice.id} className="border-b border-gray-600/50">
-                                          <td className="p-3">
-                                            <input 
-                                              type="checkbox" 
-                                              checked={selectedInvoices.includes(invoice.id)}
-                                              onChange={(e) => {
-                                                if (e.target.checked) {
-                                                  setSelectedInvoices([...selectedInvoices, invoice.id]);
-                                                } else {
-                                                  setSelectedInvoices(selectedInvoices.filter(id => id !== invoice.id));
-                                                }
-                                              }}
-                                              className="rounded"
-                                            />
-                                          </td>
-                                          <td className="p-3 text-white">{invoice.vendor}</td>
-                                          <td className="p-3 text-white">${invoice.amount.toLocaleString()}</td>
-                                          <td className="p-3 text-gray-300">{invoice.dueDate}</td>
-                                          <td className="p-3">
-                                            <Badge className={invoice.origin === 'Direct' ? "bg-blue-600 text-white" : "bg-green-600 text-white"}>
-                                              {invoice.origin}
-                                            </Badge>
-                                          </td>
-                                          <td className="p-3 text-gray-300">{invoice.propertyName}</td>
-                                          <td className="p-3">
-                                            <Button 
-                                              size="sm" 
-                                              variant="outline" 
-                                              className="text-blue-400 border-blue-600 hover:bg-blue-600 hover:text-white"
-                                              onClick={() => handleViewExpense(invoice)}
-                                            >
-                                              View Expense
-                                            </Button>
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
+                                    ))}
+                                  </tbody>
+                                </table>
                               </div>
+                            </div>
 
-                              {/* Credit Card Bills */}
-                              <div>
-                                <h4 className="text-lg font-semibold text-white mb-3">Credit Card Bills</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  {creditCards.map((card) => (
-                                    <Card key={card.id} className="bg-gray-700 border-gray-600">
-                                      <CardContent className="p-4">
-                                        <div className="flex justify-between items-start mb-2">
-                                          <div>
-                                            <div className="text-sm font-medium text-white">{card.name}</div>
-                                            <div className="text-xs text-gray-400">****{card.lastFour}</div>
-                                            <Badge className={card.type === 'internal' ? "bg-blue-600 text-white mt-1" : "bg-orange-600 text-white mt-1"}>
-                                              {card.type === 'internal' ? 'Internal' : 'External'}
-                                            </Badge>
-                                          </div>
-                                        </div>
-                                        <div className="text-lg font-bold text-white mb-2">
-                                          ${card.balance.toFixed(2)}
-                                        </div>
-                                        <div className="text-xs text-gray-400 mb-3">
-                                          Due: {card.dueDate}
-                                        </div>
-                                        <Button 
-                                          size="sm" 
-                                          className="bg-green-600 hover:bg-green-700 text-white w-full"
-                                          onClick={() => handlePayNow(card)}
-                                        >
-                                          <DollarSign className="h-4 w-4 mr-2" />
-                                          Pay Now
-                                        </Button>
-                                      </CardContent>
-                                    </Card>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* Payment Actions */}
-                              {selectedInvoices.length > 0 && (
-                                <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <div className="text-white font-medium">
-                                        {selectedInvoices.length} invoice{selectedInvoices.length !== 1 ? 's' : ''} selected
-                                      </div>
-                                      <div className="text-sm text-blue-300">
-                                        Total: ${invoices.filter(inv => selectedInvoices.includes(inv.id)).reduce((sum, inv) => sum + inv.amount, 0).toLocaleString()}
-                                      </div>
+                            {/* Payment Actions for Invoices */}
+                            {selectedInvoices.length > 0 && (
+                              <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="text-white font-medium">
+                                      {selectedInvoices.length} invoice{selectedInvoices.length !== 1 ? 's' : ''} selected
                                     </div>
-                                    <div className="flex gap-2">
-                                      <Select value={selectedBankAccount} onValueChange={setSelectedBankAccount}>
-                                        <SelectTrigger className="w-48 bg-gray-800 border-gray-600 text-white">
-                                          <SelectValue placeholder="Select payment account" />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-gray-800 border-gray-600 z-50">
-                                          {bankAccountsState.filter(acc => acc.status === 'linked').map(account => (
-                                            <SelectItem key={account.id} value={account.id} className="text-white">
-                                              {account.name}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                      <Button 
-                                        className="bg-green-600 hover:bg-green-700 text-white"
-                                        onClick={handleProcessPayment}
-                                      >
-                                        <DollarSign className="h-4 w-4 mr-2" />
-                                        Process Payment{selectedInvoices.length > 1 ? 's' : ''}
-                                      </Button>
+                                    <div className="text-sm text-blue-300">
+                                      Total: ${invoices.filter(inv => selectedInvoices.includes(inv.id)).reduce((sum, inv) => sum + inv.amount, 0).toLocaleString()}
                                     </div>
                                   </div>
+                                  <div className="flex gap-2">
+                                    <Select value={selectedBankAccount} onValueChange={setSelectedBankAccount}>
+                                      <SelectTrigger className="w-48 bg-gray-800 border-gray-600 text-white">
+                                        <SelectValue placeholder="Select payment account" />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-gray-800 border-gray-600 z-50">
+                                        {bankAccountsState.filter(acc => acc.status === 'linked').map(account => (
+                                          <SelectItem key={account.id} value={account.id} className="text-white">
+                                            {account.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Button 
+                                      className="bg-green-600 hover:bg-green-700 text-white"
+                                      onClick={handleProcessPayment}
+                                    >
+                                      <DollarSign className="h-4 w-4 mr-2" />
+                                      Process Payment{selectedInvoices.length > 1 ? 's' : ''}
+                                    </Button>
+                                  </div>
                                 </div>
-                              )}
-                            </div>
-                          </CardContent>
-                        </CollapsibleContent>
-                      </Collapsible>
+                              </div>
+                            )}
+                          </TabsContent>
+                        </Tabs>
+                      </CardContent>
                     </Card>
 
                     {/* Reimburse Personal Expenses Card */}
@@ -6427,457 +6670,7 @@ export default function PMFinancialDashboard() {
                   </Dialog>
 
                   {/* Export Reports Section */}
-                  <div className="mt-16">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        📊 Export Reports
-                      </h3>
-                      <div className="text-sm text-gray-400">
-                        Generate customized reports for reconciliation or tax purposes
-                      </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      {/* Filters Panel */}
-                      <div className="lg:col-span-1">
-                        <Card className="bg-gray-800 border-gray-700">
-                          <CardHeader>
-                            <CardTitle className="text-white flex items-center justify-between">
-                              <span>Filters</span>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={clearAllReportFilters}
-                                className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                              >
-                                Clear All
-                              </Button>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            {/* Date Range */}
-                            <div>
-                              <Label className="text-gray-300 text-sm font-medium">Date Range</Label>
-                              <div className="grid grid-cols-2 gap-2 mt-2">
-                                <div>
-                                  <Label className="text-gray-400 text-xs">From</Label>
-                                  <Input
-                                    type="date"
-                                    value={reportDateRange.from}
-                                    onChange={(e) => setReportDateRange(prev => ({ ...prev, from: e.target.value }))}
-                                    className="bg-gray-700 border-gray-600 text-white"
-                                  />
-                                </div>
-                                <div>
-                                  <Label className="text-gray-400 text-xs">To</Label>
-                                  <Input
-                                    type="date"
-                                    value={reportDateRange.to}
-                                    onChange={(e) => setReportDateRange(prev => ({ ...prev, to: e.target.value }))}
-                                    className="bg-gray-700 border-gray-600 text-white"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Properties */}
-                            <div>
-                              <Label className="text-gray-300 text-sm font-medium">Properties</Label>
-                              <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
-                                {reportPropertyOptions.map((property) => (
-                                  <div key={property} className="flex items-center space-x-2">
-                                    <input
-                                      type="checkbox"
-                                      id={`report-${property}`}
-                                      checked={reportSelectedProperties.includes(property)}
-                                      onChange={() => handleReportPropertyToggle(property)}
-                                      className="rounded bg-gray-700 border-gray-600"
-                                    />
-                                    <Label htmlFor={`report-${property}`} className="text-white text-xs cursor-pointer">
-                                      {property}
-                                    </Label>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* GL Codes */}
-                            <div>
-                              <Label className="text-gray-300 text-sm font-medium">GL Codes</Label>
-                              <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
-                                {reportGlCodeOptions.map((code) => (
-                                  <div key={code} className="flex items-center space-x-2">
-                                    <input
-                                      type="checkbox"
-                                      id={`report-${code}`}
-                                      checked={reportSelectedGLCodes.includes(code)}
-                                      onChange={() => handleReportGLCodeToggle(code)}
-                                      className="rounded bg-gray-700 border-gray-600"
-                                    />
-                                    <Label htmlFor={`report-${code}`} className="text-white text-xs cursor-pointer">
-                                      {code}
-                                    </Label>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Expense Status */}
-                            <div>
-                              <Label className="text-gray-300 text-sm font-medium">Expense Status</Label>
-                              <div className="mt-2 space-y-2">
-                                {reportExpenseStatusOptions.map((status) => (
-                                  <div key={status} className="flex items-center space-x-2">
-                                    <input
-                                      type="checkbox"
-                                      id={`report-${status}`}
-                                      checked={reportSelectedExpenseStatus.includes(status)}
-                                      onChange={() => handleReportExpenseStatusToggle(status)}
-                                      className="rounded bg-gray-700 border-gray-600"
-                                    />
-                                    <Label htmlFor={`report-${status}`} className="text-white text-xs cursor-pointer">
-                                      {status}
-                                    </Label>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Trust Account */}
-                            <div>
-                              <Label className="text-gray-300 text-sm font-medium">Trust Account (Optional)</Label>
-                              <Select value={reportSelectedTrustAccount} onValueChange={setReportSelectedTrustAccount}>
-                                <SelectTrigger className="mt-2 bg-gray-700 border-gray-600 text-white">
-                                  <SelectValue placeholder="All trust accounts" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-gray-800 border-gray-600 z-50">
-                                  <SelectItem value="all" className="text-white">All trust accounts</SelectItem>
-                                  {reportTrustAccountOptions.map((account) => (
-                                    <SelectItem key={account} value={account} className="text-white">
-                                      {account}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-
-                      {/* Report Types Panel */}
-                      <div className="lg:col-span-2">
-                        <Card className="bg-gray-800 border-gray-700">
-                          <CardHeader>
-                            <CardTitle className="text-white">Report Types</CardTitle>
-                            <p className="text-sm text-gray-400">Select the type of report you want to generate</p>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            {reportTypes.map((report) => (
-                              <div
-                                key={report.id}
-                                className={`p-4 rounded-lg border cursor-pointer transition-colors ${
-                                  reportType === report.id
-                                    ? "border-blue-500 bg-blue-900/20"
-                                    : "border-gray-600 bg-gray-700 hover:bg-gray-600"
-                                }`}
-                                onClick={() => setReportType(report.id)}
-                              >
-                                <div className="flex items-center space-x-2 mb-2">
-                                  <input
-                                    type="radio"
-                                    id={report.id}
-                                    name="reportType"
-                                    checked={reportType === report.id}
-                                    onChange={() => setReportType(report.id)}
-                                    className="text-blue-600"
-                                  />
-                                  <Label htmlFor={report.id} className="text-white font-medium cursor-pointer">
-                                    {report.name}
-                                  </Label>
-                                </div>
-                                <p className="text-sm text-gray-300 ml-6">{report.description}</p>
-                              </div>
-                            ))}
-                          </CardContent>
-                        </Card>
-
-                        {/* Generate Report Section */}
-                        <Card className="bg-gray-800 border-gray-700 mt-6">
-                          <CardHeader>
-                            <CardTitle className="text-white">Generate Report</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-4">
-                              <div className="bg-gray-700 rounded-lg p-4">
-                                <h4 className="font-medium text-white mb-2">Active Filters Summary</h4>
-                                <div className="text-sm text-gray-300 space-y-1">
-                                  <div>
-                                    <span className="font-medium">Date Range:</span> {
-                                      reportDateRange.from && reportDateRange.to 
-                                        ? `${reportDateRange.from} to ${reportDateRange.to}`
-                                        : "All time"
-                                    }
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">Properties:</span> {
-                                      reportSelectedProperties.length > 0 
-                                        ? `${reportSelectedProperties.length} selected`
-                                        : "All properties"
-                                    }
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">GL Codes:</span> {
-                                      reportSelectedGLCodes.length > 0 
-                                        ? `${reportSelectedGLCodes.length} selected`
-                                        : "All GL codes"
-                                    }
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">Expense Status:</span> {
-                                      reportSelectedExpenseStatus.length > 0 
-                                        ? `${reportSelectedExpenseStatus.length} selected`
-                                        : "All statuses"
-                                    }
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">Trust Account:</span> {
-                                      reportSelectedTrustAccount === "all" ? "All trust accounts" : reportSelectedTrustAccount
-                                    }
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                                <h4 className="font-medium text-blue-300 mb-2">Export Options</h4>
-                                <div className="text-sm text-blue-200 mb-4">
-                                  Reports will include:
-                                  <ul className="mt-2 space-y-1 ml-4">
-                                    <li>• Generated timestamp</li>
-                                    <li>• Applied filters summary</li>
-                                    <li>• Receipt links (where available)</li>
-                                    <li>• Formatted tables matching expense views</li>
-                                  </ul>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div className="space-y-2">
-                                    <Label className="text-blue-300 text-sm font-medium">Download</Label>
-                                    <div className="flex gap-2">
-                                                                             <Button
-                                         onClick={() => handleGenerateExportReport('csv')}
-                                         disabled={isGeneratingReport}
-                                         className="bg-green-600 hover:bg-green-700 text-white flex-1"
-                                         size="sm"
-                                       >
-                                         {isGeneratingReport ? (
-                                           <>
-                                             <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                                             Generating...
-                                           </>
-                                         ) : (
-                                           <>
-                                             <FileSpreadsheet className="h-4 w-4 mr-2" />
-                                             CSV
-                                           </>
-                                         )}
-                                       </Button>
-                                       <Button
-                                         onClick={() => handleGenerateExportReport('pdf')}
-                                         disabled={isGeneratingReport}
-                                         className="bg-red-600 hover:bg-red-700 text-white flex-1"
-                                         size="sm"
-                                       >
-                                         {isGeneratingReport ? (
-                                           <>
-                                             <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                                             Generating...
-                                           </>
-                                         ) : (
-                                           <>
-                                             <FileText className="h-4 w-4 mr-2" />
-                                             PDF
-                                           </>
-                                         )}
-                                       </Button>
-                                     </div>
-                                   </div>
-                                   <div className="space-y-2">
-                                     <Label className="text-blue-300 text-sm font-medium">Email Report</Label>
-                                     <div className="flex gap-2">
-                                       <Button
-                                         onClick={() => handleGenerateExportReport('csv', true)}
-                                         disabled={isGeneratingReport}
-                                         className="bg-blue-600 hover:bg-blue-700 text-white flex-1"
-                                         size="sm"
-                                       >
-                                         <Mail className="h-4 w-4 mr-2" />
-                                         Email CSV
-                                       </Button>
-                                       <Button
-                                         onClick={() => handleGenerateExportReport('pdf', true)}
-                                         disabled={isGeneratingReport}
-                                         className="bg-purple-600 hover:bg-purple-700 text-white flex-1"
-                                         size="sm"
-                                       >
-                                         <Mail className="h-4 w-4 mr-2" />
-                                         Email PDF
-                                       </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </div>
-
-                    {/* Recent Reports */}
-                    <Card className="bg-gray-800 border-gray-700 mt-6">
-                      <CardHeader>
-                        <CardTitle className="text-white">Recent Reports</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                            <div>
-                              <div className="text-white font-medium">Trust Account Reconciliation Report</div>
-                              <div className="text-sm text-gray-400">Generated on: 2024-07-08 14:30:22 • All properties • CSV</div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="outline" className="bg-gray-600 border-gray-500 text-white">
-                                <Download className="h-4 w-4 mr-2" />
-                                Download
-                              </Button>
-                              <Button size="sm" variant="outline" className="bg-blue-600 border-blue-500 text-white">
-                                <Mail className="h-4 w-4 mr-2" />
-                                Email
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                            <div>
-                              <div className="text-white font-medium">Tax Deduction Summary</div>
-                              <div className="text-sm text-gray-400">Generated on: 2024-07-07 09:15:45 • YTD • PDF</div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="outline" className="bg-gray-600 border-gray-500 text-white">
-                                <Download className="h-4 w-4 mr-2" />
-                                Download
-                              </Button>
-                              <Button size="sm" variant="outline" className="bg-blue-600 border-blue-500 text-white">
-                                <Mail className="h-4 w-4 mr-2" />
-                                Email
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                            <div>
-                              <div className="text-white font-medium">Flagged Expense Report</div>
-                              <div className="text-sm text-gray-400">Generated on: 2024-07-05 16:22:18 • Q2 2024 • CSV</div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="outline" className="bg-gray-600 border-gray-500 text-white">
-                                <Download className="h-4 w-4 mr-2" />
-                                Download
-                              </Button>
-                              <Button size="sm" variant="outline" className="bg-blue-600 border-blue-500 text-white">
-                                <Mail className="h-4 w-4 mr-2" />
-                                Email
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Email Report Dialog */}
-                  <Dialog open={emailReportDialogOpen} onOpenChange={setEmailReportDialogOpen}>
-                    <DialogContent className="bg-gray-900 border-gray-700 text-white">
-                      <DialogHeader>
-                        <DialogTitle>Email Report</DialogTitle>
-                        <DialogDescription>
-                          Send report to recipient via email
-                        </DialogDescription>
-                      </DialogHeader>
-                      
-                      <div className="space-y-4">
-                        <div className="bg-gray-800 p-4 rounded-lg">
-                          <div className="text-white font-medium">
-                            {reportTypes.find(r => r.id === reportType)?.name}
-                          </div>
-                          <div className="text-sm text-gray-400">
-                            Format: {reportEmailForm.format.toUpperCase()}
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="recipient-name" className="text-sm text-gray-400 mb-2 block">
-                              Recipient Name
-                            </Label>
-                            <Input
-                              id="recipient-name"
-                              value={reportEmailForm.recipientName}
-                              onChange={(e) => setReportEmailForm(prev => ({ ...prev, recipientName: e.target.value }))}
-                              className="bg-gray-800 border-gray-600 text-white"
-                              placeholder="Enter recipient name"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="recipient-email" className="text-sm text-gray-400 mb-2 block">
-                              Email Address
-                            </Label>
-                            <Input
-                              id="recipient-email"
-                              type="email"
-                              value={reportEmailForm.recipientEmail}
-                              onChange={(e) => setReportEmailForm(prev => ({ ...prev, recipientEmail: e.target.value }))}
-                              className="bg-gray-800 border-gray-600 text-white"
-                              placeholder="Enter email address"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="email-message" className="text-sm text-gray-400 mb-2 block">
-                            Message (Optional)
-                          </Label>
-                          <Textarea
-                            id="email-message"
-                            value={reportEmailForm.message}
-                            onChange={(e) => setReportEmailForm(prev => ({ ...prev, message: e.target.value }))}
-                            className="bg-gray-800 border-gray-600 text-white"
-                            placeholder="Add a custom message..."
-                            rows={3}
-                          />
-                        </div>
-                      </div>
-                      
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setEmailReportDialogOpen(false)}>
-                          Cancel
-                        </Button>
-                        <Button 
-                          className="bg-blue-600 hover:bg-blue-700"
-                          onClick={handleEmailReport}
-                          disabled={!reportEmailForm.recipientEmail || !reportEmailForm.recipientName || isGeneratingReport}
-                        >
-                          {isGeneratingReport ? (
-                            <>
-                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                              Sending...
-                            </>
-                          ) : (
-                            <>
-                              <Send className="h-4 w-4 mr-2" />
-                              Send Report
-                            </>
-                          )}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
                 </div>
               </>
             )}
@@ -7153,15 +6946,19 @@ export default function PMFinancialDashboard() {
                     <table className="min-w-full text-sm">
                       <thead className="sticky top-0 z-10">
                         <tr className="bg-gray-900 border-b border-gray-700">
+                          <th className="text-left py-3 px-4 font-semibold text-white">Type</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Date</th>
-                          <th className="text-left py-3 px-4 font-semibold text-white">Merchant</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Vendor</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Amount</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Invoice #</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Due Date</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Made By</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Work Order</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Billable</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Memo</th>
-                          <th className="text-left py-3 px-4 font-semibold text-white">Receipt</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Documents</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Status</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Actions</th>
                         </tr>
                       </thead>
@@ -7175,9 +6972,20 @@ export default function PMFinancialDashboard() {
                             
                             return (
                               <tr key={txn.id} className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700/50 transition-colors">
+                                <td className="py-3 px-4">
+                                  <Badge className={`${(txn.expenseType || 'credit_card') === 'invoice' ? 'bg-purple-600' : 'bg-blue-600'} text-white text-xs`}>
+                                    {(txn.expenseType || 'credit_card') === 'invoice' ? 'Invoice' : 'Credit Card'}
+                                  </Badge>
+                                </td>
                                 <td className="py-3 px-4 text-gray-300">{txn.date}</td>
                                 <td className="py-3 px-4 text-gray-300">{txn.vendor}</td>
                                 <td className="py-3 px-4 text-gray-300">${txn.amount.toFixed(2)}</td>
+                                <td className="py-3 px-4 text-gray-300">
+                                  {txn.expenseType === 'invoice' ? (txn.invoiceNumber || '-') : '-'}
+                                </td>
+                                <td className="py-3 px-4 text-gray-300">
+                                  {txn.expenseType === 'invoice' ? (txn.dueDate || '-') : '-'}
+                                </td>
                                 <td className="py-3 px-4 text-gray-300">{txn.madeBy}</td>
                                 <td className="py-3 px-4">
                                   {isEditing ? (
@@ -7331,22 +7139,37 @@ export default function PMFinancialDashboard() {
                                       </Button>
                                   </div>
                                   ) : (
-                                    <Button
-                                      size="sm"
-                                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                                      onClick={() => {
-                                        setInlineEditingExpense(txn.id);
-                                        setInlineExpenseForm({
-                                          property: property ? property.name : '',
-                                          job: job ? job.id : '',
-                                          billable: txn.billable,
-                                          memo: txn.memo || '',
-                                          receipt: ''
-                                        });
-                                      }}
-                                    >
-                                      <CheckCircle className="h-4 w-4" />
-                                    </Button>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                                        onClick={() => {
+                                          setInlineEditingExpense(txn.id);
+                                          setInlineExpenseForm({
+                                            property: property ? property.name : '',
+                                            job: job ? job.id : '',
+                                            billable: txn.billable,
+                                            memo: txn.memo || '',
+                                            receipt: ''
+                                          });
+                                        }}
+                                      >
+                                        <CheckCircle className="h-4 w-4" />
+                                      </Button>
+                                      {txn.expenseType === 'invoice' && !txn.flaggedForApproval && (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="border-orange-600 text-orange-400 hover:bg-orange-600/20"
+                                          onClick={() => {
+                                            setSelectedInvoiceForFlagging(txn);
+                                            setFlagInvoiceDialogOpen(true);
+                                          }}
+                                        >
+                                          <Flag className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    </div>
                                   )}
                                 </td>
                               </tr>
@@ -7992,6 +7815,375 @@ export default function PMFinancialDashboard() {
                       </tbody>
                     </table>
                   </div>
+                </div>
+
+                {/* Export Reports Section */}
+                <div className="mt-16">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                      📊 Export Reports
+                    </h3>
+                    <div className="text-sm text-gray-400">
+                      Generate customized reports for reconciliation or tax purposes
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Filters Panel */}
+                    <div className="lg:col-span-1">
+                      <Card className="bg-gray-800 border-gray-700">
+                        <CardHeader>
+                          <CardTitle className="text-white flex items-center justify-between">
+                            <span>Filters</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={clearAllReportFilters}
+                              className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                            >
+                              Clear All
+                            </Button>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {/* Date Range */}
+                          <div>
+                            <Label className="text-gray-300 text-sm font-medium">Date Range</Label>
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                              <div>
+                                <Label className="text-gray-400 text-xs">From</Label>
+                                <Input
+                                  type="date"
+                                  value={reportDateRange.from}
+                                  onChange={(e) => setReportDateRange(prev => ({ ...prev, from: e.target.value }))}
+                                  className="bg-gray-700 border-gray-600 text-white"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-gray-400 text-xs">To</Label>
+                                <Input
+                                  type="date"
+                                  value={reportDateRange.to}
+                                  onChange={(e) => setReportDateRange(prev => ({ ...prev, to: e.target.value }))}
+                                  className="bg-gray-700 border-gray-600 text-white"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Properties */}
+                          <div>
+                            <Label className="text-gray-300 text-sm font-medium">Properties</Label>
+                            <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
+                              {reportPropertyOptions.map((property) => (
+                                <div key={property} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={`report-${property}`}
+                                    checked={reportSelectedProperties.includes(property)}
+                                    onChange={() => handleReportPropertyToggle(property)}
+                                    className="rounded bg-gray-700 border-gray-600"
+                                  />
+                                  <Label htmlFor={`report-${property}`} className="text-white text-xs cursor-pointer">
+                                    {property}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* GL Codes */}
+                          <div>
+                            <Label className="text-gray-300 text-sm font-medium">GL Codes</Label>
+                            <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
+                              {reportGlCodeOptions.map((code) => (
+                                <div key={code} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={`report-${code}`}
+                                    checked={reportSelectedGLCodes.includes(code)}
+                                    onChange={() => handleReportGLCodeToggle(code)}
+                                    className="rounded bg-gray-700 border-gray-600"
+                                  />
+                                  <Label htmlFor={`report-${code}`} className="text-white text-xs cursor-pointer">
+                                    {code}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Expense Status */}
+                          <div>
+                            <Label className="text-gray-300 text-sm font-medium">Expense Status</Label>
+                            <div className="mt-2 space-y-2">
+                              {reportExpenseStatusOptions.map((status) => (
+                                <div key={status} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={`report-${status}`}
+                                    checked={reportSelectedExpenseStatus.includes(status)}
+                                    onChange={() => handleReportExpenseStatusToggle(status)}
+                                    className="rounded bg-gray-700 border-gray-600"
+                                  />
+                                  <Label htmlFor={`report-${status}`} className="text-white text-xs cursor-pointer">
+                                    {status}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Trust Account */}
+                          <div>
+                            <Label className="text-gray-300 text-sm font-medium">Trust Account (Optional)</Label>
+                            <Select value={reportSelectedTrustAccount} onValueChange={setReportSelectedTrustAccount}>
+                              <SelectTrigger className="mt-2 bg-gray-700 border-gray-600 text-white">
+                                <SelectValue placeholder="All trust accounts" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-gray-800 border-gray-600 z-50">
+                                <SelectItem value="all" className="text-white">All trust accounts</SelectItem>
+                                {reportTrustAccountOptions.map((account) => (
+                                  <SelectItem key={account} value={account} className="text-white">
+                                    {account}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Report Types Panel */}
+                    <div className="lg:col-span-2">
+                      <Card className="bg-gray-800 border-gray-700">
+                        <CardHeader>
+                          <CardTitle className="text-white">Report Types</CardTitle>
+                          <p className="text-sm text-gray-400">Select the type of report you want to generate</p>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {reportTypes.map((report) => (
+                            <div
+                              key={report.id}
+                              className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                                reportType === report.id
+                                  ? "border-blue-500 bg-blue-900/20"
+                                  : "border-gray-600 bg-gray-700 hover:bg-gray-600"
+                              }`}
+                              onClick={() => setReportType(report.id)}
+                            >
+                              <div className="flex items-center space-x-2 mb-2">
+                                <input
+                                  type="radio"
+                                  id={report.id}
+                                  name="reportType"
+                                  checked={reportType === report.id}
+                                  onChange={() => setReportType(report.id)}
+                                  className="text-blue-600"
+                                />
+                                <Label htmlFor={report.id} className="text-white font-medium cursor-pointer">
+                                  {report.name}
+                                </Label>
+                              </div>
+                              <p className="text-sm text-gray-300 ml-6">{report.description}</p>
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+
+                      {/* Generate Report Section */}
+                      <Card className="bg-gray-800 border-gray-700 mt-6">
+                        <CardHeader>
+                          <CardTitle className="text-white">Generate Report</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div className="bg-gray-700 rounded-lg p-4">
+                              <h4 className="font-medium text-white mb-2">Active Filters Summary</h4>
+                              <div className="text-sm text-gray-300 space-y-1">
+                                <div>
+                                  <span className="font-medium">Date Range:</span> {
+                                    reportDateRange.from && reportDateRange.to 
+                                      ? `${reportDateRange.from} to ${reportDateRange.to}`
+                                      : "All time"
+                                  }
+                                </div>
+                                <div>
+                                  <span className="font-medium">Properties:</span> {
+                                    reportSelectedProperties.length > 0 
+                                      ? `${reportSelectedProperties.length} selected`
+                                      : "All properties"
+                                  }
+                                </div>
+                                <div>
+                                  <span className="font-medium">GL Codes:</span> {
+                                    reportSelectedGLCodes.length > 0 
+                                      ? `${reportSelectedGLCodes.length} selected`
+                                      : "All GL codes"
+                                  }
+                                </div>
+                                <div>
+                                  <span className="font-medium">Expense Status:</span> {
+                                    reportSelectedExpenseStatus.length > 0 
+                                      ? `${reportSelectedExpenseStatus.length} selected`
+                                      : "All statuses"
+                                  }
+                                </div>
+                                <div>
+                                  <span className="font-medium">Trust Account:</span> {
+                                    reportSelectedTrustAccount === "all" ? "All trust accounts" : reportSelectedTrustAccount
+                                  }
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                              <h4 className="font-medium text-blue-300 mb-2">Export Options</h4>
+                              <div className="text-sm text-blue-200 mb-4">
+                                Reports will include:
+                                <ul className="mt-2 space-y-1 ml-4">
+                                  <li>• Generated timestamp</li>
+                                  <li>• Applied filters summary</li>
+                                  <li>• Receipt links (where available)</li>
+                                  <li>• Formatted tables matching expense views</li>
+                                </ul>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                  <Label className="text-blue-300 text-sm font-medium">Download</Label>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      onClick={() => handleGenerateExportReport('csv')}
+                                      disabled={isGeneratingReport}
+                                      className="bg-green-600 hover:bg-green-700 text-white flex-1"
+                                      size="sm"
+                                    >
+                                      {isGeneratingReport ? (
+                                        <>
+                                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                          Generating...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                          CSV
+                                        </>
+                                      )}
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleGenerateExportReport('pdf')}
+                                      disabled={isGeneratingReport}
+                                      className="bg-red-600 hover:bg-red-700 text-white flex-1"
+                                      size="sm"
+                                    >
+                                      {isGeneratingReport ? (
+                                        <>
+                                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                          Generating...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <FileText className="h-4 w-4 mr-2" />
+                                          PDF
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label className="text-blue-300 text-sm font-medium">Email Report</Label>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      onClick={() => handleGenerateExportReport('csv', true)}
+                                      disabled={isGeneratingReport}
+                                      className="bg-blue-600 hover:bg-blue-700 text-white flex-1"
+                                      size="sm"
+                                    >
+                                      <Mail className="h-4 w-4 mr-2" />
+                                      Email CSV
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleGenerateExportReport('pdf', true)}
+                                      disabled={isGeneratingReport}
+                                      className="bg-purple-600 hover:bg-purple-700 text-white flex-1"
+                                      size="sm"
+                                    >
+                                      <Mail className="h-4 w-4 mr-2" />
+                                      Email PDF
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+
+                  {/* Recent Reports */}
+                  <Card className="bg-gray-800 border-gray-700 mt-6">
+                    <CardHeader>
+                      <CardTitle className="text-white">Recent Reports</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {[
+                          {
+                            id: 'trust-reconciliation-recent',
+                            name: 'Trust Account Reconciliation Report',
+                            generatedOn: '2024-07-08 14:30:22',
+                            scope: 'All properties',
+                            format: 'csv'
+                          },
+                          {
+                            id: 'tax-deduction-recent',
+                            name: 'Tax Deduction Summary',
+                            generatedOn: '2024-07-07 09:15:45',
+                            scope: 'YTD',
+                            format: 'pdf'
+                          },
+                          {
+                            id: 'flagged-expense-recent',
+                            name: 'Flagged Expense Report',
+                            generatedOn: '2024-07-05 16:22:18',
+                            scope: 'Q2 2024',
+                            format: 'csv'
+                          }
+                        ].map((report) => (
+                          <div key={report.id} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                            <div>
+                              <div className="text-white font-medium">{report.name}</div>
+                              <div className="text-sm text-gray-400">
+                                Generated on: {report.generatedOn} • {report.scope} • {report.format.toUpperCase()}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="bg-gray-600 border-gray-500 text-white hover:bg-gray-500"
+                                onClick={() => handleRecentReportDownload(report)}
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="bg-blue-600 border-blue-500 text-white hover:bg-blue-500"
+                                onClick={() => handleRecentReportEmail(report)}
+                              >
+                                <Mail className="h-4 w-4 mr-2" />
+                                Email
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </>
             )}
@@ -9953,73 +10145,218 @@ export default function PMFinancialDashboard() {
               </DialogContent>
             </Dialog>
 
+            {/* Flag Invoice Dialog */}
+            <Dialog open={flagInvoiceDialogOpen} onOpenChange={setFlagInvoiceDialogOpen}>
+              <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Flag Invoice for Approval</DialogTitle>
+                  <DialogDescription className="text-gray-400">
+                    Flag this invoice to Central Office or Owner for payment approval.
+                  </DialogDescription>
+                </DialogHeader>
+                {selectedInvoiceForFlagging && (
+                  <div className="space-y-4">
+                    {/* Invoice Details */}
+                    <div className="bg-gray-800 p-3 rounded-lg">
+                      <div className="text-sm text-gray-300 space-y-1">
+                        <div><strong>Vendor:</strong> {selectedInvoiceForFlagging.vendor}</div>
+                        <div><strong>Amount:</strong> ${selectedInvoiceForFlagging.amount.toFixed(2)}</div>
+                        <div><strong>Invoice #:</strong> {selectedInvoiceForFlagging.invoiceNumber}</div>
+                        <div><strong>Due Date:</strong> {selectedInvoiceForFlagging.dueDate}</div>
+                      </div>
+                    </div>
+
+                    {/* Flag To Selection */}
+                    <div>
+                      <Label className="text-gray-300">Flag To</Label>
+                      <Select value={flagInvoiceForm.flaggedTo} onValueChange={v => setFlagInvoiceForm(f => ({ ...f, flaggedTo: v as 'co' | 'owner' }))}>
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                          <SelectItem value="co">Central Office</SelectItem>
+                          <SelectItem value="owner">Property Owner</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Reason */}
+                    <div>
+                      <Label className="text-gray-300">Reason for Flagging</Label>
+                      <Textarea 
+                        className="bg-gray-800 border-gray-600 text-white resize-none" 
+                        rows={3}
+                        value={flagInvoiceForm.reason} 
+                        onChange={e => setFlagInvoiceForm(f => ({ ...f, reason: e.target.value }))} 
+                        placeholder="Explain why this invoice needs approval (e.g., amount exceeds limit, requires special authorization, etc.)" 
+                      />
+                    </div>
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setFlagInvoiceDialogOpen(false)} className="border-gray-600 text-gray-300">
+                    Cancel
+                  </Button>
+                  <Button
+                    className="bg-orange-600 hover:bg-orange-700 text-white" 
+                    disabled={!flagInvoiceForm.reason.trim()} 
+                    onClick={handleFlagInvoice}
+                  >
+                    <Flag className="h-4 w-4 mr-2" />
+                    Flag for Approval
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             {/* New Expense Dialog */}
             <Dialog open={newExpenseDialogOpen} onOpenChange={setNewExpenseDialogOpen}>
-              <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
+              <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New Expense</DialogTitle>
                   <DialogDescription className="text-gray-400">
                     Enter the details for the new expense. It will be added to the "Needs Review" table.
                   </DialogDescription>
                 </DialogHeader>
-                        <div className="space-y-4">
+                <div className="space-y-4">
+                  {/* Expense Type Selection */}
                   <div>
-                    <Label className="text-gray-300">Merchant</Label>
-                    <Input 
-                      className="bg-gray-800 border-gray-600 text-white" 
-                      value={mainExpenseForm.vendor} 
-                      onChange={e => setMainExpenseForm(f => ({ ...f, vendor: e.target.value }))} 
-                      placeholder="Merchant name" 
-                    />
-                                  </div>
-                  <div>
-                    <Label className="text-gray-300">Amount</Label>
-                    <Input 
-                      className="bg-gray-800 border-gray-600 text-white" 
-                      type="number" 
-                      value={mainExpenseForm.amount} 
-                      onChange={e => setMainExpenseForm(f => ({ ...f, amount: e.target.value }))} 
-                      placeholder="Amount" 
-                    />
-                                    </div>
-                  <div>
-                    <Label className="text-gray-300">Made By</Label>
-                    <Input 
-                      className="bg-gray-800 border-gray-600 text-white" 
-                      value={mainExpenseForm.madeBy} 
-                      onChange={e => setMainExpenseForm(f => ({ ...f, madeBy: e.target.value }))} 
-                      placeholder="Name" 
-                    />
-                                  </div>
-                  <div>
-                    <Label className="text-gray-300">Billable</Label>
-                    <Select value={mainExpenseForm.billable ? 'yes' : 'no'} onValueChange={v => setMainExpenseForm(f => ({ ...f, billable: v === 'yes' }))}>
+                    <Label className="text-gray-300">Expense Type</Label>
+                    <Select value={mainExpenseForm.expenseType} onValueChange={v => setMainExpenseForm(f => ({ ...f, expenseType: v as 'credit_card' | 'invoice' }))}>
                       <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-gray-900 border-gray-700 text-white">
-                        <SelectItem value="yes">Yes</SelectItem>
-                        <SelectItem value="no">No</SelectItem>
+                        <SelectItem value="credit_card">Credit Card Expense</SelectItem>
+                        <SelectItem value="invoice">Invoice Expense</SelectItem>
                       </SelectContent>
                     </Select>
-                                </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-gray-300">
+                        {mainExpenseForm.expenseType === 'invoice' ? 'Vendor/Company' : 'Merchant'}
+                      </Label>
+                      <Input 
+                        className="bg-gray-800 border-gray-600 text-white" 
+                        value={mainExpenseForm.vendor} 
+                        onChange={e => setMainExpenseForm(f => ({ ...f, vendor: e.target.value }))} 
+                        placeholder={mainExpenseForm.expenseType === 'invoice' ? 'Vendor company name' : 'Merchant name'} 
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-gray-300">Amount</Label>
+                      <Input 
+                        className="bg-gray-800 border-gray-600 text-white" 
+                        type="number" 
+                        step="0.01"
+                        value={mainExpenseForm.amount} 
+                        onChange={e => setMainExpenseForm(f => ({ ...f, amount: e.target.value }))} 
+                        placeholder="0.00" 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Invoice-specific fields */}
+                  {mainExpenseForm.expenseType === 'invoice' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-gray-300">Invoice Number</Label>
+                        <Input 
+                          className="bg-gray-800 border-gray-600 text-white" 
+                          value={mainExpenseForm.invoiceNumber} 
+                          onChange={e => setMainExpenseForm(f => ({ ...f, invoiceNumber: e.target.value }))} 
+                          placeholder="INV-2025-001" 
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-gray-300">Due Date</Label>
+                        <Input 
+                          className="bg-gray-800 border-gray-600 text-white" 
+                          type="date"
+                          value={mainExpenseForm.dueDate} 
+                          onChange={e => setMainExpenseForm(f => ({ ...f, dueDate: e.target.value }))} 
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-gray-300">Made By</Label>
+                      <Input 
+                        className="bg-gray-800 border-gray-600 text-white" 
+                        value={mainExpenseForm.madeBy} 
+                        onChange={e => setMainExpenseForm(f => ({ ...f, madeBy: e.target.value }))} 
+                        placeholder="Name" 
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-gray-300">Billable</Label>
+                      <Select value={mainExpenseForm.billable ? 'yes' : 'no'} onValueChange={v => setMainExpenseForm(f => ({ ...f, billable: v === 'yes' }))}>
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                          <SelectItem value="yes">Yes</SelectItem>
+                          <SelectItem value="no">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
                   <div>
-                    <Label className="text-gray-300">Memo</Label>
+                    <Label className="text-gray-300">Memo/Description</Label>
                     <Input 
                       className="bg-gray-800 border-gray-600 text-white" 
                       value={mainExpenseForm.memo} 
                       onChange={e => setMainExpenseForm(f => ({ ...f, memo: e.target.value }))} 
-                      placeholder="Memo" 
+                      placeholder="Description of expense" 
                     />
-                              </div>
+                  </div>
+
+                  {/* File Upload Section */}
                   <div>
-                    <Label className="text-gray-300">Receipt</Label>
+                    <Label className="text-gray-300">
+                      {mainExpenseForm.expenseType === 'invoice' ? 'Supporting Documents' : 'Receipt'}
+                    </Label>
                     <Input 
-                                    className="bg-gray-800 border-gray-600 text-white"
+                      className="bg-gray-800 border-gray-600 text-white"
                       type="file" 
-                      onChange={e => setMainExpenseForm(f => ({ ...f, receipt: e.target.files?.[0]?.name || '' }))} 
+                      multiple={mainExpenseForm.expenseType === 'invoice'}
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={e => {
+                        const files = Array.from(e.target.files || []);
+                        if (mainExpenseForm.expenseType === 'invoice') {
+                          setMainExpenseForm(f => ({ ...f, supportingDocs: files }));
+                        } else {
+                          setMainExpenseForm(f => ({ ...f, receipt: files[0]?.name || '' }));
+                        }
+                      }} 
                     />
-                    {mainExpenseForm.receipt && <span className="text-xs text-green-400">{mainExpenseForm.receipt}</span>}
+                    <div className="text-xs text-gray-400 mt-1">
+                      {mainExpenseForm.expenseType === 'invoice' 
+                        ? 'Upload invoice, receipts, and supporting documents (PDF, JPG, PNG)'
+                        : 'Upload receipt (PDF, JPG, PNG)'
+                      }
+                    </div>
+                    {mainExpenseForm.expenseType === 'invoice' && mainExpenseForm.supportingDocs.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {mainExpenseForm.supportingDocs.map((file, idx) => (
+                          <div key={idx} className="text-xs text-green-400 flex items-center gap-2">
+                            <CheckCircle className="h-3 w-3" />
+                            {file.name}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {mainExpenseForm.expenseType === 'credit_card' && mainExpenseForm.receipt && (
+                      <div className="text-xs text-green-400 flex items-center gap-2 mt-2">
+                        <CheckCircle className="h-3 w-3" />
+                        {mainExpenseForm.receipt}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <DialogFooter>
@@ -10028,11 +10365,16 @@ export default function PMFinancialDashboard() {
                   </Button>
                                     <Button
                     className="bg-blue-600 hover:bg-blue-700" 
-                    disabled={!mainExpenseForm.vendor || !mainExpenseForm.amount || !mainExpenseForm.madeBy} 
+                    disabled={
+                      !mainExpenseForm.vendor || 
+                      !mainExpenseForm.amount || 
+                      !mainExpenseForm.madeBy ||
+                      (mainExpenseForm.expenseType === 'invoice' && !mainExpenseForm.invoiceNumber)
+                    } 
                                       onClick={() => {
                       // Add new expense to transactions with pending status
                       const newExpense: Transaction = {
-                        id: `txn-${Date.now()}`,
+                        id: `${mainExpenseForm.expenseType === 'invoice' ? 'inv' : 'txn'}-${Date.now()}`,
                         date: new Date().toISOString().split('T')[0],
                         vendor: mainExpenseForm.vendor,
                         amount: Number(mainExpenseForm.amount),
@@ -10041,12 +10383,29 @@ export default function PMFinancialDashboard() {
                         jobId: '', // No job assigned initially
                         madeBy: mainExpenseForm.madeBy,
                         memo: mainExpenseForm.memo,
-                        receipt: mainExpenseForm.receipt
+                        receipt: mainExpenseForm.receipt,
+                        expenseType: mainExpenseForm.expenseType,
+                        ...(mainExpenseForm.expenseType === 'invoice' && {
+                          invoiceNumber: mainExpenseForm.invoiceNumber,
+                          dueDate: mainExpenseForm.dueDate,
+                          supportingDocs: mainExpenseForm.supportingDocs.map(f => f.name)
+                        })
                       };
                       
                       setTransactions(prev => [...prev, newExpense]);
                       setNewExpenseDialogOpen(false);
-                      setMainExpenseForm({ vendor: '', amount: '', madeBy: '', billable: true, memo: '', receipt: '' });
+                      setMainExpenseForm({ 
+                        vendor: '', 
+                        amount: '', 
+                        madeBy: '', 
+                        billable: true, 
+                        memo: '', 
+                        receipt: '',
+                        expenseType: 'credit_card',
+                        invoiceNumber: '',
+                        dueDate: '',
+                        supportingDocs: []
+                      });
                     }}
                   >
                     Add Expense
@@ -11834,6 +12193,206 @@ export default function PMFinancialDashboard() {
                   >
                     <Send className="h-4 w-4 mr-2" />
                     Send Nudge
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Download Report Confirmation Dialog */}
+            <Dialog open={downloadReportDialogOpen} onOpenChange={(open) => {
+              setDownloadReportDialogOpen(open);
+              if (!open) setSelectedRecentReport(null);
+            }}>
+              <DialogContent className="bg-gray-900 border-gray-700 text-white">
+                <DialogHeader>
+                  <DialogTitle>Download Report</DialogTitle>
+                  <DialogDescription>
+                    Confirm download of the selected report
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4">
+                  <div className="bg-gray-800 p-4 rounded-lg">
+                    <div className="text-white font-medium">
+                      {selectedRecentReport ? selectedRecentReport.name : reportTypes.find(r => r.id === reportType)?.name}
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      Format: {reportDownloadForm.format.toUpperCase()}
+                    </div>
+                    {selectedRecentReport && (
+                      <div className="text-sm text-gray-400 mt-2">
+                        Generated: {selectedRecentReport.generatedOn} • {selectedRecentReport.scope}
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedRecentReport ? (
+                    <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                      <div className="text-blue-300 font-medium mb-2">Recent Report Details</div>
+                      <div className="text-sm text-blue-200 space-y-1">
+                        <div>
+                          <span className="font-medium">Generated:</span> {selectedRecentReport.generatedOn}
+                        </div>
+                        <div>
+                          <span className="font-medium">Scope:</span> {selectedRecentReport.scope}
+                        </div>
+                        <div>
+                          <span className="font-medium">Format:</span> {selectedRecentReport.format.toUpperCase()}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                      <div className="text-blue-300 font-medium mb-2">Report Summary</div>
+                      <div className="text-sm text-blue-200 space-y-1">
+                        <div>
+                          <span className="font-medium">Date Range:</span> {
+                            reportDateRange.from && reportDateRange.to 
+                              ? `${reportDateRange.from} to ${reportDateRange.to}`
+                              : "All time"
+                          }
+                        </div>
+                        <div>
+                          <span className="font-medium">Properties:</span> {
+                            reportSelectedProperties.length > 0 
+                              ? `${reportSelectedProperties.length} selected`
+                              : "All properties"
+                          }
+                        </div>
+                        <div>
+                          <span className="font-medium">GL Codes:</span> {
+                            reportSelectedGLCodes.length > 0 
+                              ? `${reportSelectedGLCodes.length} selected`
+                              : "All GL codes"
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => {
+                    setDownloadReportDialogOpen(false);
+                    setSelectedRecentReport(null);
+                  }}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={handleDownloadReport}
+                    disabled={isGeneratingReport}
+                  >
+                    {isGeneratingReport ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        Download {reportDownloadForm.format.toUpperCase()}
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Email Report Dialog */}
+            <Dialog open={emailReportDialogOpen} onOpenChange={(open) => {
+              setEmailReportDialogOpen(open);
+              if (!open) setSelectedRecentReport(null);
+            }}>
+              <DialogContent className="bg-gray-900 border-gray-700 text-white">
+                <DialogHeader>
+                  <DialogTitle>Email Report</DialogTitle>
+                  <DialogDescription>
+                    Send report to recipient via email
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4">
+                  <div className="bg-gray-800 p-4 rounded-lg">
+                    <div className="text-white font-medium">
+                      {selectedRecentReport ? selectedRecentReport.name : reportTypes.find(r => r.id === reportType)?.name}
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      Format: {reportEmailForm.format.toUpperCase()}
+                    </div>
+                    {selectedRecentReport && (
+                      <div className="text-sm text-gray-400 mt-2">
+                        Generated: {selectedRecentReport.generatedOn} • {selectedRecentReport.scope}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="recipient-name" className="text-sm text-gray-400 mb-2 block">
+                        Recipient Name
+                      </Label>
+                      <Input
+                        id="recipient-name"
+                        value={reportEmailForm.recipientName}
+                        onChange={(e) => setReportEmailForm(prev => ({ ...prev, recipientName: e.target.value }))}
+                        className="bg-gray-800 border-gray-600 text-white"
+                        placeholder="Enter recipient name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="recipient-email" className="text-sm text-gray-400 mb-2 block">
+                        Email Address
+                      </Label>
+                      <Input
+                        id="recipient-email"
+                        type="email"
+                        value={reportEmailForm.recipientEmail}
+                        onChange={(e) => setReportEmailForm(prev => ({ ...prev, recipientEmail: e.target.value }))}
+                        className="bg-gray-800 border-gray-600 text-white"
+                        placeholder="Enter email address"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="email-message" className="text-sm text-gray-400 mb-2 block">
+                      Message (Optional)
+                    </Label>
+                    <Textarea
+                      id="email-message"
+                      value={reportEmailForm.message}
+                      onChange={(e) => setReportEmailForm(prev => ({ ...prev, message: e.target.value }))}
+                      className="bg-gray-800 border-gray-600 text-white"
+                      placeholder="Add a custom message..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+                
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => {
+                    setEmailReportDialogOpen(false);
+                    setSelectedRecentReport(null);
+                  }}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={handleEmailReport}
+                    disabled={!reportEmailForm.recipientEmail || !reportEmailForm.recipientName || isGeneratingReport}
+                  >
+                    {isGeneratingReport ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Send Report
+                      </>
+                    )}
                   </Button>
                 </DialogFooter>
               </DialogContent>
