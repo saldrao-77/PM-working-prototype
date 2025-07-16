@@ -43,6 +43,7 @@ import {
   Database,
   FileSpreadsheet,
   Send,
+  RefreshCw,
   Clock,
   MoreVertical,
   CreditCard,
@@ -981,6 +982,22 @@ export default function PMFinancialDashboard() {
   // Mock state for bank accounts and trust accounts (to simulate updates)
   const [bankAccountsState, setBankAccountsState] = useState(bankAccounts);
   const [trustAccountsState, setTrustAccountsState] = useState(ownerTrustAccounts);
+  
+  // State for Reports functionality
+  const [reportDateRange, setReportDateRange] = useState({ from: "", to: "" });
+  const [reportSelectedProperties, setReportSelectedProperties] = useState<string[]>([]);
+  const [reportSelectedGLCodes, setReportSelectedGLCodes] = useState<string[]>([]);
+  const [reportSelectedExpenseStatus, setReportSelectedExpenseStatus] = useState<string[]>([]);
+  const [reportSelectedTrustAccount, setReportSelectedTrustAccount] = useState("all");
+  const [reportType, setReportType] = useState("trust-reconciliation");
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [emailReportDialogOpen, setEmailReportDialogOpen] = useState(false);
+  const [reportEmailForm, setReportEmailForm] = useState({
+    recipientName: '',
+    recipientEmail: '',
+    message: '',
+    format: 'csv' as 'csv' | 'pdf'
+  });
 
   // Helper functions for Advanced Payment Tools
   const handleLinkAccount = (account: any, shouldLink: boolean) => {
@@ -1052,6 +1069,141 @@ export default function PMFinancialDashboard() {
   const handleReviewReimburse = () => {
     if (selectedPersonalExpenses.length === 0 || !selectedTeamMember) return;
     setReimbursementReviewDialogOpen(true);
+  };
+
+  // Helper functions for Reports functionality
+  const reportPropertyOptions = [
+    "Stanford Graduate School of Business",
+    "Mission Bay Tech Campus", 
+    "Redwood Shores Office Complex",
+    "Palo Alto Research Center",
+    "South Bay Industrial Park"
+  ];
+
+  const reportGlCodeOptions = [
+    "REP-HVAC", "REP-PLUMB", "REP-ELEC", "REP-GEN",
+    "OPS-CLEAN", "OPS-LAND", "OPS-SUPP", "OPS-MAINT",
+    "CAP-SEC", "CAP-HVAC", "CAP-ELEC", "CAP-BLDG",
+    "ADMIN-MGMT", "ADMIN-LEGAL", "ADMIN-ACCT"
+  ];
+
+  const reportExpenseStatusOptions = [
+    "Flagged", "Approved", "Missing Receipt", "Pending Review", "Processed"
+  ];
+
+  const reportTrustAccountOptions = [
+    "TA-2024-001 (Redwood Shores)",
+    "TA-2024-002 (Mission Bay)",
+    "TA-2024-003 (Skyline Vista)"
+  ];
+
+  const reportTypes = [
+    {
+      id: "trust-reconciliation",
+      name: "Trust Account Reconciliation Report",
+      description: "Lists all withdrawals, reimbursements, and trust balances by property. Tracks packet approvals, flagged items, and final balance snapshot. Includes PM and Owner notes."
+    },
+    {
+      id: "tax-deduction",
+      name: "Tax Deduction Summary",
+      description: "Breaks down expenses by deductible/non-deductible GL categories. Totals by property and time period. CSV includes memo fields, category mapping, and receipt links."
+    },
+    {
+      id: "flagged-expenses",
+      name: "Flagged Expense Report",
+      description: "Includes all items auto- or manually-flagged. Lists policy rule violated (e.g. over $2K, missing receipt, >10% budget). Includes comments, property, GL, amount, flag type, and reviewer."
+    },
+    {
+      id: "cost-savings",
+      name: "Cost-Saving Summary Report",
+      description: "Shows Smart Insight savings suggestions accepted/rejected. Itemized view of projected vs realized savings per suggestion. Groups by category and property."
+    }
+  ];
+
+  const handleGenerateExportReport = async (format: 'csv' | 'pdf', shouldEmail: boolean = false) => {
+    if (shouldEmail) {
+      setReportEmailForm(prev => ({ ...prev, format }));
+      setEmailReportDialogOpen(true);
+      return;
+    }
+
+    setIsGeneratingReport(true);
+    
+    // Simulate report generation
+    const selectedReportType = reportTypes.find(r => r.id === reportType);
+    const timestamp = new Date().toISOString();
+    
+    const filters = {
+      dateRange: reportDateRange.from && reportDateRange.to ? `${reportDateRange.from} to ${reportDateRange.to}` : "All time",
+      properties: reportSelectedProperties.length > 0 ? reportSelectedProperties.join(", ") : "All properties",
+      glCodes: reportSelectedGLCodes.length > 0 ? reportSelectedGLCodes.join(", ") : "All GL codes",
+      expenseStatus: reportSelectedExpenseStatus.length > 0 ? reportSelectedExpenseStatus.join(", ") : "All statuses",
+      trustAccount: reportSelectedTrustAccount === "all" ? "All trust accounts" : reportSelectedTrustAccount
+    };
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    setIsGeneratingReport(false);
+    
+    // Mock download
+    const fileName = `${reportType}-report-${new Date().toISOString().split('T')[0]}.${format}`;
+    alert(`Report generated and downloaded: ${fileName}`);
+  };
+
+  const handleEmailReport = async () => {
+    if (!reportEmailForm.recipientEmail || !reportEmailForm.recipientName) return;
+
+    setIsGeneratingReport(true);
+    
+    // Simulate email sending
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    setIsGeneratingReport(false);
+    setEmailReportDialogOpen(false);
+    
+    const selectedReportType = reportTypes.find(r => r.id === reportType);
+    alert(`Report "${selectedReportType?.name}" has been emailed to ${reportEmailForm.recipientName} (${reportEmailForm.recipientEmail})`);
+    
+    // Reset form
+    setReportEmailForm({
+      recipientName: '',
+      recipientEmail: '',
+      message: '',
+      format: 'csv'
+    });
+  };
+
+  const handleReportPropertyToggle = (property: string) => {
+    setReportSelectedProperties(prev => 
+      prev.includes(property) 
+        ? prev.filter(p => p !== property)
+        : [...prev, property]
+    );
+  };
+
+  const handleReportGLCodeToggle = (code: string) => {
+    setReportSelectedGLCodes(prev => 
+      prev.includes(code) 
+        ? prev.filter(c => c !== code)
+        : [...prev, code]
+    );
+  };
+
+  const handleReportExpenseStatusToggle = (status: string) => {
+    setReportSelectedExpenseStatus(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status)
+        : [...prev, status]
+    );
+  };
+
+  const clearAllReportFilters = () => {
+    setReportDateRange({ from: "", to: "" });
+    setReportSelectedProperties([]);
+    setReportSelectedGLCodes([]);
+    setReportSelectedExpenseStatus([]);
+    setReportSelectedTrustAccount("all");
   };
 
   // Handle URL parameters for tab navigation and role detection
@@ -1523,7 +1675,7 @@ export default function PMFinancialDashboard() {
     setPaymentDialogOpen(true)
   }
 
-  const handleGenerateReport = (property: any) => {
+  const handleGeneratePropertyReport = (property: any) => {
     setSelectedProperty(property)
     setReportDialogOpen(true)
   }
@@ -6269,6 +6421,459 @@ export default function PMFinancialDashboard() {
                         >
                           <User className="h-4 w-4 mr-2" />
                           Process Reimbursement
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Export Reports Section */}
+                  <div className="mt-16">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        📊 Export Reports
+                      </h3>
+                      <div className="text-sm text-gray-400">
+                        Generate customized reports for reconciliation or tax purposes
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      {/* Filters Panel */}
+                      <div className="lg:col-span-1">
+                        <Card className="bg-gray-800 border-gray-700">
+                          <CardHeader>
+                            <CardTitle className="text-white flex items-center justify-between">
+                              <span>Filters</span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={clearAllReportFilters}
+                                className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                              >
+                                Clear All
+                              </Button>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            {/* Date Range */}
+                            <div>
+                              <Label className="text-gray-300 text-sm font-medium">Date Range</Label>
+                              <div className="grid grid-cols-2 gap-2 mt-2">
+                                <div>
+                                  <Label className="text-gray-400 text-xs">From</Label>
+                                  <Input
+                                    type="date"
+                                    value={reportDateRange.from}
+                                    onChange={(e) => setReportDateRange(prev => ({ ...prev, from: e.target.value }))}
+                                    className="bg-gray-700 border-gray-600 text-white"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-gray-400 text-xs">To</Label>
+                                  <Input
+                                    type="date"
+                                    value={reportDateRange.to}
+                                    onChange={(e) => setReportDateRange(prev => ({ ...prev, to: e.target.value }))}
+                                    className="bg-gray-700 border-gray-600 text-white"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Properties */}
+                            <div>
+                              <Label className="text-gray-300 text-sm font-medium">Properties</Label>
+                              <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
+                                {reportPropertyOptions.map((property) => (
+                                  <div key={property} className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      id={`report-${property}`}
+                                      checked={reportSelectedProperties.includes(property)}
+                                      onChange={() => handleReportPropertyToggle(property)}
+                                      className="rounded bg-gray-700 border-gray-600"
+                                    />
+                                    <Label htmlFor={`report-${property}`} className="text-white text-xs cursor-pointer">
+                                      {property}
+                                    </Label>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* GL Codes */}
+                            <div>
+                              <Label className="text-gray-300 text-sm font-medium">GL Codes</Label>
+                              <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
+                                {reportGlCodeOptions.map((code) => (
+                                  <div key={code} className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      id={`report-${code}`}
+                                      checked={reportSelectedGLCodes.includes(code)}
+                                      onChange={() => handleReportGLCodeToggle(code)}
+                                      className="rounded bg-gray-700 border-gray-600"
+                                    />
+                                    <Label htmlFor={`report-${code}`} className="text-white text-xs cursor-pointer">
+                                      {code}
+                                    </Label>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Expense Status */}
+                            <div>
+                              <Label className="text-gray-300 text-sm font-medium">Expense Status</Label>
+                              <div className="mt-2 space-y-2">
+                                {reportExpenseStatusOptions.map((status) => (
+                                  <div key={status} className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      id={`report-${status}`}
+                                      checked={reportSelectedExpenseStatus.includes(status)}
+                                      onChange={() => handleReportExpenseStatusToggle(status)}
+                                      className="rounded bg-gray-700 border-gray-600"
+                                    />
+                                    <Label htmlFor={`report-${status}`} className="text-white text-xs cursor-pointer">
+                                      {status}
+                                    </Label>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Trust Account */}
+                            <div>
+                              <Label className="text-gray-300 text-sm font-medium">Trust Account (Optional)</Label>
+                              <Select value={reportSelectedTrustAccount} onValueChange={setReportSelectedTrustAccount}>
+                                <SelectTrigger className="mt-2 bg-gray-700 border-gray-600 text-white">
+                                  <SelectValue placeholder="All trust accounts" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-gray-800 border-gray-600 z-50">
+                                  <SelectItem value="all" className="text-white">All trust accounts</SelectItem>
+                                  {reportTrustAccountOptions.map((account) => (
+                                    <SelectItem key={account} value={account} className="text-white">
+                                      {account}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Report Types Panel */}
+                      <div className="lg:col-span-2">
+                        <Card className="bg-gray-800 border-gray-700">
+                          <CardHeader>
+                            <CardTitle className="text-white">Report Types</CardTitle>
+                            <p className="text-sm text-gray-400">Select the type of report you want to generate</p>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            {reportTypes.map((report) => (
+                              <div
+                                key={report.id}
+                                className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                                  reportType === report.id
+                                    ? "border-blue-500 bg-blue-900/20"
+                                    : "border-gray-600 bg-gray-700 hover:bg-gray-600"
+                                }`}
+                                onClick={() => setReportType(report.id)}
+                              >
+                                <div className="flex items-center space-x-2 mb-2">
+                                  <input
+                                    type="radio"
+                                    id={report.id}
+                                    name="reportType"
+                                    checked={reportType === report.id}
+                                    onChange={() => setReportType(report.id)}
+                                    className="text-blue-600"
+                                  />
+                                  <Label htmlFor={report.id} className="text-white font-medium cursor-pointer">
+                                    {report.name}
+                                  </Label>
+                                </div>
+                                <p className="text-sm text-gray-300 ml-6">{report.description}</p>
+                              </div>
+                            ))}
+                          </CardContent>
+                        </Card>
+
+                        {/* Generate Report Section */}
+                        <Card className="bg-gray-800 border-gray-700 mt-6">
+                          <CardHeader>
+                            <CardTitle className="text-white">Generate Report</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-4">
+                              <div className="bg-gray-700 rounded-lg p-4">
+                                <h4 className="font-medium text-white mb-2">Active Filters Summary</h4>
+                                <div className="text-sm text-gray-300 space-y-1">
+                                  <div>
+                                    <span className="font-medium">Date Range:</span> {
+                                      reportDateRange.from && reportDateRange.to 
+                                        ? `${reportDateRange.from} to ${reportDateRange.to}`
+                                        : "All time"
+                                    }
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">Properties:</span> {
+                                      reportSelectedProperties.length > 0 
+                                        ? `${reportSelectedProperties.length} selected`
+                                        : "All properties"
+                                    }
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">GL Codes:</span> {
+                                      reportSelectedGLCodes.length > 0 
+                                        ? `${reportSelectedGLCodes.length} selected`
+                                        : "All GL codes"
+                                    }
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">Expense Status:</span> {
+                                      reportSelectedExpenseStatus.length > 0 
+                                        ? `${reportSelectedExpenseStatus.length} selected`
+                                        : "All statuses"
+                                    }
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">Trust Account:</span> {
+                                      reportSelectedTrustAccount === "all" ? "All trust accounts" : reportSelectedTrustAccount
+                                    }
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                                <h4 className="font-medium text-blue-300 mb-2">Export Options</h4>
+                                <div className="text-sm text-blue-200 mb-4">
+                                  Reports will include:
+                                  <ul className="mt-2 space-y-1 ml-4">
+                                    <li>• Generated timestamp</li>
+                                    <li>• Applied filters summary</li>
+                                    <li>• Receipt links (where available)</li>
+                                    <li>• Formatted tables matching expense views</li>
+                                  </ul>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="space-y-2">
+                                    <Label className="text-blue-300 text-sm font-medium">Download</Label>
+                                    <div className="flex gap-2">
+                                                                             <Button
+                                         onClick={() => handleGenerateExportReport('csv')}
+                                         disabled={isGeneratingReport}
+                                         className="bg-green-600 hover:bg-green-700 text-white flex-1"
+                                         size="sm"
+                                       >
+                                         {isGeneratingReport ? (
+                                           <>
+                                             <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                             Generating...
+                                           </>
+                                         ) : (
+                                           <>
+                                             <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                             CSV
+                                           </>
+                                         )}
+                                       </Button>
+                                       <Button
+                                         onClick={() => handleGenerateExportReport('pdf')}
+                                         disabled={isGeneratingReport}
+                                         className="bg-red-600 hover:bg-red-700 text-white flex-1"
+                                         size="sm"
+                                       >
+                                         {isGeneratingReport ? (
+                                           <>
+                                             <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                             Generating...
+                                           </>
+                                         ) : (
+                                           <>
+                                             <FileText className="h-4 w-4 mr-2" />
+                                             PDF
+                                           </>
+                                         )}
+                                       </Button>
+                                     </div>
+                                   </div>
+                                   <div className="space-y-2">
+                                     <Label className="text-blue-300 text-sm font-medium">Email Report</Label>
+                                     <div className="flex gap-2">
+                                       <Button
+                                         onClick={() => handleGenerateExportReport('csv', true)}
+                                         disabled={isGeneratingReport}
+                                         className="bg-blue-600 hover:bg-blue-700 text-white flex-1"
+                                         size="sm"
+                                       >
+                                         <Mail className="h-4 w-4 mr-2" />
+                                         Email CSV
+                                       </Button>
+                                       <Button
+                                         onClick={() => handleGenerateExportReport('pdf', true)}
+                                         disabled={isGeneratingReport}
+                                         className="bg-purple-600 hover:bg-purple-700 text-white flex-1"
+                                         size="sm"
+                                       >
+                                         <Mail className="h-4 w-4 mr-2" />
+                                         Email PDF
+                                       </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+
+                    {/* Recent Reports */}
+                    <Card className="bg-gray-800 border-gray-700 mt-6">
+                      <CardHeader>
+                        <CardTitle className="text-white">Recent Reports</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                            <div>
+                              <div className="text-white font-medium">Trust Account Reconciliation Report</div>
+                              <div className="text-sm text-gray-400">Generated on: 2024-07-08 14:30:22 • All properties • CSV</div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="bg-gray-600 border-gray-500 text-white">
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </Button>
+                              <Button size="sm" variant="outline" className="bg-blue-600 border-blue-500 text-white">
+                                <Mail className="h-4 w-4 mr-2" />
+                                Email
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                            <div>
+                              <div className="text-white font-medium">Tax Deduction Summary</div>
+                              <div className="text-sm text-gray-400">Generated on: 2024-07-07 09:15:45 • YTD • PDF</div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="bg-gray-600 border-gray-500 text-white">
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </Button>
+                              <Button size="sm" variant="outline" className="bg-blue-600 border-blue-500 text-white">
+                                <Mail className="h-4 w-4 mr-2" />
+                                Email
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                            <div>
+                              <div className="text-white font-medium">Flagged Expense Report</div>
+                              <div className="text-sm text-gray-400">Generated on: 2024-07-05 16:22:18 • Q2 2024 • CSV</div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="bg-gray-600 border-gray-500 text-white">
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </Button>
+                              <Button size="sm" variant="outline" className="bg-blue-600 border-blue-500 text-white">
+                                <Mail className="h-4 w-4 mr-2" />
+                                Email
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Email Report Dialog */}
+                  <Dialog open={emailReportDialogOpen} onOpenChange={setEmailReportDialogOpen}>
+                    <DialogContent className="bg-gray-900 border-gray-700 text-white">
+                      <DialogHeader>
+                        <DialogTitle>Email Report</DialogTitle>
+                        <DialogDescription>
+                          Send report to recipient via email
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="space-y-4">
+                        <div className="bg-gray-800 p-4 rounded-lg">
+                          <div className="text-white font-medium">
+                            {reportTypes.find(r => r.id === reportType)?.name}
+                          </div>
+                          <div className="text-sm text-gray-400">
+                            Format: {reportEmailForm.format.toUpperCase()}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="recipient-name" className="text-sm text-gray-400 mb-2 block">
+                              Recipient Name
+                            </Label>
+                            <Input
+                              id="recipient-name"
+                              value={reportEmailForm.recipientName}
+                              onChange={(e) => setReportEmailForm(prev => ({ ...prev, recipientName: e.target.value }))}
+                              className="bg-gray-800 border-gray-600 text-white"
+                              placeholder="Enter recipient name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="recipient-email" className="text-sm text-gray-400 mb-2 block">
+                              Email Address
+                            </Label>
+                            <Input
+                              id="recipient-email"
+                              type="email"
+                              value={reportEmailForm.recipientEmail}
+                              onChange={(e) => setReportEmailForm(prev => ({ ...prev, recipientEmail: e.target.value }))}
+                              className="bg-gray-800 border-gray-600 text-white"
+                              placeholder="Enter email address"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="email-message" className="text-sm text-gray-400 mb-2 block">
+                            Message (Optional)
+                          </Label>
+                          <Textarea
+                            id="email-message"
+                            value={reportEmailForm.message}
+                            onChange={(e) => setReportEmailForm(prev => ({ ...prev, message: e.target.value }))}
+                            className="bg-gray-800 border-gray-600 text-white"
+                            placeholder="Add a custom message..."
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                      
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setEmailReportDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          className="bg-blue-600 hover:bg-blue-700"
+                          onClick={handleEmailReport}
+                          disabled={!reportEmailForm.recipientEmail || !reportEmailForm.recipientName || isGeneratingReport}
+                        >
+                          {isGeneratingReport ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="h-4 w-4 mr-2" />
+                              Send Report
+                            </>
+                          )}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
