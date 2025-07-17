@@ -255,7 +255,9 @@ const transactionsList: Transaction[] = [
     dueDate: '2025-02-19',
     memo: 'Electrical panel upgrade for Sunnyvale 432',
     supportingDocs: ['invoice-ABC-001.pdf', 'work-authorization.pdf'],
-    flaggedForApproval: false
+    flaggedForApproval: true,
+    flaggedTo: 'co',
+    flaggedReason: 'Large electrical work requires Central Office approval'
   },
   {
     id: 'inv2',
@@ -873,14 +875,7 @@ export default function PMFinancialDashboard() {
     reason: ''
   });
   
-  // Add state for ping owner dialog
-  const [pingOwnerDialogOpen, setPingOwnerDialogOpen] = useState(false);
   const [selectedInvoiceForPing, setSelectedInvoiceForPing] = useState<Transaction | null>(null);
-  const [pingOwnerForm, setPingOwnerForm] = useState({
-    urgency: 'normal' as 'low' | 'normal' | 'high',
-    message: '',
-    dueDate: ''
-  });
   
   // Add state for main expense form (for adding new expenses)
   const [mainExpenseForm, setMainExpenseForm] = useState({
@@ -952,6 +947,11 @@ export default function PMFinancialDashboard() {
 
   // Add state for toggling review table visibility
   const [reviewTableExpanded, setReviewTableExpanded] = useState(false);
+
+  // Add state for payment ping functionality
+  const [pingPaymentDialogOpen, setPingPaymentDialogOpen] = useState(false);
+  const [pingRecipient, setPingRecipient] = useState<'co' | 'owner'>('co');
+  const [pingMessage, setPingMessage] = useState('');
 
   // Add state for editing transactions (Central Office)
   const [editTransactionDialogOpen, setEditTransactionDialogOpen] = useState(false);
@@ -3714,23 +3714,59 @@ export default function PMFinancialDashboard() {
       vendor: selectedInvoiceForPing.vendor,
       amount: selectedInvoiceForPing.amount,
       dueDate: selectedInvoiceForPing.dueDate,
-      urgency: pingOwnerForm.urgency,
-      message: pingOwnerForm.message,
+      urgency: 'normal',
+      message: pingMessage,
       requestedBy: 'Property Manager',
       requestedAt: new Date().toISOString(),
-      status: 'sent'
+      status: 'sent',
+      sentTo: pingRecipient
     };
 
-    // In a real app, this would send a notification/email to the owner
-    console.log('Payment request sent to owner:', paymentRequest);
+    // Create a communication thread message
+    const recipientName = pingRecipient === 'co' ? 'Central Office' : 'Property Owner';
+    
+    // Find the property associated with this invoice
+    const job = jobs.find(j => j.id === selectedInvoiceForPing.jobId);
+    const property = job ? properties.find(p => p.name === job.property) : properties[0];
+    
+    const messageContent = `Payment request sent to ${recipientName}:
+
+Invoice: ${selectedInvoiceForPing.vendor} - ${selectedInvoiceForPing.invoiceNumber}
+Amount: $${selectedInvoiceForPing.amount.toFixed(2)}
+Due Date: ${selectedInvoiceForPing.dueDate}
+
+${pingMessage ? `Additional Notes: ${pingMessage}` : ''}
+
+This payment request has been automatically forwarded to ${recipientName} for processing.`;
+
+    // Add the message to communications
+    if (property) {
+      const newMessage = {
+        id: `msg-${Date.now()}`,
+        propertyId: property.id,
+        propertyName: property.name,
+        senderId: 'pm-001',
+        senderName: 'Property Manager',
+        senderRole: 'pm',
+        content: messageContent,
+        timestamp: new Date(),
+        status: 'unread',
+        threadId: `payment-${selectedInvoiceForPing.id}`,
+        type: 'payment_request',
+        relatedInvoice: selectedInvoiceForPing.id
+      };
+      
+      setMessages(prev => [newMessage, ...prev]);
+    }
 
     // Reset dialog state
-    setPingOwnerDialogOpen(false);
+    setPingPaymentDialogOpen(false);
     setSelectedInvoiceForPing(null);
-    setPingOwnerForm({ urgency: 'normal', message: '', dueDate: '' });
+    setPingMessage('');
+    setPingRecipient('co');
 
-    // Show success message
-    alert(`Payment request sent to owner for ${selectedInvoiceForPing.vendor} invoice ($${selectedInvoiceForPing.amount})`);
+    // Automatically switch to communications tab
+    setActiveTab('communications');
   };
 
   const getUrgencyColor = (urgency: string) => {
@@ -7040,317 +7076,6 @@ export default function PMFinancialDashboard() {
                               </div>
                         </div>
 
-                {/* Completed Expenses Table */}
-                <div className="mb-8">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-white">Completed Expenses</h3>
-                    {role === 'pm' && (
-                      <Button 
-                        className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
-                        onClick={() => setHelpRequestDialogOpen(true)}
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        Ask Central Office
-                      </Button>
-                    )}
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                      <thead className="sticky top-0 z-10">
-                        <tr className="bg-gray-900 border-b border-gray-700">
-                          <th className="text-left py-3 px-4 font-semibold text-white">Type</th>
-                          <th className="text-left py-3 px-4 font-semibold text-white">Date</th>
-                          <th className="text-left py-3 px-4 font-semibold text-white">Vendor</th>
-                          <th className="text-left py-3 px-4 font-semibold text-white">Amount</th>
-                          <th className="text-left py-3 px-4 font-semibold text-white">Invoice #</th>
-                          <th className="text-left py-3 px-4 font-semibold text-white">Due Date</th>
-                          <th className="text-left py-3 px-4 font-semibold text-white">Made By</th>
-                          <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
-                          <th className="text-left py-3 px-4 font-semibold text-white">Work Order</th>
-                          <th className="text-left py-3 px-4 font-semibold text-white">Billable</th>
-                          <th className="text-left py-3 px-4 font-semibold text-white">Memo</th>
-                          <th className="text-left py-3 px-4 font-semibold text-white">Documents</th>
-                          <th className="text-left py-3 px-4 font-semibold text-white">Status</th>
-                          <th className="text-left py-3 px-4 font-semibold text-white">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filterExpensesByRole([...transactions, ...technicianTransactions])
-                          .filter(txn => txn.status === 'reconciled' && (txn.jobId || txnAssignments[txn.id]?.job))
-                          .sort((a, b) => {
-                            // Sort credit cards first, then invoices
-                            const aType = a.expenseType || 'credit_card';
-                            const bType = b.expenseType || 'credit_card';
-                            if (aType === 'credit_card' && bType === 'invoice') return -1;
-                            if (aType === 'invoice' && bType === 'credit_card') return 1;
-                            // Within same type, sort by date (newest first)
-                            return new Date(b.date).getTime() - new Date(a.date).getTime();
-                          })
-                          .map((txn, idx) => {
-                            const assignment = txnAssignments[txn.id] || {};
-                            const memo = txnMemos[txn.id] || '';
-                            const receipt = txnReceipts[txn.id] || null;
-                            const job = jobs.find(j => j.id === txn.jobId);
-                            const property = job ? properties.find(p => p.name === job.property) : undefined;
-                            const isEditing = editingExpense && editingExpense.id === txn.id;
-                            return (
-                              <tr key={txn.id} className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700/50 transition-colors">
-                                <td className="py-3 px-4">
-                                  <Badge className={`${(txn.expenseType || 'credit_card') === 'invoice' ? 'bg-purple-600' : 'bg-blue-600'} text-white text-xs`}>
-                                    {(txn.expenseType || 'credit_card') === 'invoice' ? 'Invoice' : 'Credit Card'}
-                                  </Badge>
-                                </td>
-                                <td className="py-3 px-4 text-gray-300">{txn.date}</td>
-                                <td className="py-3 px-4 text-gray-300">{txn.vendor}</td>
-                                <td className="py-3 px-4 text-gray-300">${txn.amount.toFixed(2)}</td>
-                                <td className="py-3 px-4 text-gray-300">
-                                  {txn.expenseType === 'invoice' ? (txn.invoiceNumber || '-') : '-'}
-                                </td>
-                                <td className="py-3 px-4 text-gray-300">
-                                  {txn.expenseType === 'invoice' ? (txn.dueDate || '-') : '-'}
-                                </td>
-                                <td className="py-3 px-4 text-gray-300">{txn.madeBy}</td>
-                                <td className="py-3 px-4">
-                                  {isEditing ? (
-                                    <Select
-                                      value={expenseForm.property}
-                                      onValueChange={value => setExpenseForm(prev => ({ ...prev, property: value }))}
-                                    >
-                                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white w-32">
-                                        <SelectValue placeholder="Property" />
-                                      </SelectTrigger>
-                                      <SelectContent className="bg-gray-900 border-gray-700 text-white">
-                                        {properties.map(property => (
-                                          <SelectItem key={property.id} value={property.name} className="bg-gray-900 text-white">
-                                            {property.name}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  ) : (
-                                    assignment.property || (property ? property.name : 'Not Assigned')
-                                  )}
-                                </td>
-                                <td className="py-3 px-4">
-                                  {isEditing ? (
-                                    <Select
-                                      value={expenseForm.job}
-                                      onValueChange={value => setExpenseForm(prev => ({ ...prev, job: value }))}
-                                    >
-                                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white w-32">
-                                        <SelectValue placeholder="Job" />
-                                      </SelectTrigger>
-                                      <SelectContent className="bg-gray-900 border-gray-700 text-white">
-                                        <SelectItem value="none" className="bg-gray-900 text-white">No job assigned</SelectItem>
-                                        {jobs.map(job => (
-                                          <SelectItem key={job.id} value={job.id} className="bg-gray-900 text-white">
-                                            {job.description}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  ) : (
-                                    assignment.job ? (jobs.find(j => j.id === assignment.job)?.description || assignment.job) : (job ? job.description : 'Not Assigned')
-                                  )}
-                                </td>
-                                <td className="py-3 px-4">
-                                  {isEditing ? (
-                                    <Select
-                                      value={expenseForm.billable ? 'yes' : 'no'}
-                                      onValueChange={value => setExpenseForm(prev => ({ ...prev, billable: value === 'yes' }))}
-                                    >
-                                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white w-24">
-                                        <SelectValue placeholder="Billable" />
-                                      </SelectTrigger>
-                                      <SelectContent className="bg-gray-900 border-gray-700 text-white">
-                                        <SelectItem value="yes" className="bg-gray-900 text-white">Yes</SelectItem>
-                                        <SelectItem value="no" className="bg-gray-900 text-white">No</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  ) : (
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${txn.billable ? 'bg-green-700 text-green-100' : 'bg-gray-700 text-gray-200'}`}>
-                                      {txn.billable ? 'Yes' : 'No'}
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="py-3 px-4">
-                                  {isEditing ? (
-                                    <Input
-                                      className="bg-gray-700 border-gray-600 text-white w-32 text-xs"
-                                      placeholder="Memo"
-                                      value={expenseForm.memo}
-                                      onChange={e => setExpenseForm(prev => ({ ...prev, memo: e.target.value }))}
-                                    />
-                                  ) : (
-                                    txn.memo || '-'
-                                  )}
-                                </td>
-                                <td className="py-3 px-4">
-                                  {isEditing ? (
-                                    <div className="flex items-center gap-2">
-                                      <label className="cursor-pointer">
-                                        <input
-                                          type="file"
-                                          accept="image/*,application/pdf"
-                                          className="hidden"
-                                          onChange={e => {
-                                            const file = e.target.files?.[0] || null;
-                                            setExpenseForm(prev => ({ ...prev, receipt: file ? file.name : '' }));
-                                          }}
-                                        />
-                                        <Paperclip className="h-4 w-4 text-blue-400 hover:text-blue-300" />
-                                      </label>
-                                      {expenseForm.receipt && (
-                                        <span className="text-xs text-green-400">{expenseForm.receipt}</span>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-2">
-                                      {txn.expenseType === 'invoice' && txn.supportingDocs ? (
-                                        <div className="flex items-center gap-1">
-                                          <FileText className="h-4 w-4 text-blue-400" />
-                                          <span className="text-xs text-gray-400">{txn.supportingDocs.length}</span>
-                                        </div>
-                                      ) : txn.receipt ? (
-                                        <FileText className="h-4 w-4 text-blue-400" />
-                                      ) : (
-                                        <span className="text-gray-300">-</span>
-                                      )}
-                                    </div>
-                                  )}
-                                </td>
-                                <td className="py-3 px-4">
-                                  {txn.expenseType === 'invoice' && txn.flaggedForApproval ? (
-                                    <div className="flex items-center gap-1">
-                                      <Badge className="bg-yellow-600 text-white text-xs">
-                                        Flagged to {txn.flaggedTo}
-                                      </Badge>
-                                      {txn.flaggedReason && (
-                                        <span 
-                                          className="text-xs text-yellow-400 cursor-help" 
-                                          title={txn.flaggedReason}
-                                        >
-                                          ℹ️
-                                        </span>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <Badge className={`text-white text-xs ${txn.status === 'reconciled' ? 'bg-green-600' : 'bg-gray-600'}`}>
-                                      {txn.status === 'reconciled' ? 'Reconciled' : 'Pending'}
-                                    </Badge>
-                                  )}
-                                </td>
-                                <td className="py-3 px-4">
-                                  {isEditing ? (
-                                    <div className="flex gap-2">
-                                      <Button
-                                        size="sm"
-                                        className="bg-green-600 hover:bg-green-700 text-white"
-                                        disabled={!expenseForm.property || !expenseForm.memo || !expenseForm.receipt}
-                                        onClick={() => {
-                                          if (expenseForm.property && expenseForm.memo && expenseForm.receipt) {
-                                            const updatedTxn = {
-                                              ...txn,
-                                              jobId: expenseForm.job === 'none' ? '' : expenseForm.job,
-                                              billable: expenseForm.billable,
-                                              memo: expenseForm.memo,
-                                              receipt: expenseForm.receipt,
-                                              status: 'reconciled' as const // ensure status is valid and typed
-                                            };
-                                            setTransactions(prev => prev.map(t => t.id === txn.id ? updatedTxn : t));
-                                            setEditingExpense(null);
-                                            setExpenseForm({
-                                              property: '',
-                                              job: '',
-                                              billable: true,
-                                              memo: '',
-                                              receipt: ''
-                                            });
-                                          }
-                                        }}
-                                      >
-                                        <CheckCircle className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="border-gray-600 text-gray-300 hover:bg-gray-700"
-                                        onClick={() => {
-                                          setEditingExpense(null);
-                                          setExpenseForm({
-                                            property: '',
-                                            job: '',
-                                            billable: true,
-                                            memo: '',
-                                            receipt: ''
-                                          });
-                                        }}
-                                      >
-                                        <XCircle className="h-4 w-4" />
-                                      </Button>
-                            </div>
-                                  ) : (
-                                    <div className="flex items-center gap-1">
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              className="h-8 w-8 p-0 border-blue-600 text-blue-400 hover:bg-blue-600/20"
-                                              onClick={() => {
-                                                setEditingExpense(txn as Transaction);
-                                                setExpenseForm({
-                                                  property: assignment.property || (property ? property.name : ''),
-                                                  job: assignment.job || (job ? job.id : ''),
-                                                  billable: txn.billable,
-                                                  memo: txn.memo || '',
-                                                  receipt: txn.receipt || ''
-                                                });
-                                              }}
-                                            >
-                                              <Pencil className="h-3 w-3" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Edit expense details</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                      
-                                      {txn.expenseType === 'invoice' && role === 'pm' && (
-                                        <TooltipProvider>
-                                          <Tooltip>
-                                            <TooltipTrigger asChild>
-                                              <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="h-8 w-8 p-0 border-green-600 text-green-400 hover:bg-green-600/20"
-                                                onClick={() => {
-                                                  setSelectedInvoiceForPing(txn as Transaction);
-                                                  setPingOwnerDialogOpen(true);
-                                                }}
-                                              >
-                                                <DollarSign className="h-3 w-3" />
-                                              </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                              <p>Ping owner for payment</p>
-                                            </TooltipContent>
-                                          </Tooltip>
-                                        </TooltipProvider>
-                                      )}
-                                    </div>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      </tbody>
-                    </table>
-                        </div>
-                        </div>
-
                 {/* Uncategorized / Needs Review Table */}
                 <div className="mb-8">
                   <div className="flex justify-between items-center mb-4">
@@ -7400,7 +7125,7 @@ export default function PMFinancialDashboard() {
                             return (
                               <tr key={txn.id} className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700/50 transition-colors">
                                 <td className="py-3 px-4">
-                                  <Badge className={`${(txn.expenseType || 'credit_card') === 'invoice' ? 'bg-purple-600' : 'bg-blue-600'} text-white text-xs`}>
+                                  <Badge className={`rounded-md px-2 py-1 text-xs font-medium ${(txn.expenseType || 'credit_card') === 'invoice' ? 'bg-purple-600/90 text-purple-100 border border-purple-500/50' : 'bg-blue-600/90 text-blue-100 border border-blue-500/50'}`}>
                                     {(txn.expenseType || 'credit_card') === 'invoice' ? 'Invoice' : 'Credit Card'}
                                   </Badge>
                                 </td>
@@ -7525,18 +7250,11 @@ export default function PMFinancialDashboard() {
                                 </td>
                                 <td className="py-3 px-4">
                                   {txn.expenseType === 'invoice' && txn.flaggedForApproval ? (
-                                    <div className="flex items-center gap-1">
-                                      <Badge className="bg-yellow-600 text-white text-xs">
-                                        Flagged to {txn.flaggedTo}
+                                    <div className="flex items-center gap-2">
+                                      <Flag className="h-4 w-4 text-orange-400" />
+                                      <Badge className="bg-orange-600/90 text-orange-100 border border-orange-500/50 text-xs rounded-md px-2 py-1 font-medium">
+                                        Flagged to {txn.flaggedTo === 'co' ? 'CO' : 'Owner'}
                                       </Badge>
-                                      {txn.flaggedReason && (
-                                        <span 
-                                          className="text-xs text-yellow-400 cursor-help" 
-                                          title={txn.flaggedReason}
-                                        >
-                                          ℹ️
-                                        </span>
-                                      )}
                                     </div>
                                   ) : (
                                     <Badge className={`text-white text-xs ${txn.status === 'reconciled' ? 'bg-green-600' : 'bg-gray-600'}`}>
@@ -7660,14 +7378,14 @@ export default function PMFinancialDashboard() {
                                                     className="h-8 w-8 p-0 border-green-600 text-green-400 hover:bg-green-600/20"
                                                     onClick={() => {
                                                       setSelectedInvoiceForPing(txn);
-                                                      setPingOwnerDialogOpen(true);
+                                                      setPingPaymentDialogOpen(true);
                                                     }}
                                                   >
                                                     <DollarSign className="h-3 w-3" />
                                                   </Button>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                  <p>Ping owner for payment</p>
+                                                  <p>Ping for payment</p>
                                                 </TooltipContent>
                                               </Tooltip>
                                             </TooltipProvider>
@@ -7684,6 +7402,312 @@ export default function PMFinancialDashboard() {
                     </table>
                                 </div>
                 </div>
+
+                {/* Completed Expenses Table */}
+                <div className="mb-8">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-white">Completed Expenses</h3>
+                    {role === 'pm' && (
+                      <Button 
+                        className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+                        onClick={() => setHelpRequestDialogOpen(true)}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        Ask Central Office
+                      </Button>
+                    )}
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="sticky top-0 z-10">
+                        <tr className="bg-gray-900 border-b border-gray-700">
+                          <th className="text-left py-3 px-4 font-semibold text-white">Type</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Date</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Vendor</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Amount</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Invoice #</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Due Date</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Made By</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Work Order</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Billable</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Memo</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Documents</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Status</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filterExpensesByRole([...transactions, ...technicianTransactions])
+                          .filter(txn => txn.status === 'reconciled' && (txn.jobId || txnAssignments[txn.id]?.job))
+                          .sort((a, b) => {
+                            // Sort credit cards first, then invoices
+                            const aType = a.expenseType || 'credit_card';
+                            const bType = b.expenseType || 'credit_card';
+                            if (aType === 'credit_card' && bType === 'invoice') return -1;
+                            if (aType === 'invoice' && bType === 'credit_card') return 1;
+                            // Within same type, sort by date (newest first)
+                            return new Date(b.date).getTime() - new Date(a.date).getTime();
+                          })
+                          .map((txn, idx) => {
+                            const assignment = txnAssignments[txn.id] || {};
+                            const memo = txnMemos[txn.id] || '';
+                            const receipt = txnReceipts[txn.id] || null;
+                            const job = jobs.find(j => j.id === txn.jobId);
+                            const property = job ? properties.find(p => p.name === job.property) : undefined;
+                            const isEditing = editingExpense && editingExpense.id === txn.id;
+                            return (
+                              <tr key={txn.id} className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700/50 transition-colors">
+                                <td className="py-3 px-4">
+                                  <Badge className={`rounded-md px-2 py-1 text-xs font-medium ${(txn.expenseType || 'credit_card') === 'invoice' ? 'bg-purple-600/90 text-purple-100 border border-purple-500/50' : 'bg-blue-600/90 text-blue-100 border border-blue-500/50'}`}>
+                                    {(txn.expenseType || 'credit_card') === 'invoice' ? 'Invoice' : 'Credit Card'}
+                                  </Badge>
+                                </td>
+                                <td className="py-3 px-4 text-gray-300">{txn.date}</td>
+                                <td className="py-3 px-4 text-gray-300">{txn.vendor}</td>
+                                <td className="py-3 px-4 text-gray-300">${txn.amount.toFixed(2)}</td>
+                                <td className="py-3 px-4 text-gray-300">
+                                  {txn.expenseType === 'invoice' ? (txn.invoiceNumber || '-') : '-'}
+                                </td>
+                                <td className="py-3 px-4 text-gray-300">
+                                  {txn.expenseType === 'invoice' ? (txn.dueDate || '-') : '-'}
+                                </td>
+                                <td className="py-3 px-4 text-gray-300">{txn.madeBy}</td>
+                                <td className="py-3 px-4">
+                                  {isEditing ? (
+                                    <Select
+                                      value={expenseForm.property}
+                                      onValueChange={value => setExpenseForm(prev => ({ ...prev, property: value }))}
+                                    >
+                                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white w-32">
+                                        <SelectValue placeholder="Property" />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                                        {properties.map(property => (
+                                          <SelectItem key={property.id} value={property.name} className="bg-gray-900 text-white">
+                                            {property.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    assignment.property || (property ? property.name : 'Not Assigned')
+                                  )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  {isEditing ? (
+                                    <Select
+                                      value={expenseForm.job}
+                                      onValueChange={value => setExpenseForm(prev => ({ ...prev, job: value }))}
+                                    >
+                                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white w-32">
+                                        <SelectValue placeholder="Job" />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                                        <SelectItem value="none" className="bg-gray-900 text-white">No job assigned</SelectItem>
+                                        {jobs.map(job => (
+                                          <SelectItem key={job.id} value={job.id} className="bg-gray-900 text-white">
+                                            {job.description}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    assignment.job ? (jobs.find(j => j.id === assignment.job)?.description || assignment.job) : (job ? job.description : 'Not Assigned')
+                                  )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  {isEditing ? (
+                                    <Select
+                                      value={expenseForm.billable ? 'yes' : 'no'}
+                                      onValueChange={value => setExpenseForm(prev => ({ ...prev, billable: value === 'yes' }))}
+                                    >
+                                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white w-24">
+                                        <SelectValue placeholder="Billable" />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                                        <SelectItem value="yes" className="bg-gray-900 text-white">Yes</SelectItem>
+                                        <SelectItem value="no" className="bg-gray-900 text-white">No</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${txn.billable ? 'bg-green-700 text-green-100' : 'bg-gray-700 text-gray-200'}`}>
+                                      {txn.billable ? 'Yes' : 'No'}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  {isEditing ? (
+                                    <Input
+                                      className="bg-gray-700 border-gray-600 text-white w-32 text-xs"
+                                      placeholder="Memo"
+                                      value={expenseForm.memo}
+                                      onChange={e => setExpenseForm(prev => ({ ...prev, memo: e.target.value }))}
+                                    />
+                                  ) : (
+                                    txn.memo || '-'
+                                  )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  {isEditing ? (
+                                    <div className="flex items-center gap-2">
+                                      <label className="cursor-pointer">
+                                        <input
+                                          type="file"
+                                          accept="image/*,application/pdf"
+                                          className="hidden"
+                                          onChange={e => {
+                                            const file = e.target.files?.[0] || null;
+                                            setExpenseForm(prev => ({ ...prev, receipt: file ? file.name : '' }));
+                                          }}
+                                        />
+                                        <Paperclip className="h-4 w-4 text-blue-400 hover:text-blue-300" />
+                                      </label>
+                                      {expenseForm.receipt && (
+                                        <span className="text-xs text-green-400">{expenseForm.receipt}</span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      {txn.expenseType === 'invoice' && txn.supportingDocs ? (
+                                        <div className="flex items-center gap-1">
+                                          <FileText className="h-4 w-4 text-blue-400" />
+                                          <span className="text-xs text-gray-400">{txn.supportingDocs.length}</span>
+                                        </div>
+                                      ) : txn.receipt ? (
+                                        <FileText className="h-4 w-4 text-blue-400" />
+                                      ) : (
+                                        <span className="text-gray-300">-</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  {txn.expenseType === 'invoice' && txn.flaggedForApproval ? (
+                                    <div className="flex items-center gap-2">
+                                      <Flag className="h-4 w-4 text-orange-400" />
+                                      <Badge className="bg-orange-600/90 text-orange-100 border border-orange-500/50 text-xs rounded-md px-2 py-1 font-medium">
+                                        Flagged to {txn.flaggedTo === 'co' ? 'CO' : 'Owner'}
+                                      </Badge>
+                                    </div>
+                                  ) : (
+                                    <Badge className={`text-white text-xs ${txn.status === 'reconciled' ? 'bg-green-600' : 'bg-gray-600'}`}>
+                                      {txn.status === 'reconciled' ? 'Reconciled' : 'Pending'}
+                                    </Badge>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  {isEditing ? (
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                        disabled={!expenseForm.property || !expenseForm.memo || !expenseForm.receipt}
+                                        onClick={() => {
+                                          if (expenseForm.property && expenseForm.memo && expenseForm.receipt) {
+                                            const updatedTxn = {
+                                              ...txn,
+                                              jobId: expenseForm.job === 'none' ? '' : expenseForm.job,
+                                              billable: expenseForm.billable,
+                                              memo: expenseForm.memo,
+                                              receipt: expenseForm.receipt,
+                                              status: 'reconciled' as const // ensure status is valid and typed
+                                            };
+                                            setTransactions(prev => prev.map(t => t.id === txn.id ? updatedTxn : t));
+                                            setEditingExpense(null);
+                                            setExpenseForm({
+                                              property: '',
+                                              job: '',
+                                              billable: true,
+                                              memo: '',
+                                              receipt: ''
+                                            });
+                                          }
+                                        }}
+                                      >
+                                        <CheckCircle className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                                        onClick={() => {
+                                          setEditingExpense(null);
+                                          setExpenseForm({
+                                            property: '',
+                                            job: '',
+                                            billable: true,
+                                            memo: '',
+                                            receipt: ''
+                                          });
+                                        }}
+                                      >
+                                        <XCircle className="h-4 w-4" />
+                                      </Button>
+                            </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1">
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              className="h-8 w-8 p-0 border-blue-600 text-blue-400 hover:bg-blue-600/20"
+                                              onClick={() => {
+                                                setEditingExpense(txn as Transaction);
+                                                setExpenseForm({
+                                                  property: assignment.property || (property ? property.name : ''),
+                                                  job: assignment.job || (job ? job.id : ''),
+                                                  billable: txn.billable,
+                                                  memo: txn.memo || '',
+                                                  receipt: txn.receipt || ''
+                                                });
+                                              }}
+                                            >
+                                              <Pencil className="h-3 w-3" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p>Edit expense details</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                      
+                                      {txn.expenseType === 'invoice' && role === 'pm' && (
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-8 w-8 p-0 border-green-600 text-green-400 hover:bg-green-600/20"
+                                                onClick={() => {
+                                                  setSelectedInvoiceForPing(txn as Transaction);
+                                                  setPingPaymentDialogOpen(true);
+                                                }}
+                                              >
+                                                <DollarSign className="h-3 w-3" />
+                                              </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p>Ping for payment</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      )}
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                        </div>
+                        </div>
+
+
               </>
             )}
             {activeTab === "technicianExpenses" && (
@@ -8043,6 +8067,8 @@ export default function PMFinancialDashboard() {
                     </Button>
                   </div>
                 </div>
+
+
 
                 {/* Need Review Table - Central Office Only */}
                 {role === 'centralOffice' && getTransactionsNeedingReview().length > 0 && (
@@ -10732,13 +10758,13 @@ export default function PMFinancialDashboard() {
               </DialogContent>
             </Dialog>
 
-            {/* Ping Owner Dialog */}
-            <Dialog open={pingOwnerDialogOpen} onOpenChange={setPingOwnerDialogOpen}>
+            {/* Payment Request Dialog */}
+            <Dialog open={pingPaymentDialogOpen} onOpenChange={setPingPaymentDialogOpen}>
               <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Ping Owner for Payment</DialogTitle>
+                  <DialogTitle>Request Payment</DialogTitle>
                   <DialogDescription className="text-gray-400">
-                    Send a payment request to the property owner for this invoice.
+                    Send a payment request for this invoice.
                   </DialogDescription>
                 </DialogHeader>
                 {selectedInvoiceForPing && (
@@ -10753,47 +10779,35 @@ export default function PMFinancialDashboard() {
                       </div>
                     </div>
 
-                    {/* Urgency Selection */}
+                    {/* Recipient Selection */}
                     <div>
-                      <Label className="text-gray-300">Urgency Level</Label>
-                      <Select value={pingOwnerForm.urgency} onValueChange={v => setPingOwnerForm(f => ({ ...f, urgency: v as 'low' | 'normal' | 'high' }))}>
+                      <Label className="text-gray-300">Send Payment Request To</Label>
+                      <Select value={pingRecipient} onValueChange={v => setPingRecipient(v as 'co' | 'owner')}>
                         <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-gray-900 border-gray-700 text-white">
-                          <SelectItem value="low">Low - Standard Payment</SelectItem>
-                          <SelectItem value="normal">Normal - Payment Reminder</SelectItem>
-                          <SelectItem value="high">High - Urgent Payment Required</SelectItem>
+                          <SelectItem value="co">Central Office</SelectItem>
+                          <SelectItem value="owner">Property Owner</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     {/* Custom Message */}
                     <div>
-                      <Label className="text-gray-300">Message to Owner (Optional)</Label>
+                      <Label className="text-gray-300">Message (Optional)</Label>
                       <Textarea 
                         className="bg-gray-800 border-gray-600 text-white resize-none" 
                         rows={3}
-                        value={pingOwnerForm.message} 
-                        onChange={e => setPingOwnerForm(f => ({ ...f, message: e.target.value }))} 
-                        placeholder="Add any additional context or notes for the owner..." 
-                      />
-                    </div>
-
-                    {/* Payment Deadline */}
-                    <div>
-                      <Label className="text-gray-300">Requested Payment By (Optional)</Label>
-                      <Input 
-                        type="date"
-                        className="bg-gray-800 border-gray-600 text-white" 
-                        value={pingOwnerForm.dueDate} 
-                        onChange={e => setPingOwnerForm(f => ({ ...f, dueDate: e.target.value }))} 
+                        value={pingMessage} 
+                        onChange={e => setPingMessage(e.target.value)} 
+                        placeholder="Add any additional notes about this payment request..." 
                       />
                     </div>
                   </div>
                 )}
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setPingOwnerDialogOpen(false)} className="border-gray-600 text-gray-300">
+                  <Button variant="outline" onClick={() => setPingPaymentDialogOpen(false)} className="border-gray-600 text-gray-300">
                     Cancel
                   </Button>
                   <Button
