@@ -90,7 +90,8 @@ import {
   Archive,
   Calendar as CalendarIcon,
   ExternalLink as LinkIcon,
-  Calculator
+  Calculator,
+  Info
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from 'next/navigation'
@@ -815,6 +816,570 @@ if (workStartedIndex !== -1) {
     ...activityMilestones,
     { milestone: 'Work Order Update', owner: 'PM' as MilestoneOwner, description: 'General update to work order', responsibility: 'Any update or note related to the work order' }
   ];
+}
+
+// Enhanced Properties Tab Component with Cash Flow and Trust Account Features
+function EnhancedPropertiesTab({ 
+  role, 
+  setActiveTab 
+}: { 
+  role: 'pm' | 'centralOffice' | 'owner',
+  setActiveTab: (tab: string) => void 
+}) {
+  // Calculate percentage of year elapsed (assuming July, so ~58% of year)
+  const yearElapsed = 0.58
+  const [expandedProperty, setExpandedProperty] = useState<number | null>(null)
+  const [expandedTableRow, setExpandedTableRow] = useState<string | null>(null)
+
+  const properties = [
+    {
+      id: 1,
+      name: "Stanford Graduate School of Business",
+      address: "655 Knight Way, Stanford, CA 94305",
+      manager: {
+        name: "Sarah Chen",
+        email: "sarah.chen@stanford.edu",
+        phone: "(650) 723-2146"
+      },
+      type: "Academic",
+      size: "285,000 sq ft",
+      ytdSpent: 2.2, // In millions - UNDER budget
+      annualBudget: 4.3, // In millions
+      // Cash Flow Data
+      cashFlow: {
+        monthly: [
+          { month: "Jan", income: 180, expenses: 165, net: 15 },
+          { month: "Feb", income: 185, expenses: 172, net: 13 },
+          { month: "Mar", income: 190, expenses: 178, net: 12 },
+          { month: "Apr", income: 175, expenses: 169, net: 6 },
+          { month: "May", income: 195, expenses: 185, net: 10 },
+          { month: "Jun", income: 200, expenses: 190, net: 10 },
+          { month: "Jul", income: 188, expenses: 175, net: 13 }
+        ],
+        projectedIncome: 2.1,
+        projectedExpenses: 2.0,
+        projectedNet: 0.1
+      },
+      // Trust Account Data
+      trustAccount: {
+        balance: 485000,
+        accountNumber: "TA-2024-001",
+        forecastBalance: 520000,
+        nextReimbursement: 45000,
+        dueDate: "2024-07-25"
+      },
+      // Cash Flow Issues/Flags
+      cashFlowFlags: [],
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
+    },
+    {
+      id: 2,
+      name: "Mission Bay Tech Campus",
+      address: "1700 Owens Street, San Francisco, CA 94158",
+      manager: {
+        name: "Marcus Rodriguez",
+        email: "marcus.rodriguez@consult.com",
+        phone: "(415) 555-0123"
+      },
+      type: "Office",
+      size: "450,000 sq ft",
+      ytdSpent: 3.4, // In millions - OVER budget
+      annualBudget: 5.4, // In millions
+      // Cash Flow Data
+      cashFlow: {
+        monthly: [
+          { month: "Jan", income: 280, expenses: 295, net: -15 },
+          { month: "Feb", income: 275, expenses: 310, net: -35 },
+          { month: "Mar", income: 290, expenses: 320, net: -30 },
+          { month: "Apr", income: 285, expenses: 315, net: -30 },
+          { month: "May", income: 295, expenses: 325, net: -30 },
+          { month: "Jun", income: 300, expenses: 335, net: -35 },
+          { month: "Jul", income: 288, expenses: 305, net: -17 }
+        ],
+        projectedIncome: 3.8,
+        projectedExpenses: 4.2,
+        projectedNet: -0.4
+      },
+      // Trust Account Data
+      trustAccount: {
+        balance: 125000,
+        accountNumber: "TA-2024-002",
+        forecastBalance: 85000,
+        nextReimbursement: 85000,
+        dueDate: "2024-07-20"
+      },
+      // Cash Flow Issues/Flags
+      cashFlowFlags: [
+        { type: "budget_overage", message: "Over budget by $270K due to unexpected HVAC system replacement and emergency roof repairs. Major capital expenditures exceeded reserve allocations." },
+        { type: "cash_flow_negative", message: "Negative cash flow for 6 consecutive months. Trust account running low." }
+      ],
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
+    },
+    {
+      id: 3,
+      name: "Redwood Shores Office Complex",
+      address: "500 Oracle Parkway, Redwood City, CA 94065",
+      manager: {
+        name: "Sarah Kim",
+        email: "sarah.kim@oracle.com",
+        phone: "(650) 506-7000"
+      },
+      type: "Office",
+      size: "320,000 sq ft",
+      ytdSpent: 1.9, // In millions - UNDER budget
+      annualBudget: 3.8, // In millions
+      // Cash Flow Data
+      cashFlow: {
+        monthly: [
+          { month: "Jan", income: 220, expenses: 195, net: 25 },
+          { month: "Feb", income: 225, expenses: 200, net: 25 },
+          { month: "Mar", income: 230, expenses: 205, net: 25 },
+          { month: "Apr", income: 215, expenses: 190, net: 25 },
+          { month: "May", income: 235, expenses: 210, net: 25 },
+          { month: "Jun", income: 240, expenses: 215, net: 25 },
+          { month: "Jul", income: 228, expenses: 203, net: 25 }
+        ],
+        projectedIncome: 3.1,
+        projectedExpenses: 2.8,
+        projectedNet: 0.3
+      },
+      // Trust Account Data
+      trustAccount: {
+        balance: 650000,
+        accountNumber: "TA-2024-003",
+        forecastBalance: 720000,
+        nextReimbursement: 25000,
+        dueDate: "2024-08-01"
+      },
+      // Cash Flow Issues/Flags
+      cashFlowFlags: [],
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
+    },
+    {
+      id: 4,
+      name: "Palo Alto Research Center",
+      address: "3333 Coyote Hill Road, Palo Alto, CA 94304",
+      manager: {
+        name: "David Rodriguez",
+        email: "david.rodriguez@xerox.com",
+        phone: "(650) 812-4000"
+      },
+      type: "Research",
+      size: "200,000 sq ft",
+      ytdSpent: 1.5, // In millions - UNDER budget
+      annualBudget: 3.0, // In millions
+      // Cash Flow Data
+      cashFlow: {
+        monthly: [
+          { month: "Jan", income: 165, expenses: 150, net: 15 },
+          { month: "Feb", income: 170, expenses: 155, net: 15 },
+          { month: "Mar", income: 175, expenses: 160, net: 15 },
+          { month: "Apr", income: 160, expenses: 145, net: 15 },
+          { month: "May", income: 180, expenses: 165, net: 15 },
+          { month: "Jun", income: 185, expenses: 170, net: 15 },
+          { month: "Jul", income: 173, expenses: 158, net: 15 }
+        ],
+        projectedIncome: 2.4,
+        projectedExpenses: 2.2,
+        projectedNet: 0.2
+      },
+      // Trust Account Data
+      trustAccount: {
+        balance: 420000,
+        accountNumber: "TA-2024-004",
+        forecastBalance: 465000,
+        nextReimbursement: 35000,
+        dueDate: "2024-07-30"
+      },
+      // Cash Flow Issues/Flags
+      cashFlowFlags: [],
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
+    },
+    {
+      id: 5,
+      name: "South Bay Industrial Park",
+      address: "1000 Innovation Drive, San Jose, CA 95110",
+      manager: {
+        name: "Angela Martinez",
+        email: "angela.martinez@seogate.com",
+        phone: "(408) 555-7890"
+      },
+      type: "Industrial",
+      size: "600,000 sq ft",
+      ytdSpent: 2.9, // In millions - OVER budget
+      annualBudget: 4.8, // In millions
+      // Cash Flow Data
+      cashFlow: {
+        monthly: [
+          { month: "Jan", income: 310, expenses: 330, net: -20 },
+          { month: "Feb", income: 305, expenses: 325, net: -20 },
+          { month: "Mar", income: 315, expenses: 340, net: -25 },
+          { month: "Apr", income: 300, expenses: 320, net: -20 },
+          { month: "May", income: 320, expenses: 345, net: -25 },
+          { month: "Jun", income: 325, expenses: 350, net: -25 },
+          { month: "Jul", income: 312, expenses: 330, net: -18 }
+        ],
+        projectedIncome: 4.2,
+        projectedExpenses: 4.5,
+        projectedNet: -0.3
+      },
+      // Trust Account Data
+      trustAccount: {
+        balance: 180000,
+        accountNumber: "TA-2024-005",
+        forecastBalance: 140000,
+        nextReimbursement: 65000,
+        dueDate: "2024-07-22"
+      },
+      // Cash Flow Issues/Flags
+      cashFlowFlags: [
+        { type: "budget_overage", message: "Over budget by $120K due to increased maintenance costs from aging industrial equipment and higher utility expenses." }
+      ],
+      get expectedSpend() { return this.annualBudget * yearElapsed },
+      get budgetVariance() { return (this.ytdSpent / this.expectedSpend) * 100 },
+      get isUnderBudget() { return this.budgetVariance < 100 },
+      get varianceAmount() { return this.ytdSpent - this.expectedSpend },
+      get variancePercentage() { return Math.abs(100 - this.budgetVariance) }
+    }
+  ]
+
+  // Property-specific data for table
+  const propertyTableData = [
+    { 
+      name: "Stanford GSB", 
+      address: "655 Knight Way, Stanford, CA",
+      staff: [
+        { name: "Sarah Chen", role: "Property Manager", phone: "(650) 723-2146", email: "sarah.chen@stanford.edu" }
+      ]
+    },
+    { 
+      name: "Sunnyvale 432", 
+      address: "432 Sunnyvale Ave, Sunnyvale, CA",
+      staff: [
+        { name: "Mike Johnson", role: "Site Manager", phone: "(408) 555-0198", email: "mike.johnson@sunnyvale.com" }
+      ]
+    },
+    { 
+      name: "Downtown Lofts", 
+      address: "123 Market St, San Francisco, CA",
+      staff: [
+        { name: "Lisa Wong", role: "Building Manager", phone: "(415) 555-0142", email: "lisa.wong@dtlofts.com" }
+      ]
+    }
+  ]
+
+  const handleViewExpenses = (propertyId: number) => {
+    // Role-based navigation
+    if (role === 'pm') {
+      setActiveTab('wallet'); // PM > Expenses
+    } else if (role === 'centralOffice') {
+      setActiveTab('transactions'); // Central Office > Transactions
+    } else {
+      setActiveTab('transactions'); // Owner > Transactions
+    }
+  }
+
+  const totalBudget = properties.reduce((sum, prop) => sum + prop.annualBudget, 0)
+  const totalSpent = properties.reduce((sum, prop) => sum + prop.ytdSpent, 0)
+  const propertiesUnderBudget = properties.filter(prop => prop.isUnderBudget).length
+  const propertiesOverBudget = properties.length - propertiesUnderBudget
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-white">Properties</h2>
+        <div className="text-sm text-gray-400">
+          {propertiesUnderBudget} under budget • {propertiesOverBudget} over budget • ${totalBudget.toFixed(1)}M total budget
+        </div>
+      </div>
+
+      {/* Properties Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {properties.map((property) => (
+          <Card key={property.id} className="bg-gray-800 border-gray-700">
+            <CardHeader className="pb-4">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-lg font-semibold text-white mb-1">
+                    {property.name}
+                  </CardTitle>
+                  <p className="text-sm text-gray-400">{property.address}</p>
+                </div>
+                <Badge className={`${property.isUnderBudget ? 'bg-green-500' : 'bg-red-500'} text-white text-xs ml-2`}>
+                  {property.isUnderBudget ? 'Under' : 'Over'} budget by {property.variancePercentage.toFixed(1)}%
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Cash Flow Issues/Flags - Show at top if any exist */}
+              {property.cashFlowFlags.length > 0 && (
+                <div className="space-y-2">
+                  {property.cashFlowFlags.map((flag, idx) => (
+                    <div key={idx} className="bg-red-900/20 border border-red-600/30 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <div className="text-sm font-medium text-red-300 mb-1">
+                            {flag.type === 'budget_overage' ? 'Budget Overage' : 'Cash Flow Issue'}
+                          </div>
+                          <div className="text-xs text-red-200">{flag.message}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Budget Variance - Primary Metric */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium text-gray-300">Budget Variance</h4>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-gray-500 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <div className="text-sm">
+                          <div className="font-medium">Calculation:</div>
+                          <div>YTD Spend: ${property.ytdSpent.toFixed(1)}M</div>
+                          <div>Expected (58% of year): ${property.expectedSpend.toFixed(1)}M</div>
+                          <div>Variance: ${property.varianceAmount.toFixed(1)}M ({property.isUnderBudget ? 'under' : 'over'} budget)</div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                
+                {/* Budget Variance Display */}
+                <div className="text-center">
+                  <div className={`text-3xl font-bold ${property.isUnderBudget ? 'text-green-400' : 'text-red-400'} mb-2`}>
+                    {property.isUnderBudget ? '-' : '+'}{property.variancePercentage.toFixed(1)}%
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    {property.isUnderBudget ? 'Under' : 'Over'} budget by ${Math.abs(property.varianceAmount).toFixed(1)}M
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-700 rounded-full h-3">
+                  <div 
+                    className={`${property.isUnderBudget ? 'bg-green-500' : 'bg-red-500'} h-3 rounded-full`}
+                    style={{ width: `${Math.min(property.budgetVariance, 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Trust Account Balance + Forecast */}
+              <div className="bg-gray-900 rounded-lg p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium text-gray-300">Trust Account</h4>
+                  <Badge className="bg-blue-600 text-white text-xs">{property.trustAccount.accountNumber}</Badge>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-sm text-gray-400">Current Balance</div>
+                    <div className="text-lg font-bold text-white">${property.trustAccount.balance.toLocaleString()}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-sm text-gray-400">Forecasted</div>
+                    <div className={`text-lg font-bold ${property.trustAccount.forecastBalance > property.trustAccount.balance ? 'text-green-400' : 'text-yellow-400'}`}>
+                      ${property.trustAccount.forecastBalance.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <div className="text-xs text-gray-400">Next Reimbursement: ${property.trustAccount.nextReimbursement.toLocaleString()} on {property.trustAccount.dueDate}</div>
+                </div>
+              </div>
+
+              {/* Cash Flow View - Expandable */}
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                  onClick={() => setExpandedProperty(expandedProperty === property.id ? null : property.id)}
+                >
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Cash Flow View
+                  <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${expandedProperty === property.id ? 'rotate-180' : ''}`} />
+                </Button>
+
+                {expandedProperty === property.id && (
+                  <div className="bg-gray-900 rounded-lg p-4 space-y-4">
+                    {/* Monthly Cash Flow Chart */}
+                    <div>
+                      <h5 className="text-sm font-medium text-gray-300 mb-2">Monthly Cash Flow (YTD)</h5>
+                      <div className="h-32">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={property.cashFlow.monthly}>
+                            <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#9CA3AF' }} />
+                            <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} />
+                            <RechartsTooltip
+                              contentStyle={{ backgroundColor: '#374151', border: 'none', borderRadius: '8px' }}
+                              labelStyle={{ color: '#F3F4F6' }}
+                            />
+                            <Line type="monotone" dataKey="net" stroke="#10B981" strokeWidth={2} />
+                            <Line type="monotone" dataKey="income" stroke="#3B82F6" strokeWidth={1} />
+                            <Line type="monotone" dataKey="expenses" stroke="#EF4444" strokeWidth={1} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Cash Flow Projections */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="text-center">
+                        <div className="text-xs text-gray-400">Projected Income</div>
+                        <div className="text-sm font-bold text-blue-400">${property.cashFlow.projectedIncome.toFixed(1)}M</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-gray-400">Projected Expenses</div>
+                        <div className="text-sm font-bold text-red-400">${property.cashFlow.projectedExpenses.toFixed(1)}M</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-gray-400">Net Cash Flow</div>
+                        <div className={`text-sm font-bold ${property.cashFlow.projectedNet >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          ${property.cashFlow.projectedNet.toFixed(1)}M
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Key Metrics */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <div className="text-sm text-gray-400">YTD Spend</div>
+                  <div className="text-lg font-bold text-white">${property.ytdSpent.toFixed(1)}M</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-sm text-gray-400">Annual Budget</div>
+                  <div className="text-lg font-bold text-white">${property.annualBudget.toFixed(1)}M</div>
+                </div>
+              </div>
+
+              {/* Property Manager */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-gray-300">Property Manager</h4>
+                <div className="text-sm text-white">
+                  <div className="font-medium">{property.manager.name}</div>
+                  <div className="text-gray-400">{property.manager.email}</div>
+                </div>
+              </div>
+
+              {/* Property Details */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-300 mb-1">Type</h4>
+                  <p className="text-sm text-white">{property.type}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-300 mb-1">Size</h4>
+                  <p className="text-sm text-white">{property.size}</p>
+                </div>
+              </div>
+
+              {/* View Expenses Button */}
+              <Button
+                className="w-full bg-gray-700 hover:bg-gray-600 text-white"
+                onClick={() => handleViewExpenses(property.id)}
+              >
+                View Expenses
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Properties Table */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-bold text-white">Properties</h3>
+        
+        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+          {/* Table Header */}
+          <div className="bg-gray-700 px-4 py-3 border-b border-gray-600">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-sm font-medium text-gray-300">Property</div>
+              <div className="text-sm font-medium text-gray-300">Address</div>
+            </div>
+          </div>
+
+          {/* Individual Property Rows */}
+          {propertyTableData.map((property, idx) => (
+            <div key={property.name} className={`${idx === propertyTableData.length - 1 ? '' : 'border-b border-gray-700'}`}>
+              <div 
+                className="flex items-center px-4 py-3 cursor-pointer hover:bg-gray-700/50 transition-colors"
+                onClick={() => setExpandedTableRow(expandedTableRow === property.name ? null : property.name)}
+              >
+                <ChevronRight className={`h-4 w-4 text-gray-400 mr-2 transition-transform ${expandedTableRow === property.name ? 'rotate-90' : ''}`} />
+                <div className="grid grid-cols-2 gap-4 flex-1">
+                  <div className="text-white">{property.name}</div>
+                  <div className="text-gray-400">{property.address}</div>
+                </div>
+              </div>
+
+              {/* Property Expanded Content */}
+              {expandedTableRow === property.name && (
+                <div className="bg-gray-900 px-8 py-4">
+                  {/* Staff at Property */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <User className="h-4 w-4 text-blue-400" />
+                      <h4 className="text-blue-400 font-medium">Staff at {property.name}</h4>
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-700">
+                            <th className="text-left py-2 text-gray-400 font-medium">Name</th>
+                            <th className="text-left py-2 text-gray-400 font-medium">Role</th>
+                            <th className="text-left py-2 text-gray-400 font-medium">Phone</th>
+                            <th className="text-left py-2 text-gray-400 font-medium">Email</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {property.staff.map((staff, staffIdx) => (
+                            <tr key={staffIdx} className="border-b border-gray-800">
+                              <td className="py-2 text-white">{staff.name}</td>
+                              <td className="py-2 text-white">{staff.role}</td>
+                              <td className="py-2 text-white">{staff.phone}</td>
+                              <td className="py-2 text-white">{staff.email}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function PMFinancialDashboard() {
@@ -9404,116 +9969,8 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                 )}
               </>
             )}
-            {activeTab === "properties" && (
-              <>
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-white">Properties</h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="bg-gray-900 border-b border-gray-700">
-                        <th className="text-left py-3 px-4 font-semibold text-white w-8"></th>
-                        <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
-                        <th className="text-left py-3 px-4 font-semibold text-white">Address</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {properties.map((property) => (
-                        <React.Fragment key={property.id}>
-                          <tr 
-                            className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700/50 transition-colors cursor-pointer"
-                            onClick={() => setExpandedPropertyEmployees(expandedPropertyEmployees === property.id ? null : property.id)}
-                          >
-                            <td className="py-3 px-4">
-                              <ChevronDown 
-                                className={`h-4 w-4 text-gray-400 transition-transform ${
-                                  expandedPropertyEmployees === property.id ? 'rotate-180' : ''
-                                }`} 
-                              />
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="font-medium text-white">{property.name}</div>
-                            </td>
-                            <td className="py-3 px-4 text-gray-300">{property.address}</td>
-                          </tr>
-                          {expandedPropertyEmployees === property.id && (
-                            <>
-                              {/* Owner Information Row */}
-                              <tr className="bg-gray-900/50 border-b border-gray-700">
-                                <td></td>
-                                <td colSpan={2} className="py-4 px-4">
-                                  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                                    <h5 className="text-sm font-semibold text-blue-300 mb-3 flex items-center gap-2">
-                                      <User className="h-4 w-4" />
-                                      Owner Information
-                                    </h5>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                      <div>
-                                        <span className="text-gray-400">Name:</span>
-                                        <span className="text-white ml-2 font-medium">{property.ownerName}</span>
-                                      </div>
-                                      <div>
-                                        <span className="text-gray-400">Phone:</span>
-                                        <span className="text-white ml-2">{property.ownerPhone}</span>
-                                      </div>
-                                      <div>
-                                        <span className="text-gray-400">Email:</span>
-                                        <span className="text-blue-300 ml-2">{property.ownerEmail}</span>
-                                      </div>
-                                      <div>
-                                        <span className="text-gray-400">Preferred Contact:</span>
-                                        <span className="text-yellow-300 ml-2 capitalize">{property.ownerPreferredContact}</span>
-                                      </div>
-                                      <div className="md:col-span-2">
-                                        <span className="text-gray-400">Address:</span>
-                                        <span className="text-white ml-2">{property.ownerAddress}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-                              </tr>
-                              
-                              {/* Staff Information Row */}
-                              <tr className="bg-gray-900">
-                                <td></td>
-                                <td colSpan={2} className="p-0">
-                                  <div className="p-4">
-                                    <h5 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                                      <User className="h-4 w-4" />
-                                      Staff at {property.name}
-                                    </h5>
-                                    <table className="min-w-full text-sm">
-                                      <thead>
-                                        <tr className="bg-gray-800 border-b border-gray-700">
-                                          <th className="text-left py-2 px-3 font-semibold text-white">Name</th>
-                                          <th className="text-left py-2 px-3 font-semibold text-white">Role</th>
-                                          <th className="text-left py-2 px-3 font-semibold text-white">Phone</th>
-                                          <th className="text-left py-2 px-3 font-semibold text-white">Email</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {property.staff.map((employee, index) => (
-                                          <tr key={index} className="bg-gray-900 border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
-                                            <td className="py-2 px-3 text-gray-300">{employee.name}</td>
-                                            <td className="py-2 px-3 text-gray-300">{employee.role}</td>
-                                            <td className="py-2 px-3 text-gray-300">{employee.phone}</td>
-                                            <td className="py-2 px-3 text-gray-300">{employee.email}</td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                </td>
-                              </tr>
-                            </>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
+            {activeTab === "properties" && role === 'pm' && (
+              <EnhancedPropertiesTab role="pm" setActiveTab={setActiveTab} />
             )}
             {activeTab === "staff" && (
               <>
@@ -9967,116 +10424,8 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                 </Card>
               </>
             )}
-            {activeTab === "properties" && (
-              <>
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-white">Properties</h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="bg-gray-900 border-b border-gray-700">
-                        <th className="text-left py-3 px-4 font-semibold text-white w-8"></th>
-                        <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
-                        <th className="text-left py-3 px-4 font-semibold text-white">Address</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {properties.map((property) => (
-                        <React.Fragment key={property.id}>
-                          <tr 
-                            className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700/50 transition-colors cursor-pointer"
-                            onClick={() => setExpandedPropertyEmployees(expandedPropertyEmployees === property.id ? null : property.id)}
-                          >
-                            <td className="py-3 px-4">
-                              <ChevronDown 
-                                className={`h-4 w-4 text-gray-400 transition-transform ${
-                                  expandedPropertyEmployees === property.id ? 'rotate-180' : ''
-                                }`} 
-                              />
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="font-medium text-white">{property.name}</div>
-                            </td>
-                            <td className="py-3 px-4 text-gray-300">{property.address}</td>
-                          </tr>
-                          {expandedPropertyEmployees === property.id && (
-                            <>
-                              {/* Owner Information Row */}
-                              <tr className="bg-gray-900/50 border-b border-gray-700">
-                                <td></td>
-                                <td colSpan={2} className="py-4 px-4">
-                                  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                                    <h5 className="text-sm font-semibold text-blue-300 mb-3 flex items-center gap-2">
-                                      <User className="h-4 w-4" />
-                                      Owner Information
-                                    </h5>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                      <div>
-                                        <span className="text-gray-400">Name:</span>
-                                        <span className="text-white ml-2 font-medium">{property.ownerName}</span>
-                                      </div>
-                                      <div>
-                                        <span className="text-gray-400">Phone:</span>
-                                        <span className="text-white ml-2">{property.ownerPhone}</span>
-                                      </div>
-                                      <div>
-                                        <span className="text-gray-400">Email:</span>
-                                        <span className="text-blue-300 ml-2">{property.ownerEmail}</span>
-                                      </div>
-                                      <div>
-                                        <span className="text-gray-400">Preferred Contact:</span>
-                                        <span className="text-yellow-300 ml-2 capitalize">{property.ownerPreferredContact}</span>
-                                      </div>
-                                      <div className="md:col-span-2">
-                                        <span className="text-gray-400">Address:</span>
-                                        <span className="text-white ml-2">{property.ownerAddress}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-                              </tr>
-                              
-                              {/* Staff Information Row */}
-                              <tr className="bg-gray-900">
-                                <td></td>
-                                <td colSpan={2} className="p-0">
-                                  <div className="p-4">
-                                    <h5 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                                      <User className="h-4 w-4" />
-                                      Staff at {property.name}
-                                    </h5>
-                                    <table className="min-w-full text-sm">
-                                      <thead>
-                                        <tr className="bg-gray-800 border-b border-gray-700">
-                                          <th className="text-left py-2 px-3 font-semibold text-white">Name</th>
-                                          <th className="text-left py-2 px-3 font-semibold text-white">Role</th>
-                                          <th className="text-left py-2 px-3 font-semibold text-white">Phone</th>
-                                          <th className="text-left py-2 px-3 font-semibold text-white">Email</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {property.staff.map((employee, index) => (
-                                          <tr key={index} className="bg-gray-900 border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
-                                            <td className="py-2 px-3 text-gray-300">{employee.name}</td>
-                                            <td className="py-2 px-3 text-gray-300">{employee.role}</td>
-                                            <td className="py-2 px-3 text-gray-300">{employee.phone}</td>
-                                            <td className="py-2 px-3 text-gray-300">{employee.email}</td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
-                  </div>
-                                </td>
-                              </tr>
-                            </>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </tbody>
-                  </table>
-                    </div>
-              </>
+            {activeTab === "properties" && role === 'centralOffice' && (
+              <EnhancedPropertiesTab role="centralOffice" setActiveTab={setActiveTab} />
             )}
             {activeTab === "staff" && (
               <>

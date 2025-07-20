@@ -2316,9 +2316,9 @@ function PropertiesTab({ setActiveTab }: { setActiveTab?: (tab: string) => void 
   ]
 
   const handleViewExpenses = (propertyId: number) => {
-    // Navigate to expenses tab
+    // Navigate to transactions tab
     if (setActiveTab) {
-      setActiveTab('expenses');
+      setActiveTab('transactions');
     }
   }
 
