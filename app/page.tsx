@@ -1602,7 +1602,7 @@ export default function PMFinancialDashboard() {
     const roleParam = urlParams.get('role');
     
     // Handle tab navigation
-    if (tabParam && ['dashboard', 'workorders', 'activity', 'wallet', 'transactions', 'properties', 'staff', 'payments'].includes(tabParam)) {
+    if (tabParam && ['dashboard', 'workorders', 'activity', 'wallet', 'transactions', 'properties', 'staff', 'payments', 'reporting', 'cards', 'policy', 'smart-insights', 'collateral', 'communications', 'technicianExpenses', 'profile'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
     
