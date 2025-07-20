@@ -5786,6 +5786,62 @@ function CollateralTab() {
   const [collateralDocs, setCollateralDocs] = useState<CollateralDocument[]>(collateralDocuments)
   const [selectedCollateralDoc, setSelectedCollateralDoc] = useState<CollateralDocument | null>(null)
   
+  // Collateral Documents Needing Review state
+  const [collateralReviewTableExpanded, setCollateralReviewTableExpanded] = useState(false)
+  const [showUploadCallout, setShowUploadCallout] = useState(false)
+
+  // Mock data for documents needing review/approval
+  const documentsNeedingReview = [
+    {
+      id: 'rev1',
+      filename: 'Invoice_HomeDepot_2024_07_15.pdf',
+      documentType: 'invoice' as DocumentType,
+      uploadDate: '2024-07-15',
+      uploadedBy: 'alice.johnson@company.com',
+      propertyId: 'prop1',
+      propertyName: 'Stanford GSB',
+      description: 'HVAC repair materials',
+      amount: 1250.75,
+      tags: ['HVAC', 'repair'],
+      linkedVendor: 'Home Depot',
+      status: 'pending_review',
+      reviewFlags: ['Missing work order link', 'High amount requires approval'],
+      assignedTo: 'Property Manager'
+    },
+    {
+      id: 'rev2',
+      filename: 'Receipt_Lowes_Emergency_Plumbing.jpg',
+      documentType: 'receipt' as DocumentType,
+      uploadDate: '2024-07-14',
+      uploadedBy: 'mike.tech@company.com',
+      propertyId: 'prop2',
+      propertyName: 'Mission Bay Tech Campus',
+      description: 'Emergency plumbing supplies',
+      amount: 485.20,
+      tags: ['plumbing', 'emergency'],
+      linkedVendor: 'Lowes',
+      status: 'pending_review',
+      reviewFlags: ['Image quality poor', 'Emergency expense needs verification'],
+      assignedTo: 'Central Office'
+    },
+    {
+      id: 'rev3',
+      filename: 'Contract_HVAC_Annual_Service.pdf',
+      documentType: 'contract' as DocumentType,
+      uploadDate: '2024-07-13',
+      uploadedBy: 'sarah.pm@company.com',
+      propertyId: 'prop1',
+      propertyName: 'Stanford GSB',
+      description: 'Annual HVAC service contract',
+      amount: 5200.00,
+      tags: ['HVAC', 'contract', 'annual'],
+      linkedVendor: 'CoolAir Services',
+      status: 'pending_review',
+      reviewFlags: ['Contract needs legal review', 'Budget impact significant'],
+      assignedTo: 'Legal & Finance'
+    }
+  ]
+  
   // AI Search State
   const [aiSearchQuery, setAiSearchQuery] = useState('')
   const [aiSearchResults, setAiSearchResults] = useState<any>(null)
@@ -5816,6 +5872,37 @@ function CollateralTab() {
 
   // AI Search Functions
   const getCurrentUserName = () => "Owner Portal User"
+
+  // Collateral Documents Review Handlers
+  const handleCollateralFileUpload = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.multiple = true
+    input.accept = '.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.txt'
+    input.onchange = (e) => {
+      const files = (e.target as HTMLInputElement).files
+      if (files && files.length > 0) {
+        // For demo purposes, just show the upload dialog
+        setCollateralUploadDialogOpen(true)
+        // In a real app, you would handle the file upload here
+        console.log('Files selected for upload:', files)
+      }
+    }
+    input.click()
+  }
+
+  const handleDocumentReview = (docId: string, action: 'approve' | 'reject' | 'request_changes') => {
+    // In a real app, this would make an API call
+    console.log(`Document ${docId} ${action}`)
+    // For demo purposes, just log the action
+    if (action === 'approve') {
+      alert(`Document approved and added to collateral hub`)
+    } else if (action === 'reject') {
+      alert(`Document rejected`)
+    } else {
+      alert(`Changes requested for document`)
+    }
+  }
 
   const handleCollateralExportSelected = useCallback(() => {
     const selectedDocsData = collateralDocs.filter(doc => collateralSelectedDocs.includes(doc.id))
@@ -6088,14 +6175,52 @@ function CollateralTab() {
     <>
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-semibold text-white">Collateral Hub</h3>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            className="bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 flex items-center gap-2"
-            onClick={() => setCollateralUploadDialogOpen(true)}
-          >
-            <Upload className="h-4 w-4" /> Upload Files
-          </Button>
+        <div className="flex gap-2 items-center">
+          <div className="relative">
+            <Button 
+              variant="outline" 
+              className="bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 flex items-center gap-2"
+              onClick={handleCollateralFileUpload}
+              onMouseEnter={() => setShowUploadCallout(true)}
+              onMouseLeave={() => setShowUploadCallout(false)}
+            >
+              <Upload className="h-4 w-4" /> Upload Files
+            </Button>
+            
+            {/* Upload Options Callout */}
+            {showUploadCallout && (
+              <div className="absolute top-full left-0 mt-2 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-lg p-4 z-50">
+                <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+                  <Upload className="h-4 w-4 text-blue-400" />
+                  File Upload Options
+                </h4>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-start gap-2">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                    <div>
+                      <div className="text-white font-medium">Upload Directly</div>
+                      <div className="text-gray-400">Click to select files from your device</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
+                    <div>
+                      <div className="text-white font-medium">Email Documents</div>
+                      <div className="text-gray-400">Send to: <span className="text-blue-300">docs@jobvault.co</span></div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
+                    <div>
+                      <div className="text-white font-medium">Text Us</div>
+                      <div className="text-gray-400">Send photos to: <span className="text-blue-300">(202) 202-3030</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
           <Button 
             variant="outline" 
             className="bg-purple-600 border-purple-600 text-white hover:bg-purple-700 hover:border-purple-700 flex items-center gap-2"
@@ -6249,6 +6374,113 @@ function CollateralTab() {
           </Button>
         </div>
       </div>
+
+      {/* Documents Needing Review */}
+      {documentsNeedingReview.length > 0 && (
+        <div className="mb-8">
+          <div 
+            className="flex items-center justify-between p-4 bg-yellow-900/20 border border-yellow-700 rounded-lg cursor-pointer hover:bg-yellow-900/30 transition-colors"
+            onClick={() => setCollateralReviewTableExpanded(!collateralReviewTableExpanded)}
+          >
+            <h4 className="text-md font-semibold text-yellow-400 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Documents Needing Review ({documentsNeedingReview.length})
+            </h4>
+            <ChevronDown 
+              className={`h-5 w-5 text-yellow-400 transition-transform ${collateralReviewTableExpanded ? 'rotate-180' : ''}`} 
+            />
+          </div>
+          
+          {collateralReviewTableExpanded && (
+            <div className="mt-4 bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-yellow-900/30 border-b border-yellow-700">
+                    <tr>
+                      <th className="text-left py-3 px-4 font-semibold text-white flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-yellow-400" />
+                        Document
+                      </th>
+                      <th className="text-left py-3 px-4 font-semibold text-white">Type</th>
+                      <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
+                      <th className="text-left py-3 px-4 font-semibold text-white">Uploaded By</th>
+                      <th className="text-left py-3 px-4 font-semibold text-white">Amount</th>
+                      <th className="text-left py-3 px-4 font-semibold text-white">Upload Date</th>
+                      <th className="text-left py-3 px-4 font-semibold text-white">Review Flags</th>
+                      <th className="text-left py-3 px-4 font-semibold text-white">Assigned To</th>
+                      <th className="text-left py-3 px-4 font-semibold text-white">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {documentsNeedingReview.map((doc) => {
+                      const IconComponent = getDocumentTypeIcon(doc.documentType)
+                      return (
+                        <tr key={doc.id} className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700/50 transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <IconComponent className="h-4 w-4 text-blue-400" />
+                              <span className="text-white text-sm font-medium">{doc.filename}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-gray-300">
+                            {documentTypeLabels[doc.documentType]}
+                          </td>
+                          <td className="py-3 px-4 text-gray-300">{doc.propertyName}</td>
+                          <td className="py-3 px-4 text-gray-300">{doc.uploadedBy}</td>
+                          <td className="py-3 px-4 text-gray-300">
+                            {doc.amount ? `$${doc.amount.toFixed(2)}` : 'N/A'}
+                          </td>
+                          <td className="py-3 px-4 text-gray-300">{doc.uploadDate}</td>
+                          <td className="py-3 px-4">
+                            <div className="space-y-1">
+                              {doc.reviewFlags.map((flag, idx) => (
+                                <div key={idx} className="text-xs bg-yellow-900/30 text-yellow-300 px-2 py-1 rounded">
+                                  {flag}
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-gray-300">{doc.assignedTo}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                onClick={() => handleDocumentReview(doc.id, 'approve')}
+                              >
+                                <Check className="h-3 w-3 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-red-500 text-red-400 hover:bg-red-500/10"
+                                onClick={() => handleDocumentReview(doc.id, 'reject')}
+                              >
+                                <X className="h-3 w-3 mr-1" />
+                                Reject
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-yellow-500 text-yellow-400 hover:bg-yellow-500/10"
+                                onClick={() => handleDocumentReview(doc.id, 'request_changes')}
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Changes
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Results */}
       {collateralViewMode === 'card' ? (
