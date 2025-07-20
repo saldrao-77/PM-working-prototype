@@ -1454,6 +1454,11 @@ export default function PMFinancialDashboard() {
       description: "Breaks down expenses by deductible/non-deductible GL categories. Totals by property and time period. CSV includes memo fields, category mapping, and receipt links."
     },
     {
+      id: "tax-report",
+      name: "Annual Expense Summary for Tax Filing",
+      description: "A clean, downloadable PDF or Excel report that includes:\n\n• All billable expenses across the portfolio\n\n• GL-coded line items (Date, Vendor, Property, Category, Amount)\n\n• Attached receipts and memos\n\n• Trust account tie-outs\n\n• Tax-deductible vs. non-deductible flagging\n\nPurpose: To make it one-click easy to forward a complete, accountant-ready expense package—no chasing PMs, no missing documentation."
+    },
+    {
       id: "annual-expense-tax",
       name: "Annual Expense Summary for Tax Filing",
       description: "Clean, downloadable PDF or Excel report including all billable expenses across the portfolio, GL-coded line items (Date, Vendor, Property, Category, Amount), attached receipts and memos, trust account tie-outs, and tax-deductible vs. non-deductible flagging."
@@ -7151,34 +7156,79 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                   </div>
                   {/* Filters for job and property */}
                   <div className="flex gap-6 overflow-x-auto pb-2">
-                    {(role === 'technician' ? technicianCards : properties[0].cards.slice(0, 2)).map((card, idx) => {
-                      // Mock card data for demo
-                      const brand = idx % 2 === 0 ? "Amex" : "Chase";
-                      const brandColor = brand === "Amex" ? "from-cyan-700 to-blue-900" : "from-indigo-700 to-purple-900";
-                      const available = card.balance;
-                      const limit = 5000;
-                      const percent = Math.min(100, Math.round((available / limit) * 100));
-                      return (
-                        <div key={card.id} className={`relative w-80 h-48 rounded-2xl shadow-xl bg-gradient-to-br ${brandColor} p-6 flex flex-col justify-between text-white`}>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-lg font-bold tracking-wide">{brand}</span>
-                            <CreditCard className="h-7 w-7 text-white/80" />
-                                </div>
-                          <div className="text-2xl font-mono tracking-widest mb-2">{card.number}</div>
-                          <div className="flex justify-between text-xs mb-2">
-                            <span>Exp: 12/26</span>
-                            <span>Limit: ${limit.toLocaleString()}</span>
-                                </div>
-                          <div className="flex justify-between items-end text-xs mb-1">
-                            <span>Available: <span className="font-semibold">${available.toLocaleString()}</span></span>
-                            <span className="text-white/70">John Smith</span>
-                                </div>
-                          <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden mt-1">
-                            <div className="h-full rounded-full bg-green-400 transition-all" style={{ width: `${percent}%` }} />
-                                </div>
-                                </div>
-                      );
-                    })}
+                    {role === 'technician' ? (
+                      technicianCards.map((card, idx) => {
+                        // Mock card data for demo
+                        const brand = idx % 2 === 0 ? "Amex" : "Chase";
+                        const brandColor = brand === "Amex" ? "from-cyan-700 to-blue-900" : "from-indigo-700 to-purple-900";
+                        const available = card.balance;
+                        const limit = 5000;
+                        const percent = Math.min(100, Math.round((available / limit) * 100));
+                        return (
+                          <div key={card.id} className={`relative w-80 h-48 rounded-2xl shadow-xl bg-gradient-to-br ${brandColor} p-6 flex flex-col justify-between text-white`}>
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-lg font-bold tracking-wide">{brand}</span>
+                              <CreditCard className="h-7 w-7 text-white/80" />
+                            </div>
+                            <div className="text-2xl font-mono tracking-widest mb-2">{card.number}</div>
+                            <div className="flex justify-between text-xs mb-2">
+                              <span>Exp: 12/26</span>
+                              <span>Limit: ${limit.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-end text-xs mb-1">
+                              <span>Available: <span className="font-semibold">${available.toLocaleString()}</span></span>
+                              <span className="text-white/70">{technicianName}</span>
+                            </div>
+                            <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden mt-1">
+                              <div className="h-full rounded-full bg-green-400 transition-all" style={{ width: `${percent}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      // PM specific cards
+                      [
+                        {
+                          id: 'amex-1122',
+                          brand: 'Amex',
+                          number: '**** 1122',
+                          available: 1200,
+                          limit: 5000,
+                          holder: 'Alice Johnson'
+                        },
+                        {
+                          id: 'chase-3344',
+                          brand: 'Chase',
+                          number: '**** 3344',
+                          available: 800,
+                          limit: 5000,
+                          holder: 'Alice Johnson'
+                        }
+                      ].map((card) => {
+                        const brandColor = card.brand === "Amex" ? "from-cyan-700 to-blue-900" : "from-indigo-700 to-purple-900";
+                        const percent = Math.min(100, Math.round((card.available / card.limit) * 100));
+                        return (
+                          <div key={card.id} className={`relative w-80 h-48 rounded-2xl shadow-xl bg-gradient-to-br ${brandColor} p-6 flex flex-col justify-between text-white`}>
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-lg font-bold tracking-wide">{card.brand}</span>
+                              <CreditCard className="h-7 w-7 text-white/80" />
+                            </div>
+                            <div className="text-2xl font-mono tracking-widest mb-2">{card.number}</div>
+                            <div className="flex justify-between text-xs mb-2">
+                              <span>Exp: 12/26</span>
+                              <span>Limit: ${card.limit.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-end text-xs mb-1">
+                              <span>Available: <span className="font-semibold">${card.available.toLocaleString()}</span></span>
+                              <span className="text-white/70">{card.holder}</span>
+                            </div>
+                            <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden mt-1">
+                              <div className="h-full rounded-full bg-green-400 transition-all" style={{ width: `${percent}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                               </div>
                         </div>
 
