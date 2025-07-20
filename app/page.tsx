@@ -49,6 +49,7 @@ import {
   MoreVertical,
   CreditCard,
   TrendingUp,
+  TrendingDown,
   MessageSquare,
   CheckCircle2,
   XCircle,
@@ -817,6 +818,825 @@ if (workStartedIndex !== -1) {
     ...activityMilestones,
     { milestone: 'Work Order Update', owner: 'PM' as MilestoneOwner, description: 'General update to work order', responsibility: 'Any update or note related to the work order' }
   ];
+}
+
+// Budgeting Tab Component
+function BudgetingTab() {
+  const [selectedProperty, setSelectedProperty] = useState<string>('prop1')
+  const [selectedBudgetYear, setSelectedBudgetYear] = useState<string>('2025')
+  const [viewMode, setViewMode] = useState<'overview' | 'property' | 'create'>('property')
+  const [selectedPropertyForBudget, setSelectedPropertyForBudget] = useState<any>(null)
+  const [aiAssistantOpen, setAiAssistantOpen] = useState(false)
+  const [budgetData, setBudgetData] = useState<any>({})
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
+  const [shareWithOwnerDialog, setShareWithOwnerDialog] = useState(false)
+  const [selectedBudgetForSharing, setSelectedBudgetForSharing] = useState<any>(null)
+  const [editingLineItem, setEditingLineItem] = useState<string | null>(null)
+  const [glLineItems, setGlLineItems] = useState<any>({})
+  const [aiGenerateDialog, setAiGenerateDialog] = useState(false)
+  const [aiGenerateForm, setAiGenerateForm] = useState({
+    targetProperty: 'prop1',
+    basedOnHistorical: true,
+    includeInflation: true,
+    includeMarketRates: true,
+    includeUtilityRates: true,
+    includeContractRenewals: true,
+    includeEnergyEfficiency: true,
+    conservativeApproach: false,
+    aggressiveGrowth: false,
+    freeformNotes: ''
+  })
+
+    // Property budget data structure
+  const properties = [
+    { id: 'prop1', name: 'Stanford Graduate School of Business' },
+    { id: 'prop2', name: 'Mission Bay Tech Campus' },
+    { id: 'prop3', name: 'Redwood Shores Office Complex' }
+  ]
+
+  // Complete GL Chart of Accounts structure based on provided chart
+  const chartOfAccounts = {
+    // Income Accounts (4000s)
+    income: [
+      { account: 412, name: 'Rent Income', type: 'Income', lastYear: 2400000, budget2025: 2520000, ytdActual: 1460000, aiGenerated: true, rationale: 'AI: 5% increase based on market rates + 2 new leases' },
+      { account: 413, name: 'Renters Insurance Income', type: 'Income', lastYear: 24000, budget2025: 26000, ytdActual: 15000, aiGenerated: true, rationale: 'AI: Optional insurance program growth' },
+      { account: 414, name: 'Repairs Income', type: 'Income', lastYear: 18000, budget2025: 20000, ytdActual: 12000, aiGenerated: true, rationale: 'AI: Tenant-caused damage reimbursements' },
+      { account: 415, name: 'Utility Income', type: 'Income', lastYear: 145000, budget2025: 155000, ytdActual: 89000, aiGenerated: true, rationale: 'AI: Utility reimbursement from tenants, 7% rate increase' },
+      { account: 416, name: 'Pet Fee Income', type: 'Income', lastYear: 36000, budget2025: 39000, ytdActual: 22500, aiGenerated: true, rationale: 'AI: Pet policy expansion, $50/month per pet' }
+    ],
+    // Operating Expenses (5000s)
+    operatingExpenses: [
+      { account: 505, name: 'Cleaning and Maintenance', type: 'Operating Expenses', lastYear: 180000, budget2025: 185000, ytdActual: 108000, aiGenerated: true, rationale: 'AI: Contract renewal +2.8% inflation adjustment' },
+      { account: 509, name: 'Insurance', type: 'Operating Expenses', lastYear: 95000, budget2025: 102000, ytdActual: 51000, aiGenerated: true, rationale: 'AI: Property insurance +7% premium increase' },
+      { account: 510, name: 'Landscaping', type: 'Operating Expenses', lastYear: 68000, budget2025: 72000, ytdActual: 42000, aiGenerated: true, rationale: 'AI: Drought-resistant plants reducing water costs' },
+      { account: 511, name: 'Legal and Professional Fees', type: 'Operating Expenses', lastYear: 45000, budget2025: 50000, ytdActual: 28000, aiGenerated: false, rationale: 'Manual: Anticipated legal work for lease updates' },
+      { account: 513, name: 'Management Fees', type: 'Operating Expenses', lastYear: 144000, budget2025: 151200, ytdActual: 87600, aiGenerated: true, rationale: 'AI: 6% of gross rent income' },
+      
+      // Repairs subcategories
+      { account: 522, name: 'Repairs', type: 'Operating Expenses', lastYear: 85000, budget2025: 90000, ytdActual: 52000, aiGenerated: true, rationale: 'AI: General repair reserves' },
+      { account: 524, name: 'Appliance Repairs', type: 'Operating Expenses', lastYear: 32000, budget2025: 35000, ytdActual: 18000, aiGenerated: true, rationale: 'AI: Aging appliances require more service' },
+      { account: 525, name: 'Bathroom Repairs', type: 'Operating Expenses', lastYear: 28000, budget2025: 30000, ytdActual: 15000, aiGenerated: true, rationale: 'AI: Fixture replacements scheduled' },
+      { account: 526, name: 'Electrical Repairs', type: 'Operating Expenses', lastYear: 42000, budget2025: 45000, ytdActual: 26000, aiGenerated: true, rationale: 'AI: Panel upgrades in progress' },
+      { account: 527, name: 'Flooring Repairs', type: 'Operating Expenses', lastYear: 55000, budget2025: 60000, ytdActual: 32000, aiGenerated: true, rationale: 'AI: High-traffic area replacements' },
+      { account: 529, name: 'HVAC Repairs', type: 'Operating Expenses', lastYear: 125000, budget2025: 140000, ytdActual: 78000, aiGenerated: true, rationale: 'AI: Equipment age analysis suggests increased maintenance' },
+      { account: 530, name: 'Kitchen Repairs', type: 'Operating Expenses', lastYear: 38000, budget2025: 42000, ytdActual: 22000, aiGenerated: true, rationale: 'AI: Cabinet and fixture refresh needed' },
+      { account: 531, name: 'Plumbing Repairs', type: 'Operating Expenses', lastYear: 67000, budget2025: 65000, ytdActual: 35000, aiGenerated: true, rationale: 'AI: Recent pipe replacements reducing future costs' },
+      
+      // Utilities
+      { account: 536, name: 'Utilities', type: 'Operating Expenses', lastYear: 0, budget2025: 0, ytdActual: 0, aiGenerated: true, rationale: 'AI: Parent category - see subcategories below' },
+      { account: 537, name: 'Electric', type: 'Operating Expenses', lastYear: 185000, budget2025: 165000, ytdActual: 95000, aiGenerated: true, rationale: 'AI: LED upgrades + solar panels = 11% reduction estimated', utilityRate: '$0.32/kWh', utilityEstimate: '515,625 kWh annually' },
+      { account: 538, name: 'Gas', type: 'Operating Expenses', lastYear: 68000, budget2025: 72000, ytdActual: 41000, aiGenerated: true, rationale: 'AI: Winter heating + 6% rate increase', utilityRate: '$1.20/therm', utilityEstimate: '60,000 therms annually' },
+      { account: 539, name: 'Water/Sewer', type: 'Operating Expenses', lastYear: 95000, budget2025: 88000, ytdActual: 52000, aiGenerated: true, rationale: 'AI: Water-efficient fixtures installed, 7% reduction', utilityRate: '$12.50/CCF', utilityEstimate: '7,040 CCF annually' },
+      { account: 540, name: 'Trash', type: 'Operating Expenses', lastYear: 24000, budget2025: 25000, ytdActual: 14500, aiGenerated: true, rationale: 'AI: Waste contract renewal +4% increase' }
+    ],
+    // Fixed Assets / Capital Improvements (100s)
+    capitalImprovements: [
+      { account: 110, name: 'General Improvements', type: 'Fixed Asset', lastYear: 0, budget2025: 0, ytdActual: 0, aiGenerated: false, rationale: 'Parent category - see specific improvements below' },
+      { account: 111, name: 'Appliance Improvements', type: 'Fixed Asset', lastYear: 85000, budget2025: 120000, ytdActual: 65000, aiGenerated: false, rationale: 'Manual: Energy-efficient appliance replacements scheduled' },
+      { account: 113, name: 'Electrical Improvements', type: 'Fixed Asset', lastYear: 125000, budget2025: 180000, ytdActual: 95000, aiGenerated: false, rationale: 'Manual: Smart building system installation Q3-Q4' },
+      { account: 114, name: 'Flooring Improvements', type: 'Fixed Asset', lastYear: 210000, budget2025: 150000, ytdActual: 85000, aiGenerated: true, rationale: 'AI: Luxury vinyl plank replacement in common areas' },
+      { account: 116, name: 'HVAC Improvements', type: 'Fixed Asset', lastYear: 180000, budget2025: 450000, ytdActual: 225000, aiGenerated: false, rationale: 'Manual: Chiller replacement and smart controls installation' },
+      { account: 117, name: 'Kitchen Improvements', type: 'Fixed Asset', lastYear: 65000, budget2025: 95000, ytdActual: 45000, aiGenerated: false, rationale: 'Manual: Countertop and cabinet upgrades for premium units' },
+      { account: 119, name: 'Plumbing Improvements', type: 'Fixed Asset', lastYear: 95000, budget2025: 75000, ytdActual: 42000, aiGenerated: true, rationale: 'AI: Water-efficient fixture installations completing' }
+    ]
+  }
+
+  // Calculate totals for the selected property budget
+  const calculateTotals = () => {
+    const allItems = [...chartOfAccounts.income, ...chartOfAccounts.operatingExpenses, ...chartOfAccounts.capitalImprovements]
+    return {
+      totalBudget: allItems.reduce((sum, item) => sum + item.budget2025, 0),
+      totalLastYear: allItems.reduce((sum, item) => sum + item.lastYear, 0),
+      totalYTDActual: allItems.reduce((sum, item) => sum + item.ytdActual, 0),
+      incomeTotal: chartOfAccounts.income.reduce((sum, item) => sum + item.budget2025, 0),
+      expenseTotal: chartOfAccounts.operatingExpenses.reduce((sum, item) => sum + item.budget2025, 0),
+      capitalTotal: chartOfAccounts.capitalImprovements.reduce((sum, item) => sum + item.budget2025, 0)
+    }
+  }
+
+  const handleCreateNewBudget = () => {
+    setViewMode('create')
+  }
+
+  const handleAiGenerate = () => {
+    // Initialize form with current property selection
+    setAiGenerateForm(prev => ({
+      ...prev,
+      targetProperty: selectedProperty
+    }))
+    setAiGenerateDialog(true)
+  }
+
+  const handleAiGenerateSubmit = async () => {
+    setAiAssistantOpen(true)
+    setAiGenerateDialog(false)
+    
+    // Simulate AI budget generation with custom parameters
+    await new Promise(resolve => setTimeout(resolve, 3000))
+    
+    const targetPropertyName = properties.find(p => p.id === aiGenerateForm.targetProperty)?.name || 'Unknown Property'
+    
+    // Build AI generation summary message
+    let message = `AI has generated a new budget for ${targetPropertyName} with the following parameters:\n\n`
+    
+    if (aiGenerateForm.basedOnHistorical) message += '✓ 3-year historical data analysis\n'
+    if (aiGenerateForm.includeInflation) message += '✓ 2025 inflation projections (3.2%)\n'
+    if (aiGenerateForm.includeMarketRates) message += '✓ Local market rate adjustments\n'
+    if (aiGenerateForm.includeUtilityRates) message += '✓ Updated utility rate schedules\n'
+    if (aiGenerateForm.includeContractRenewals) message += '✓ Contract renewal analysis\n'
+    if (aiGenerateForm.includeEnergyEfficiency) message += '✓ Energy efficiency savings projections\n'
+    if (aiGenerateForm.conservativeApproach) message += '✓ Conservative growth assumptions\n'
+    if (aiGenerateForm.aggressiveGrowth) message += '✓ Aggressive growth targets\n'
+    
+    if (aiGenerateForm.freeformNotes.trim()) {
+      message += `\nCustom Notes: "${aiGenerateForm.freeformNotes}"\n`
+    }
+    
+    message += '\n🤖 Budget has been updated with 87% AI confidence'
+    
+    alert(message)
+    setAiAssistantOpen(false)
+    
+    // Reset form
+    setAiGenerateForm({
+      targetProperty: selectedProperty,
+      basedOnHistorical: true,
+      includeInflation: true,
+      includeMarketRates: true,
+      includeUtilityRates: true,
+      includeContractRenewals: true,
+      includeEnergyEfficiency: true,
+      conservativeApproach: false,
+      aggressiveGrowth: false,
+      freeformNotes: ''
+    })
+  }
+
+  const handleShareWithOwner = (budget: any) => {
+    setSelectedBudgetForSharing(budget)
+    setShareWithOwnerDialog(true)
+  }
+
+  const handleOwnerShare = () => {
+    const selectedPropertyName = properties.find(p => p.id === selectedProperty)?.name || 'Unknown Property'
+    alert(`Budget for ${selectedPropertyName} (${selectedBudgetYear}) has been shared with owner for review and approval.`)
+    setShareWithOwnerDialog(false)
+    setSelectedBudgetForSharing(null)
+  }
+
+  const handleEditLineItem = (accountNumber: number) => {
+    setEditingLineItem(accountNumber.toString())
+  }
+
+  const handleSaveLineItem = (accountNumber: number, newValue: number) => {
+    // Update the budget value for this line item
+    const allCategories = [chartOfAccounts.income, chartOfAccounts.operatingExpenses, chartOfAccounts.capitalImprovements]
+    for (const category of allCategories) {
+      const item = category.find(item => item.account === accountNumber)
+      if (item) {
+        item.budget2025 = newValue
+        break
+      }
+    }
+    setEditingLineItem(null)
+  }
+
+  const totals = calculateTotals()
+  const selectedPropertyName = properties.find(p => p.id === selectedProperty)?.name || 'Unknown Property'
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Budget: {selectedPropertyName}</h2>
+          <p className="text-gray-400">General Ledger Budget for {selectedBudgetYear}</p>
+        </div>
+        <div className="flex gap-3">
+          <Select value={selectedProperty} onValueChange={setSelectedProperty}>
+            <SelectTrigger className="w-64 bg-gray-800 border-gray-600 text-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-800 border-gray-600">
+              {properties.map((prop) => (
+                <SelectItem key={prop.id} value={prop.id} className="text-white">{prop.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedBudgetYear} onValueChange={setSelectedBudgetYear}>
+            <SelectTrigger className="w-32 bg-gray-800 border-gray-600 text-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-800 border-gray-600">
+              <SelectItem value="2024" className="text-white">2024</SelectItem>
+              <SelectItem value="2025" className="text-white">2025</SelectItem>
+              <SelectItem value="2026" className="text-white">2026</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button 
+            onClick={handleAiGenerate}
+            variant="outline"
+            className="bg-purple-600 border-purple-600 text-white hover:bg-purple-700"
+          >
+            <Bot className="h-4 w-4 mr-2" />
+            AI Generate
+          </Button>
+          <Button 
+            onClick={() => setShareWithOwnerDialog(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Send className="h-4 w-4 mr-2" />
+            Share with Owner
+          </Button>
+        </div>
+      </div>
+
+      {/* Budget Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-gray-800 border-gray-700">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <TrendingUp className="h-5 w-5 text-green-400" />
+              <div>
+                <div className="text-sm text-gray-400">Total Income</div>
+                <div className="text-xl font-bold text-green-400">${(totals.incomeTotal / 1000000).toFixed(1)}M</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gray-800 border-gray-700">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <TrendingDown className="h-5 w-5 text-red-400" />
+              <div>
+                <div className="text-sm text-gray-400">Operating Expenses</div>
+                <div className="text-xl font-bold text-red-400">${(totals.expenseTotal / 1000000).toFixed(1)}M</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gray-800 border-gray-700">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Building className="h-5 w-5 text-blue-400" />
+              <div>
+                <div className="text-sm text-gray-400">Capital Improvements</div>
+                <div className="text-xl font-bold text-blue-400">${(totals.capitalTotal / 1000000).toFixed(1)}M</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gray-800 border-gray-700">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Calculator className="h-5 w-5 text-white" />
+              <div>
+                <div className="text-sm text-gray-400">Net Operating Income</div>
+                <div className="text-xl font-bold text-white">${((totals.incomeTotal - totals.expenseTotal) / 1000000).toFixed(1)}M</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* AI Insights Banner */}
+      <div className="bg-purple-900/20 border border-purple-600/30 rounded-lg p-4">
+        <div className="flex items-center gap-3">
+          <Bot className="h-5 w-5 text-purple-400" />
+          <div>
+            <div className="text-purple-300 font-medium">AI Budget Analysis</div>
+            <div className="text-purple-200 text-sm">
+              87% of line items AI-generated • Based on 3-year historical data + inflation + market rates • 
+              <span className="text-green-300">Projected 12% utility savings</span> from energy efficiency upgrades
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Income Section */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-green-400" />
+            Income Accounts (4000s)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-gray-700">
+                <tr>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Account #</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Account Name</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-300">Last Year Actual</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-300">{selectedBudgetYear} Budget</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-300">YTD Actual</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-300">Variance</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">AI Rationale</th>
+                  <th className="text-center py-3 px-4 font-medium text-gray-300">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {chartOfAccounts.income.map((item) => {
+                  const variance = ((item.ytdActual / (item.budget2025 * 0.58)) * 100) - 100 // Assuming 58% through year
+                  return (
+                    <tr key={item.account} className="border-b border-gray-700 hover:bg-gray-700/50">
+                      <td className="py-3 px-4 text-blue-300 font-mono">{item.account}</td>
+                      <td className="py-3 px-4 text-white font-medium">{item.name}</td>
+                      <td className="py-3 px-4 text-right text-gray-300">${item.lastYear.toLocaleString()}</td>
+                      <td className="py-3 px-4 text-right text-white font-medium">
+                        {editingLineItem === item.account.toString() ? (
+                          <Input
+                            type="number"
+                            defaultValue={item.budget2025}
+                            className="w-32 text-right bg-gray-700 border-gray-600 text-white"
+                            onBlur={(e) => handleSaveLineItem(item.account, parseInt(e.target.value))}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSaveLineItem(item.account, parseInt((e.target as HTMLInputElement).value))}
+                            autoFocus
+                          />
+                        ) : (
+                          `$${item.budget2025.toLocaleString()}`
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right text-green-300">${item.ytdActual.toLocaleString()}</td>
+                      <td className={`py-3 px-4 text-right font-medium ${variance > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {variance > 0 ? '+' : ''}{variance.toFixed(1)}%
+                      </td>
+                      <td className="py-3 px-4 text-gray-300 max-w-xs">
+                        <div className="flex items-center gap-2">
+                          {item.aiGenerated && <Bot className="h-3 w-3 text-purple-400 flex-shrink-0" />}
+                          <span className="truncate">{item.rationale}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditLineItem(item.account)}
+                          className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Operating Expenses Section */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <TrendingDown className="h-5 w-5 text-red-400" />
+            Operating Expenses (5000s)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-gray-700">
+                <tr>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Account #</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Account Name</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-300">Last Year Actual</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-300">{selectedBudgetYear} Budget</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-300">YTD Actual</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-300">Variance</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">AI Rationale</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Utility Details</th>
+                  <th className="text-center py-3 px-4 font-medium text-gray-300">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {chartOfAccounts.operatingExpenses.map((item) => {
+                  const variance = ((item.ytdActual / (item.budget2025 * 0.58)) * 100) - 100
+                  return (
+                    <tr key={item.account} className="border-b border-gray-700 hover:bg-gray-700/50">
+                      <td className="py-3 px-4 text-red-300 font-mono">{item.account}</td>
+                      <td className="py-3 px-4 text-white font-medium">{item.name}</td>
+                      <td className="py-3 px-4 text-right text-gray-300">${item.lastYear.toLocaleString()}</td>
+                      <td className="py-3 px-4 text-right text-white font-medium">
+                        {editingLineItem === item.account.toString() ? (
+                          <Input
+                            type="number"
+                            defaultValue={item.budget2025}
+                            className="w-32 text-right bg-gray-700 border-gray-600 text-white"
+                            onBlur={(e) => handleSaveLineItem(item.account, parseInt(e.target.value))}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSaveLineItem(item.account, parseInt((e.target as HTMLInputElement).value))}
+                            autoFocus
+                          />
+                        ) : (
+                          `$${item.budget2025.toLocaleString()}`
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right text-red-300">${item.ytdActual.toLocaleString()}</td>
+                      <td className={`py-3 px-4 text-right font-medium ${variance < 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {variance > 0 ? '+' : ''}{variance.toFixed(1)}%
+                      </td>
+                      <td className="py-3 px-4 text-gray-300 max-w-xs">
+                        <div className="flex items-center gap-2">
+                          {item.aiGenerated && <Bot className="h-3 w-3 text-purple-400 flex-shrink-0" />}
+                          <span className="truncate">{item.rationale}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-gray-400 text-xs max-w-xs">
+                        {(item as any).utilityRate && (
+                          <div>
+                            <div>Rate: {(item as any).utilityRate}</div>
+                            <div>Est: {(item as any).utilityEstimate}</div>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditLineItem(item.account)}
+                          className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Capital Improvements Section */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Building className="h-5 w-5 text-blue-400" />
+            Capital Improvements (100s)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-gray-700">
+                <tr>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Account #</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Account Name</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-300">Last Year Actual</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-300">{selectedBudgetYear} Budget</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-300">YTD Actual</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-300">Variance</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Project Rationale</th>
+                  <th className="text-center py-3 px-4 font-medium text-gray-300">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {chartOfAccounts.capitalImprovements.map((item) => {
+                  const variance = item.budget2025 > 0 ? ((item.ytdActual / (item.budget2025 * 0.58)) * 100) - 100 : 0
+                  return (
+                    <tr key={item.account} className="border-b border-gray-700 hover:bg-gray-700/50">
+                      <td className="py-3 px-4 text-blue-300 font-mono">{item.account}</td>
+                      <td className="py-3 px-4 text-white font-medium">{item.name}</td>
+                      <td className="py-3 px-4 text-right text-gray-300">${item.lastYear.toLocaleString()}</td>
+                      <td className="py-3 px-4 text-right text-white font-medium">
+                        {editingLineItem === item.account.toString() ? (
+                          <Input
+                            type="number"
+                            defaultValue={item.budget2025}
+                            className="w-32 text-right bg-gray-700 border-gray-600 text-white"
+                            onBlur={(e) => handleSaveLineItem(item.account, parseInt(e.target.value))}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSaveLineItem(item.account, parseInt((e.target as HTMLInputElement).value))}
+                            autoFocus
+                          />
+                        ) : (
+                          `$${item.budget2025.toLocaleString()}`
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right text-blue-300">${item.ytdActual.toLocaleString()}</td>
+                      <td className={`py-3 px-4 text-right font-medium ${item.budget2025 === 0 ? 'text-gray-400' : variance < 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {item.budget2025 === 0 ? 'N/A' : `${variance > 0 ? '+' : ''}${variance.toFixed(1)}%`}
+                      </td>
+                      <td className="py-3 px-4 text-gray-300 max-w-xs">
+                        <div className="flex items-center gap-2">
+                          {item.aiGenerated && <Bot className="h-3 w-3 text-purple-400 flex-shrink-0" />}
+                          <span className="truncate">{item.rationale}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditLineItem(item.account)}
+                          className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Share with Owner Dialog */}
+      <Dialog open={shareWithOwnerDialog} onOpenChange={setShareWithOwnerDialog}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Share Budget with Owner</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Send budget for {selectedPropertyName} ({selectedBudgetYear}) for review and approval
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="bg-gray-800 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-300">Property:</span>
+                <span className="text-white font-medium">{selectedPropertyName}</span>
+              </div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-300">Total Budget:</span>
+                <span className="text-white text-lg font-bold">
+                  ${(totals.totalBudget / 1000000).toFixed(1)}M
+                </span>
+              </div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-300">Net Operating Income:</span>
+                <span className="text-green-400 font-bold">
+                  ${((totals.incomeTotal - totals.expenseTotal) / 1000000).toFixed(1)}M
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-300">AI Confidence:</span>
+                <span className="text-purple-400">87%</span>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-gray-300">Message to Owner (Optional)</Label>
+              <Textarea
+                placeholder="Add any notes or context for the owner..."
+                className="bg-gray-800 border-gray-600 text-white"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input type="checkbox" id="includeAI" className="rounded" defaultChecked />
+              <Label htmlFor="includeAI" className="text-gray-300">
+                Include AI insights and utility estimates
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input type="checkbox" id="includeGL" className="rounded" defaultChecked />
+              <Label htmlFor="includeGL" className="text-gray-300">
+                Include detailed GL line items
+              </Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShareWithOwnerDialog(false)}
+              className="border-gray-600 text-gray-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleOwnerShare}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Share Budget
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Generate Budget Dialog */}
+      <Dialog open={aiGenerateDialog} onOpenChange={setAiGenerateDialog}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bot className="h-5 w-5 text-purple-400" />
+              AI Budget Generation
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Configure AI parameters to generate a comprehensive budget for your property
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Property Selection */}
+            <div>
+              <Label className="text-gray-300 text-sm font-medium">Target Property</Label>
+              <Select 
+                value={aiGenerateForm.targetProperty} 
+                onValueChange={(value) => setAiGenerateForm(prev => ({...prev, targetProperty: value}))}
+              >
+                <SelectTrigger className="mt-2 bg-gray-800 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  {properties.map((prop) => (
+                    <SelectItem key={prop.id} value={prop.id} className="text-white">{prop.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* AI Generation Options */}
+            <div>
+              <Label className="text-gray-300 text-sm font-medium mb-3 block">AI Data Sources & Analysis</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" 
+                      id="historical" 
+                      checked={aiGenerateForm.basedOnHistorical}
+                      onChange={(e) => setAiGenerateForm(prev => ({...prev, basedOnHistorical: e.target.checked}))}
+                      className="rounded" 
+                    />
+                    <Label htmlFor="historical" className="text-gray-300">
+                      3-Year Historical Data Analysis
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" 
+                      id="inflation" 
+                      checked={aiGenerateForm.includeInflation}
+                      onChange={(e) => setAiGenerateForm(prev => ({...prev, includeInflation: e.target.checked}))}
+                      className="rounded" 
+                    />
+                    <Label htmlFor="inflation" className="text-gray-300">
+                      2025 Inflation Projections (3.2%)
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" 
+                      id="marketRates" 
+                      checked={aiGenerateForm.includeMarketRates}
+                      onChange={(e) => setAiGenerateForm(prev => ({...prev, includeMarketRates: e.target.checked}))}
+                      className="rounded" 
+                    />
+                    <Label htmlFor="marketRates" className="text-gray-300">
+                      Local Market Rate Analysis
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" 
+                      id="utilityRates" 
+                      checked={aiGenerateForm.includeUtilityRates}
+                      onChange={(e) => setAiGenerateForm(prev => ({...prev, includeUtilityRates: e.target.checked}))}
+                      className="rounded" 
+                    />
+                    <Label htmlFor="utilityRates" className="text-gray-300">
+                      Updated Utility Rate Schedules
+                    </Label>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" 
+                      id="contracts" 
+                      checked={aiGenerateForm.includeContractRenewals}
+                      onChange={(e) => setAiGenerateForm(prev => ({...prev, includeContractRenewals: e.target.checked}))}
+                      className="rounded" 
+                    />
+                    <Label htmlFor="contracts" className="text-gray-300">
+                      Contract Renewal Analysis
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" 
+                      id="efficiency" 
+                      checked={aiGenerateForm.includeEnergyEfficiency}
+                      onChange={(e) => setAiGenerateForm(prev => ({...prev, includeEnergyEfficiency: e.target.checked}))}
+                      className="rounded" 
+                    />
+                    <Label htmlFor="efficiency" className="text-gray-300">
+                      Energy Efficiency Savings
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" 
+                      id="conservative" 
+                      checked={aiGenerateForm.conservativeApproach}
+                      onChange={(e) => setAiGenerateForm(prev => ({...prev, conservativeApproach: e.target.checked, aggressiveGrowth: e.target.checked ? false : prev.aggressiveGrowth}))}
+                      className="rounded" 
+                    />
+                    <Label htmlFor="conservative" className="text-gray-300">
+                      Conservative Growth Assumptions
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" 
+                      id="aggressive" 
+                      checked={aiGenerateForm.aggressiveGrowth}
+                      onChange={(e) => setAiGenerateForm(prev => ({...prev, aggressiveGrowth: e.target.checked, conservativeApproach: e.target.checked ? false : prev.conservativeApproach}))}
+                      className="rounded" 
+                    />
+                    <Label htmlFor="aggressive" className="text-gray-300">
+                      Aggressive Growth Targets
+                    </Label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Freeform Notes */}
+            <div>
+              <Label className="text-gray-300 text-sm font-medium">Special Instructions & Notes</Label>
+              <Textarea
+                value={aiGenerateForm.freeformNotes}
+                onChange={(e) => setAiGenerateForm(prev => ({...prev, freeformNotes: e.target.value}))}
+                placeholder="Add any special considerations, upcoming projects, known changes, or specific areas to focus on..."
+                className="mt-2 bg-gray-800 border-gray-600 text-white h-24"
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                Example: "Factor in planned HVAC replacement Q3, new maintenance contract starting Jan, expecting 5% rent increase"
+              </div>
+            </div>
+
+            {/* AI Preview */}
+            <div className="bg-purple-900/20 border border-purple-600/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-4 w-4 text-purple-400" />
+                <span className="text-purple-300 font-medium">AI Generation Preview</span>
+              </div>
+              <div className="text-purple-200 text-sm">
+                {aiGenerateForm.targetProperty && (
+                  <>
+                    Generating budget for <strong>{properties.find(p => p.id === aiGenerateForm.targetProperty)?.name}</strong> using{' '}
+                    {[
+                      aiGenerateForm.basedOnHistorical && 'historical data',
+                      aiGenerateForm.includeInflation && 'inflation analysis',
+                      aiGenerateForm.includeMarketRates && 'market rates',
+                      aiGenerateForm.includeUtilityRates && 'utility rates',
+                      aiGenerateForm.includeContractRenewals && 'contract renewals',
+                      aiGenerateForm.includeEnergyEfficiency && 'efficiency savings'
+                    ].filter(Boolean).join(', ')}
+                    {aiGenerateForm.conservativeApproach && ' with conservative assumptions'}
+                    {aiGenerateForm.aggressiveGrowth && ' with aggressive growth targets'}
+                    .
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAiGenerateDialog(false)}
+              className="border-gray-600 text-gray-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAiGenerateSubmit}
+              disabled={aiAssistantOpen}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {aiAssistantOpen ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Bot className="h-4 w-4 mr-2" />
+                  Generate Budget
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
 }
 
 // Enhanced Properties Tab Component with Cash Flow and Trust Account Features
@@ -2973,6 +3793,7 @@ export default function PMFinancialDashboard() {
           { id: 'policy', label: 'Expense Requests', icon: MessageSquare },
           { id: 'transactions', label: 'Transactions', icon: FileText },
           { id: 'smart-insights', label: 'Smart Insights', icon: Bot },
+          { id: 'budgeting', label: 'Budgeting', icon: Calculator },
           { id: 'reporting', label: 'Reporting', icon: FileText },
           { id: 'collateral', label: 'Collateral Hub', icon: FileArchive },
           { id: 'properties', label: 'Properties', icon: Home },
@@ -9559,6 +10380,9 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                   </Card>
                 </div>
               </>
+            )}
+            {activeTab === "budgeting" && role === 'centralOffice' && (
+              <BudgetingTab />
             )}
             {activeTab === "collateral" && (role === 'pm' || role === 'centralOffice') && (
               <>
