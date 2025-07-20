@@ -5790,7 +5790,7 @@ function CollateralTab() {
   const [collateralReviewTableExpanded, setCollateralReviewTableExpanded] = useState(false)
   const [showUploadCallout, setShowUploadCallout] = useState(false)
 
-  // Mock data for documents needing review/approval
+  // Mock data for documents needing review/categorization
   const documentsNeedingReview = [
     {
       id: 'rev1',
@@ -5805,7 +5805,7 @@ function CollateralTab() {
       tags: ['HVAC', 'repair'],
       linkedVendor: 'Home Depot',
       status: 'pending_review',
-      reviewFlags: ['Missing work order link', 'High amount requires approval'],
+      reviewFlags: ['Missing work order link', 'Verify correct property assignment'],
       assignedTo: 'Property Manager'
     },
     {
@@ -5821,7 +5821,7 @@ function CollateralTab() {
       tags: ['plumbing', 'emergency'],
       linkedVendor: 'Lowes',
       status: 'pending_review',
-      reviewFlags: ['Image quality poor', 'Emergency expense needs verification'],
+      reviewFlags: ['Verify property assignment', 'Add work order reference'],
       assignedTo: 'Central Office'
     },
     {
@@ -5837,7 +5837,7 @@ function CollateralTab() {
       tags: ['HVAC', 'contract', 'annual'],
       linkedVendor: 'CoolAir Services',
       status: 'pending_review',
-      reviewFlags: ['Contract needs legal review', 'Budget impact significant'],
+      reviewFlags: ['Confirm property assignment', 'Add contract tags'],
       assignedTo: 'Legal & Finance'
     }
   ]
@@ -5891,16 +5891,14 @@ function CollateralTab() {
     input.click()
   }
 
-  const handleDocumentReview = (docId: string, action: 'approve' | 'reject' | 'request_changes') => {
+  const handleDocumentReview = (docId: string, action: 'edit' | 'confirm') => {
     // In a real app, this would make an API call
     console.log(`Document ${docId} ${action}`)
     // For demo purposes, just log the action
-    if (action === 'approve') {
-      alert(`Document approved and added to collateral hub`)
-    } else if (action === 'reject') {
-      alert(`Document rejected`)
-    } else {
-      alert(`Changes requested for document`)
+    if (action === 'edit') {
+      alert(`Opening document editor for categorization and property assignment`)
+    } else if (action === 'confirm') {
+      alert(`Document confirmed and added to collateral hub`)
     }
   }
 
@@ -6441,36 +6439,27 @@ function CollateralTab() {
                             </div>
                           </td>
                           <td className="py-3 px-4 text-gray-300">{doc.assignedTo}</td>
-                          <td className="py-3 px-4">
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                className="bg-green-600 hover:bg-green-700 text-white"
-                                onClick={() => handleDocumentReview(doc.id, 'approve')}
-                              >
-                                <Check className="h-3 w-3 mr-1" />
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-red-500 text-red-400 hover:bg-red-500/10"
-                                onClick={() => handleDocumentReview(doc.id, 'reject')}
-                              >
-                                <X className="h-3 w-3 mr-1" />
-                                Reject
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-yellow-500 text-yellow-400 hover:bg-yellow-500/10"
-                                onClick={() => handleDocumentReview(doc.id, 'request_changes')}
-                              >
-                                <Edit className="h-3 w-3 mr-1" />
-                                Changes
-                              </Button>
-                            </div>
-                          </td>
+                                                     <td className="py-3 px-4">
+                             <div className="flex gap-1">
+                               <Button
+                                 size="sm"
+                                 variant="outline"
+                                 className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
+                                 onClick={() => handleDocumentReview(doc.id, 'edit')}
+                               >
+                                 <Edit className="h-3 w-3 mr-1" />
+                                 Edit
+                               </Button>
+                               <Button
+                                 size="sm"
+                                 className="bg-green-600 hover:bg-green-700 text-white"
+                                 onClick={() => handleDocumentReview(doc.id, 'confirm')}
+                               >
+                                 <Check className="h-3 w-3 mr-1" />
+                                 Confirm
+                               </Button>
+                             </div>
+                           </td>
                         </tr>
                       )
                     })}
