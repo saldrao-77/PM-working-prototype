@@ -489,6 +489,63 @@ const transactionsList: Transaction[] = [
     memo: 'Fire safety system inspection and sprinkler head replacement',
     supportingDocs: ['fire-safety-invoice-334.pdf', 'inspection-report.pdf', 'compliance-cert.pdf'],
     flaggedForApproval: false
+  },
+  // Unassigned property transactions
+  {
+    id: 'txn_unassigned1',
+    date: '2025-01-22',
+    vendor: 'Office Max',
+    amount: 125.50,
+    status: 'pending',
+    billable: true,
+    jobId: '', // No job assignment
+    madeBy: 'John Smith',
+    cardHolder: 'John Smith',
+    memo: 'General office supplies',
+    receipt: 'receipt-unassigned1.pdf',
+    expenseType: 'credit_card'
+  },
+  {
+    id: 'txn_unassigned2',
+    date: '2025-01-23',
+    vendor: 'Shell Gas Station',
+    amount: 45.75,
+    status: 'pending',
+    billable: false,
+    jobId: '', // No job assignment
+    madeBy: 'Sarah Johnson',
+    cardHolder: 'Sarah Johnson',
+    memo: 'Vehicle fuel for general property visits',
+    receipt: 'receipt-unassigned2.pdf',
+    expenseType: 'credit_card'
+  },
+  {
+    id: 'txn_unassigned3',
+    date: '2025-01-24',
+    vendor: 'Costco Business',
+    amount: 89.99,
+    status: 'reconciled',
+    billable: true,
+    jobId: '', // No job assignment
+    madeBy: 'Mike Chen',
+    cardHolder: 'Mike Chen',
+    memo: 'Bulk cleaning supplies',
+    receipt: 'receipt-unassigned3.pdf',
+    expenseType: 'credit_card'
+  },
+  {
+    id: 'txn_unassigned4',
+    date: '2025-01-25',
+    vendor: 'Amazon Business',
+    amount: 234.20,
+    status: 'pending',
+    billable: true,
+    jobId: '', // No job assignment
+    madeBy: 'Lisa Wong',
+    cardHolder: 'Lisa Wong',
+    memo: 'General maintenance tools and equipment',
+    receipt: 'receipt-unassigned4.pdf',
+    expenseType: 'credit_card'
   }
 ]
 
@@ -1397,6 +1454,11 @@ export default function PMFinancialDashboard() {
       description: "Breaks down expenses by deductible/non-deductible GL categories. Totals by property and time period. CSV includes memo fields, category mapping, and receipt links."
     },
     {
+      id: "annual-expense-tax",
+      name: "Annual Expense Summary for Tax Filing",
+      description: "Clean, downloadable PDF or Excel report including all billable expenses across the portfolio, GL-coded line items (Date, Vendor, Property, Category, Amount), attached receipts and memos, trust account tie-outs, and tax-deductible vs. non-deductible flagging."
+    },
+    {
       id: "flagged-expenses",
       name: "Flagged Expense Report",
       description: "Includes all items auto- or manually-flagged. Lists policy rule violated (e.g. over $2K, missing receipt, >10% budget). Includes comments, property, GL, amount, flag type, and reviewer."
@@ -1585,6 +1647,37 @@ export default function PMFinancialDashboard() {
   ];
 
   const properties = [
+    {
+      id: "general",
+      name: "General",
+      address: "Not Assigned",
+      totalBalance: 0,
+      cardCount: 0,
+      pendingBills: 0,
+      trustBalance: 0,
+      lastSync: "N/A",
+      qboStatus: "n/a",
+      reconciliationStatus: "n/a",
+      pendingTransactions: 0,
+      lastReport: "N/A",
+      trustAccount: {
+        bankName: "N/A",
+        accountNumber: "N/A",
+        routingNumber: "N/A",
+        accountType: "General",
+        autoMapping: false,
+        lastReimbursement: "N/A"
+      },
+      ownerEmail: "N/A",
+      ownerName: "N/A",
+      ownerPhone: "N/A",
+      ownerAddress: "N/A",
+      ownerPreferredContact: "email",
+      staff: [],
+      cards: [],
+      recentActivity: [],
+      transactions: []
+    },
     {
       id: "stanford",
       name: "Stanford GSB",
@@ -2250,6 +2343,7 @@ export default function PMFinancialDashboard() {
           { id: 'policy', label: 'Expense Requests', icon: MessageSquare },
           { id: 'transactions', label: 'Transactions', icon: FileText },
           { id: 'smart-insights', label: 'Smart Insights', icon: Bot },
+          { id: 'reporting', label: 'Reporting', icon: FileText },
           { id: 'collateral', label: 'Collateral Hub', icon: FileArchive },
           { id: 'properties', label: 'Properties', icon: Home },
           { id: 'staff', label: 'Technicians', icon: User },
@@ -2258,13 +2352,14 @@ export default function PMFinancialDashboard() {
       : [
           { id: 'dashboard', label: 'Dashboard', icon: Folder },
           { id: 'workorders', label: 'Work Orders', icon: FileText },
-          { id: 'technicianExpenses', label: 'My Expenses', icon: CreditCard },
+          { id: 'technicianExpenses', label: 'Expenses', icon: CreditCard },
           { id: 'profile', label: 'Profile', icon: User },
           { id: 'communications', label: 'Communications', icon: MessageSquare },
         ];
 
   // Sample properties for dropdown
   const propertyOptions = [
+    { id: 'general', name: 'General' },
     { id: 'prop1', name: 'Stanford GSB' },
     { id: 'prop2', name: 'Sunnyvale 432' },
   ]
@@ -7040,9 +7135,20 @@ This payment request has been automatically forwarded to ${recipientName} for pr
             {activeTab === "wallet" && (
               <>
                 <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-white mb-4">
-                    {role === 'technician' ? `Active Cards for ${technicianName}` : 'Active Cards'}
-                  </h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-white mb-4">
+                      {role === 'technician' ? `Active Cards for ${technicianName}` : 'Active Cards'}
+                    </h3>
+                    {role === 'pm' && (
+                      <Button 
+                        className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+                        onClick={() => setHelpRequestDialogOpen(true)}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        Ask Central Office
+                      </Button>
+                    )}
+                  </div>
                   {/* Filters for job and property */}
                   <div className="flex gap-6 overflow-x-auto pb-2">
                     {(role === 'technician' ? technicianCards : properties[0].cards.slice(0, 2)).map((card, idx) => {
@@ -7407,15 +7513,6 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                 <div className="mb-8">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-semibold text-white">Completed Expenses</h3>
-                    {role === 'pm' && (
-                      <Button 
-                        className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
-                        onClick={() => setHelpRequestDialogOpen(true)}
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        Ask Central Office
-                      </Button>
-                    )}
                   </div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
@@ -10460,6 +10557,365 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                       </div>
                     )}
                   </div>
+                </div>
+              </>
+            )}
+            {activeTab === "reporting" && role === 'centralOffice' && (
+              <>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-white">Reporting</h2>
+                    <p className="text-sm text-gray-400">Generate high-fidelity exports for bookkeeping, tax prep, and compliance</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Filters Panel */}
+                    <div className="lg:col-span-1">
+                      <Card className="bg-gray-800 border-gray-700">
+                        <CardHeader>
+                          <CardTitle className="text-white flex items-center justify-between">
+                            <span>Filters</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setReportDateRange({ from: "", to: "" });
+                                setReportSelectedProperties([]);
+                                setReportSelectedGLCodes([]);
+                                setReportSelectedExpenseStatus([]);
+                                setReportSelectedTrustAccount("all");
+                              }}
+                              className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                            >
+                              Clear All
+                            </Button>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {/* Date Range */}
+                          <div>
+                            <Label className="text-gray-300 text-sm font-medium">Date Range</Label>
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                              <div>
+                                <Label className="text-gray-400 text-xs">From</Label>
+                                <Input
+                                  type="date"
+                                  value={reportDateRange.from}
+                                  onChange={(e) => setReportDateRange(prev => ({ ...prev, from: e.target.value }))}
+                                  className="bg-gray-700 border-gray-600 text-white"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-gray-400 text-xs">To</Label>
+                                <Input
+                                  type="date"
+                                  value={reportDateRange.to}
+                                  onChange={(e) => setReportDateRange(prev => ({ ...prev, to: e.target.value }))}
+                                  className="bg-gray-700 border-gray-600 text-white"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Properties */}
+                          <div>
+                            <Label className="text-gray-300 text-sm font-medium">Properties</Label>
+                            <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
+                              {reportPropertyOptions.map((property) => (
+                                <div key={property} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={property}
+                                    checked={reportSelectedProperties.includes(property)}
+                                    onChange={() => {
+                                      setReportSelectedProperties(prev => 
+                                        prev.includes(property) 
+                                          ? prev.filter(p => p !== property)
+                                          : [...prev, property]
+                                      );
+                                    }}
+                                    className="rounded bg-gray-700 border-gray-600"
+                                  />
+                                  <Label htmlFor={property} className="text-white text-xs cursor-pointer">
+                                    {property}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* GL Codes */}
+                          <div>
+                            <Label className="text-gray-300 text-sm font-medium">GL Codes</Label>
+                            <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
+                              {reportGlCodeOptions.map((code) => (
+                                <div key={code} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={code}
+                                    checked={reportSelectedGLCodes.includes(code)}
+                                    onChange={() => {
+                                      setReportSelectedGLCodes(prev => 
+                                        prev.includes(code) 
+                                          ? prev.filter(c => c !== code)
+                                          : [...prev, code]
+                                      );
+                                    }}
+                                    className="rounded bg-gray-700 border-gray-600"
+                                  />
+                                  <Label htmlFor={code} className="text-white text-xs cursor-pointer">
+                                    {code}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Expense Status */}
+                          <div>
+                            <Label className="text-gray-300 text-sm font-medium">Expense Status</Label>
+                            <div className="mt-2 space-y-2">
+                              {reportExpenseStatusOptions.map((status) => (
+                                <div key={status} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={status}
+                                    checked={reportSelectedExpenseStatus.includes(status)}
+                                    onChange={() => {
+                                      setReportSelectedExpenseStatus(prev => 
+                                        prev.includes(status) 
+                                          ? prev.filter(s => s !== status)
+                                          : [...prev, status]
+                                      );
+                                    }}
+                                    className="rounded bg-gray-700 border-gray-600"
+                                  />
+                                  <Label htmlFor={status} className="text-white text-xs cursor-pointer">
+                                    {status}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Trust Account */}
+                          <div>
+                            <Label className="text-gray-300 text-sm font-medium">Trust Account (Optional)</Label>
+                            <Select value={reportSelectedTrustAccount} onValueChange={setReportSelectedTrustAccount}>
+                              <SelectTrigger className="mt-2 bg-gray-700 border-gray-600 text-white">
+                                <SelectValue placeholder="All trust accounts" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-gray-800 border-gray-600">
+                                <SelectItem value="all" className="text-white">All trust accounts</SelectItem>
+                                {reportTrustAccountOptions.map((account) => (
+                                  <SelectItem key={account} value={account} className="text-white">
+                                    {account}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Report Types Panel */}
+                    <div className="lg:col-span-2">
+                      <Card className="bg-gray-800 border-gray-700">
+                        <CardHeader>
+                          <CardTitle className="text-white">Report Types</CardTitle>
+                          <p className="text-sm text-gray-400">Select the type of report you want to generate</p>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {reportTypes.map((report) => (
+                            <div
+                              key={report.id}
+                              className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                                reportType === report.id
+                                  ? "border-blue-500 bg-blue-900/20"
+                                  : "border-gray-600 bg-gray-700 hover:bg-gray-600"
+                              }`}
+                              onClick={() => setReportType(report.id)}
+                            >
+                              <div className="flex items-center space-x-2 mb-2">
+                                <input
+                                  type="radio"
+                                  id={report.id}
+                                  name="reportType"
+                                  checked={reportType === report.id}
+                                  onChange={() => setReportType(report.id)}
+                                  className="text-blue-600"
+                                />
+                                <Label htmlFor={report.id} className="text-white font-medium cursor-pointer">
+                                  {report.name}
+                                </Label>
+                              </div>
+                              <p className="text-sm text-gray-300 ml-6">{report.description}</p>
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+
+                      {/* Generate Report Section */}
+                      <Card className="bg-gray-800 border-gray-700 mt-6">
+                        <CardHeader>
+                          <CardTitle className="text-white">Generate Report</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div className="bg-gray-700 rounded-lg p-4">
+                              <h4 className="font-medium text-white mb-2">Active Filters Summary</h4>
+                              <div className="text-sm text-gray-300 space-y-1">
+                                <div>
+                                  <span className="font-medium">Date Range:</span> {
+                                    reportDateRange.from && reportDateRange.to 
+                                      ? `${reportDateRange.from} to ${reportDateRange.to}`
+                                      : "All time"
+                                  }
+                                </div>
+                                <div>
+                                  <span className="font-medium">Properties:</span> {
+                                    reportSelectedProperties.length > 0 
+                                      ? `${reportSelectedProperties.length} selected`
+                                      : "All properties"
+                                  }
+                                </div>
+                                <div>
+                                  <span className="font-medium">GL Codes:</span> {
+                                    reportSelectedGLCodes.length > 0 
+                                      ? `${reportSelectedGLCodes.length} selected`
+                                      : "All GL codes"
+                                  }
+                                </div>
+                                <div>
+                                  <span className="font-medium">Expense Status:</span> {
+                                    reportSelectedExpenseStatus.length > 0 
+                                      ? `${reportSelectedExpenseStatus.length} selected`
+                                      : "All statuses"
+                                  }
+                                </div>
+                                <div>
+                                  <span className="font-medium">Trust Account:</span> {
+                                    reportSelectedTrustAccount === "all" ? "All trust accounts" : reportSelectedTrustAccount
+                                  }
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                              <h4 className="font-medium text-blue-300 mb-2">Export Options</h4>
+                              <div className="text-sm text-blue-200 mb-4">
+                                Reports will include:
+                                <ul className="mt-2 space-y-1 ml-4">
+                                  <li>• Generated timestamp</li>
+                                  <li>• Applied filters summary</li>
+                                  <li>• Receipt links (where available)</li>
+                                  <li>• Formatted tables matching expense views</li>
+                                </ul>
+                              </div>
+                              <div className="flex gap-3">
+                                <Button
+                                  onClick={() => handleGenerateExportReport('csv')}
+                                  disabled={isGeneratingReport}
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  {isGeneratingReport ? (
+                                    <>
+                                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                      Generating...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                      Generate CSV
+                                    </>
+                                  )}
+                                </Button>
+                                <Button
+                                  onClick={() => handleGenerateExportReport('pdf')}
+                                  disabled={isGeneratingReport}
+                                  className="bg-red-600 hover:bg-red-700 text-white"
+                                >
+                                  {isGeneratingReport ? (
+                                    <>
+                                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                      Generating...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <FileText className="h-4 w-4 mr-2" />
+                                      Generate PDF
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+
+                  {/* Recent Reports */}
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white">Recent Reports</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {[
+                          {
+                            id: 'trust-reconciliation-recent',
+                            name: 'Trust Account Reconciliation Report',
+                            generatedOn: '2024-07-08 14:30:22',
+                            scope: 'All properties',
+                            format: 'csv'
+                          },
+                          {
+                            id: 'annual-expense-tax-recent',
+                            name: 'Annual Expense Summary for Tax Filing',
+                            generatedOn: '2024-07-07 09:15:45',
+                            scope: 'YTD',
+                            format: 'pdf'
+                          },
+                          {
+                            id: 'flagged-expense-recent',
+                            name: 'Flagged Expense Report',
+                            generatedOn: '2024-07-05 16:22:18',
+                            scope: 'Q2 2024',
+                            format: 'csv'
+                          }
+                        ].map((report) => (
+                          <div key={report.id} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                            <div>
+                              <div className="text-white font-medium">{report.name}</div>
+                              <div className="text-sm text-gray-400">Generated on: {report.generatedOn} • {report.scope} • {report.format.toUpperCase()}</div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="bg-gray-600 border-gray-500 text-white"
+                                onClick={() => handleRecentReportDownload(report)}
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="bg-gray-600 border-gray-500 text-white"
+                                onClick={() => handleRecentReportEmail(report)}
+                              >
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Regenerate
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </>
             )}

@@ -5008,6 +5008,11 @@ function ReportingTab() {
       description: "Breaks down expenses by deductible/non-deductible GL categories. Totals by property and time period. CSV includes memo fields, category mapping, and receipt links."
     },
     {
+      id: "annual-expense-tax",
+      name: "Annual Expense Summary for Tax Filing",
+      description: "Clean, downloadable PDF or Excel report including all billable expenses across the portfolio, GL-coded line items (Date, Vendor, Property, Category, Amount), attached receipts and memos, trust account tie-outs, and tax-deductible vs. non-deductible flagging."
+    },
+    {
       id: "flagged-expenses",
       name: "Flagged Expense Report",
       description: "Includes all items auto- or manually-flagged. Lists policy rule violated (e.g. over $2K, missing receipt, >10% budget). Includes comments, property, GL, amount, flag type, and reviewer."
