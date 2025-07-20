@@ -91,7 +91,8 @@ import {
   Calendar as CalendarIcon,
   ExternalLink as LinkIcon,
   Calculator,
-  Info
+  Info,
+  Save
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from 'next/navigation'
@@ -1866,6 +1867,8 @@ export default function PMFinancialDashboard() {
   const [collateralReviewTableExpanded, setCollateralReviewTableExpanded] = useState(false);
   const [showUploadCallout, setShowUploadCallout] = useState(false);
   const [collateralFileInput, setCollateralFileInput] = useState<HTMLInputElement | null>(null);
+  const [editingDocumentId, setEditingDocumentId] = useState<string | null>(null);
+  const [confirmingDocumentId, setConfirmingDocumentId] = useState<string | null>(null);
 
   // Mock data for documents needing review/categorization
   const documentsNeedingReview = [
@@ -4801,12 +4804,35 @@ This payment request has been automatically forwarded to ${recipientName} for pr
   const handleDocumentReview = (docId: string, action: 'edit' | 'confirm') => {
     // In a real app, this would make an API call
     console.log(`Document ${docId} ${action}`);
-    // For demo purposes, just log the action
+    
     if (action === 'edit') {
-      alert(`Opening document editor for categorization and property assignment`);
+      setEditingDocumentId(docId);
+      setConfirmingDocumentId(null);
     } else if (action === 'confirm') {
-      alert(`Document confirmed and added to collateral hub`);
+      setConfirmingDocumentId(docId);
+      setEditingDocumentId(null);
     }
+  };
+
+  const handleSaveEdit = (docId: string) => {
+    // In a real app, this would save the changes via API
+    console.log(`Saving changes for document ${docId}`);
+    setEditingDocumentId(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingDocumentId(null);
+  };
+
+  const handleConfirmDocument = (docId: string) => {
+    // In a real app, this would confirm and move the document
+    console.log(`Confirming document ${docId} and adding to collateral hub`);
+    setConfirmingDocumentId(null);
+    // Remove from pending review list (in real app, this would be handled by backend)
+  };
+
+  const handleCancelConfirm = () => {
+    setConfirmingDocumentId(null);
   };
 
   // AI Search functionality
@@ -9772,54 +9798,176 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                               {documentsNeedingReview.map((doc) => {
                                 const IconComponent = getDocumentTypeIcon(doc.documentType);
                                 return (
-                                  <tr key={doc.id} className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700/50 transition-colors">
-                                    <td className="py-3 px-4">
-                                      <div className="flex items-center gap-2">
-                                        <IconComponent className="h-4 w-4 text-blue-400" />
-                                        <span className="text-white text-sm font-medium">{doc.filename}</span>
-                                      </div>
-                                    </td>
-                                    <td className="py-3 px-4 text-gray-300">
-                                      {documentTypeLabels[doc.documentType]}
-                                    </td>
-                                    <td className="py-3 px-4 text-gray-300">{doc.propertyName}</td>
-                                    <td className="py-3 px-4 text-gray-300">{doc.uploadedBy}</td>
-                                    <td className="py-3 px-4 text-gray-300">
-                                      {doc.amount ? `$${doc.amount.toFixed(2)}` : 'N/A'}
-                                    </td>
-                                    <td className="py-3 px-4 text-gray-300">{doc.uploadDate}</td>
-                                    <td className="py-3 px-4">
-                                      <div className="space-y-1">
-                                        {doc.reviewFlags.map((flag, idx) => (
-                                          <div key={idx} className="text-xs bg-yellow-900/30 text-yellow-300 px-2 py-1 rounded">
-                                            {flag}
+                                  <React.Fragment key={doc.id}>
+                                    <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700/50 transition-colors">
+                                      <td className="py-3 px-4">
+                                        <div className="flex items-center gap-2">
+                                          <IconComponent className="h-4 w-4 text-blue-400" />
+                                          <span className="text-white text-sm font-medium">{doc.filename}</span>
+                                        </div>
+                                      </td>
+                                      <td className="py-3 px-4 text-gray-300">
+                                        {documentTypeLabels[doc.documentType]}
+                                      </td>
+                                      <td className="py-3 px-4 text-gray-300">{doc.propertyName}</td>
+                                      <td className="py-3 px-4 text-gray-300">{doc.uploadedBy}</td>
+                                      <td className="py-3 px-4 text-gray-300">
+                                        {doc.amount ? `$${doc.amount.toFixed(2)}` : 'N/A'}
+                                      </td>
+                                      <td className="py-3 px-4 text-gray-300">{doc.uploadDate}</td>
+                                      <td className="py-3 px-4">
+                                        <div className="space-y-1">
+                                          {doc.reviewFlags.map((flag, idx) => (
+                                            <div key={idx} className="text-xs bg-yellow-900/30 text-yellow-300 px-2 py-1 rounded">
+                                              {flag}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </td>
+                                      <td className="py-3 px-4 text-gray-300">{doc.assignedTo}</td>
+                                      <td className="py-3 px-4">
+                                        <div className="flex gap-1">
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
+                                            onClick={() => handleDocumentReview(doc.id, 'edit')}
+                                          >
+                                            <Edit className="h-3 w-3 mr-1" />
+                                            Edit
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            className="bg-green-600 hover:bg-green-700 text-white"
+                                            onClick={() => handleDocumentReview(doc.id, 'confirm')}
+                                          >
+                                            <Check className="h-3 w-3 mr-1" />
+                                            Confirm
+                                          </Button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                    
+                                    {/* Editing Form Row */}
+                                    {editingDocumentId === doc.id && (
+                                      <tr className="bg-blue-900/20 border-t-2 border-blue-500">
+                                        <td colSpan={9} className="py-6 px-4">
+                                          <div className="space-y-4">
+                                            <h4 className="text-lg font-semibold text-blue-400 flex items-center gap-2">
+                                              <Edit className="h-4 w-4" />
+                                              Edit Document: {doc.filename}
+                                            </h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                              <div>
+                                                <label className="block text-sm font-medium text-gray-300 mb-2">Property Assignment</label>
+                                                <select className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                                  <option value="prop1">Stanford GSB</option>
+                                                  <option value="prop2">Mission Bay Tech Campus</option>
+                                                  <option value="prop3">Downtown Office Tower</option>
+                                                </select>
+                                              </div>
+                                              <div>
+                                                <label className="block text-sm font-medium text-gray-300 mb-2">Document Type</label>
+                                                <select className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                                  <option value="invoice">Invoice</option>
+                                                  <option value="receipt">Receipt</option>
+                                                  <option value="contract">Contract</option>
+                                                  <option value="report">Report</option>
+                                                </select>
+                                              </div>
+                                              <div>
+                                                <label className="block text-sm font-medium text-gray-300 mb-2">Work Order Reference</label>
+                                                <input 
+                                                  type="text" 
+                                                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                                                  placeholder="WO-2024-001"
+                                                />
+                                              </div>
+                                              <div>
+                                                <label className="block text-sm font-medium text-gray-300 mb-2">Tags</label>
+                                                <input 
+                                                  type="text" 
+                                                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                                                  placeholder="HVAC, repair, emergency"
+                                                  defaultValue={doc.tags.join(', ')}
+                                                />
+                                              </div>
+                                            </div>
+                                            <div className="flex gap-2 pt-4">
+                                              <Button
+                                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                                onClick={() => handleSaveEdit(doc.id)}
+                                              >
+                                                <Save className="h-4 w-4 mr-2" />
+                                                Save Changes
+                                              </Button>
+                                              <Button
+                                                variant="outline"
+                                                className="border-gray-500 text-gray-300 hover:bg-gray-700"
+                                                onClick={handleCancelEdit}
+                                              >
+                                                Cancel
+                                              </Button>
+                                            </div>
                                           </div>
-                                        ))}
-                                      </div>
-                                    </td>
-                                    <td className="py-3 px-4 text-gray-300">{doc.assignedTo}</td>
-                                    <td className="py-3 px-4">
-                                      <div className="flex gap-1">
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
-                                          onClick={() => handleDocumentReview(doc.id, 'edit')}
-                                        >
-                                          <Edit className="h-3 w-3 mr-1" />
-                                          Edit
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          className="bg-green-600 hover:bg-green-700 text-white"
-                                          onClick={() => handleDocumentReview(doc.id, 'confirm')}
-                                        >
-                                          <Check className="h-3 w-3 mr-1" />
-                                          Confirm
-                                        </Button>
-                                      </div>
-                                    </td>
-                                  </tr>
+                                        </td>
+                                      </tr>
+                                    )}
+
+                                    {/* Confirmation Form Row */}
+                                    {confirmingDocumentId === doc.id && (
+                                      <tr className="bg-green-900/20 border-t-2 border-green-500">
+                                        <td colSpan={9} className="py-6 px-4">
+                                          <div className="space-y-4">
+                                            <h4 className="text-lg font-semibold text-green-400 flex items-center gap-2">
+                                              <Check className="h-4 w-4" />
+                                              Confirm Document: {doc.filename}
+                                            </h4>
+                                            <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
+                                              <p className="text-gray-300 mb-4">
+                                                Are you sure you want to confirm this document and add it to the collateral hub? 
+                                                This will move it from the review queue to the main document collection.
+                                              </p>
+                                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                                <div>
+                                                  <span className="text-gray-400">Property:</span>
+                                                  <span className="text-white ml-2">{doc.propertyName}</span>
+                                                </div>
+                                                <div>
+                                                  <span className="text-gray-400">Type:</span>
+                                                  <span className="text-white ml-2">{documentTypeLabels[doc.documentType]}</span>
+                                                </div>
+                                                <div>
+                                                  <span className="text-gray-400">Amount:</span>
+                                                  <span className="text-white ml-2">{doc.amount ? `$${doc.amount.toFixed(2)}` : 'N/A'}</span>
+                                                </div>
+                                                <div>
+                                                  <span className="text-gray-400">Tags:</span>
+                                                  <span className="text-white ml-2">{doc.tags.join(', ')}</span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                            <div className="flex gap-2 pt-4">
+                                              <Button
+                                                className="bg-green-600 hover:bg-green-700 text-white"
+                                                onClick={() => handleConfirmDocument(doc.id)}
+                                              >
+                                                <Check className="h-4 w-4 mr-2" />
+                                                Yes, Confirm & Add to Hub
+                                              </Button>
+                                              <Button
+                                                variant="outline"
+                                                className="border-gray-500 text-gray-300 hover:bg-gray-700"
+                                                onClick={handleCancelConfirm}
+                                              >
+                                                Cancel
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </React.Fragment>
                                 );
                               })}
                             </tbody>
