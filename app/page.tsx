@@ -78,7 +78,7 @@ import {
   Edit,
   BookOpen,
   Check,
-  X,
+  HelpCircle,
   FileArchive,
   Upload,
   Grid,
@@ -2641,6 +2641,26 @@ export default function PMFinancialDashboard() {
   const [policyRuleEditDialogOpen, setPolicyRuleEditDialogOpen] = useState(false);
   const [editedRule, setEditedRule] = useState({ category: '', rule: '', aiEnabled: false, active: false });
 
+  // Flagged Expenses and Property Manager Communication state
+  const [pmMessagePopupOpen, setPmMessagePopupOpen] = useState(false);
+  const [selectedFlaggedExpense, setSelectedFlaggedExpense] = useState<any>(null);
+  const [pmMessageForm, setPmMessageForm] = useState({
+    subject: '',
+    message: '',
+    urgent: false,
+    requestType: 'clarification' // clarification, correction, approval
+  });
+
+  // Variance Comments state
+  const [selectedVarianceProperty, setSelectedVarianceProperty] = useState('all');
+  const [varianceCommentDialog, setVarianceCommentDialog] = useState(false);
+  const [selectedVarianceItem, setSelectedVarianceItem] = useState<any>(null);
+  const [varianceCommentForm, setVarianceCommentForm] = useState({
+    comment: '',
+    reason: '',
+    correctiveAction: ''
+  });
+
   // Collateral Hub state variables
   const [collateralViewMode, setCollateralViewMode] = useState<'card' | 'list'>('card');
   const [collateralSearchQuery, setCollateralSearchQuery] = useState('');
@@ -3777,6 +3797,7 @@ export default function PMFinancialDashboard() {
           { id: 'activity', label: 'Activity Log', icon: Zap },
           { id: 'wallet', label: 'Expenses', icon: CreditCard },
           { id: 'transactions', label: 'Transactions', icon: FileText },
+          { id: 'variance-comments', label: 'Variance Comments', icon: AlertTriangle },
           { id: 'smart-insights', label: 'Smart Insights', icon: Bot },
           { id: 'collateral', label: 'Collateral Hub', icon: FileArchive },
           { id: 'properties', label: 'Properties', icon: Home },
@@ -5403,6 +5424,71 @@ This payment request has been automatically forwarded to ${recipientName} for pr
     setCcRecipient({ name: '', email: '' });
   };
 
+  // Function to handle property manager message requests
+  const handleRequestInfoFromPM = (flaggedExpense: any) => {
+    console.log('Request Info button clicked for expense:', flaggedExpense)
+    // Close the reimbursement dialog first to avoid layering issues
+    setMonthlyReimbursementDialogOpen(false)
+    setSelectedFlaggedExpense(flaggedExpense)
+    setPmMessageForm({
+      subject: `Request Information: ${flaggedExpense.merchant} - $${flaggedExpense.amount.toFixed(2)}`,
+      message: `Hi [Property Manager Name],
+
+I need additional information regarding this flagged expense:
+
+**Expense Details:**
+- Date: ${flaggedExpense.date}
+- Merchant: ${flaggedExpense.merchant}
+- Amount: $${flaggedExpense.amount.toFixed(2)}
+- GL Code: ${flaggedExpense.glCode} - ${flaggedExpense.glName}
+- Sub-GL: ${flaggedExpense.subGlCode} - ${flaggedExpense.subGlName}
+
+**Your Original Memo:** "${flaggedExpense.pmMemo}"
+
+**AI Analysis:** ${flaggedExpense.aiMemo}
+
+**Flag Reason:** ${flaggedExpense.flagReason}
+
+**Required Action:** Please provide additional clarification, correction, or supporting documentation for this expense. Specifically, we need verification of the circumstances and approval status.
+
+Thanks,
+Central Office`,
+      urgent: flaggedExpense.amount >= 1000,
+      requestType: flaggedExpense.amount >= 1000 ? 'approval' : 'clarification'
+    })
+    setPmMessagePopupOpen(true)
+  }
+
+  // Function to send message to property manager
+  const sendMessageToPM = () => {
+    // Add message to communications tab (simulated)
+    const newMessage = {
+      id: `msg-${Date.now()}`,
+      from: 'Central Office',
+      to: 'Property Manager',
+      subject: pmMessageForm.subject,
+      content: pmMessageForm.message,
+      timestamp: new Date().toISOString(),
+      urgent: pmMessageForm.urgent,
+      type: pmMessageForm.requestType,
+      relatedExpense: selectedFlaggedExpense,
+      status: 'sent'
+    }
+
+    // Close popup and reset form
+    setPmMessagePopupOpen(false)
+    setPmMessageForm({
+      subject: '',
+      message: '',
+      urgent: false,
+      requestType: 'clarification'
+    })
+    setSelectedFlaggedExpense(null)
+
+    // Route directly to communications tab
+    setActiveTab('communications')
+  };
+
   // Optimized Collateral Hub Helper Functions with memoization
   const filteredCollateralDocs = useMemo(() => {
     // Show previous results while searching to prevent UI freezing
@@ -6561,6 +6647,90 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                     </div>
                   );
                 })()}
+
+                {/* Variance Comments Due - PM Only */}
+                {role === 'pm' && (
+                  <div className="mb-2 mt-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-lg font-semibold text-white">Variance Comments Due</h4>
+                      <Button
+                        onClick={() => setActiveTab('variance-comments')}
+                        variant="outline"
+                        className="bg-red-600 border-red-600 text-white hover:bg-red-700"
+                        size="sm"
+                      >
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                        View All (5)
+                      </Button>
+                    </div>
+
+                    {/* Critical Alert */}
+                    <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="h-5 w-5 text-red-400" />
+                        <h5 className="text-red-300 font-semibold">Critical: 5 Variance Comments Due</h5>
+                      </div>
+                      <p className="text-red-200 text-sm">
+                        Budget overages &gt;$5K or &gt;5% require immediate variance comments. 
+                        <strong> Chris is expecting these by EOD.</strong>
+                      </p>
+                    </div>
+
+                    {/* Top 3 Urgent Variance Items */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        {
+                          property: 'Stanford GSB',
+                          glCode: '7200 - HVAC Repairs',
+                          variance: '+$8,750 (+58.3%)',
+                          urgency: 'Due Now',
+                          reason: 'Emergency system replacement'
+                        },
+                        {
+                          property: 'Stanford GSB', 
+                          glCode: '6100 - Tree Maintenance',
+                          variance: '+$5,200 (+65%)',
+                          urgency: 'Due Now',
+                          reason: 'Storm damage removal'
+                        },
+                        {
+                          property: 'Mission Bay',
+                          glCode: '7300 - Legal Fees', 
+                          variance: '+$6,500 (+54.2%)',
+                          urgency: 'Due Now',
+                          reason: 'Tenant lease dispute'
+                        }
+                      ].map((item, idx) => (
+                        <Card key={idx} className="bg-gray-800 border-red-500/30">
+                          <CardContent className="p-4">
+                            <div className="text-orange-300 text-xs mb-1 font-medium">{item.property}</div>
+                            <div className="text-blue-300 text-sm font-medium mb-2">{item.glCode}</div>
+                            <div className="text-red-300 font-bold text-lg mb-1">{item.variance}</div>
+                            <div className="text-orange-200 text-xs mb-2">{item.reason}</div>
+                            <Badge className="bg-red-600 text-red-100 text-xs">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              {item.urgency}
+                            </Badge>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 text-center">
+                      <div className="text-xs text-red-300 mb-2">
+                        💡 <strong>Pro Tip:</strong> Use AI suggestions to write detailed, specific variance comments that Chris will approve.
+                      </div>
+                      <Button
+                        onClick={() => setActiveTab('variance-comments')}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Submit Variance Comments
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                                  {/* Spend by Type - Central Office Only */}
                  {role === 'centralOffice' && (
                    <div className="mb-2 mt-8">
@@ -8189,7 +8359,7 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                                                   </Badge>
                                                 ) : (
                                                   <Badge className="bg-red-600 text-white">
-                                                    <X className="h-3 w-3 mr-1" />
+                                                    <XCircle className="h-3 w-3 mr-1" />
                                                     No
                                                   </Badge>
                                                 )}
@@ -11599,7 +11769,7 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                                       className="border-red-500 text-red-400 hover:bg-red-500/10"
                                       onClick={() => handleDenyExpenseRequest(request.id)}
                                     >
-                                      <X className="h-3 w-3 mr-1" />
+                                      <XCircle className="h-3 w-3 mr-1" />
                                       Deny
                                     </Button>
                                   </div>
@@ -11879,6 +12049,357 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                     </CardContent>
                   </Card>
                 </div>
+              </>
+            )}
+            {activeTab === "variance-comments" && role === 'pm' && (
+              <>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-semibold text-white">Variance Comments Due</h3>
+                  <div className="flex items-center gap-4">
+                                         <div className="text-sm text-gray-400">
+                       Track and submit variance comments for budget overages &gt;$5K or &gt;5% over
+                     </div>
+                    <Select value={selectedVarianceProperty} onValueChange={setSelectedVarianceProperty}>
+                      <SelectTrigger className="w-48 bg-gray-800 border-gray-600 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-600">
+                        <SelectItem value="all" className="text-white">All Properties</SelectItem>
+                        {getPropertiesForRole('pm').map((property) => (
+                          <SelectItem key={property.id} value={property.id.toString()} className="text-white">
+                            {property.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Variance Comments Alert */}
+                <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-5 w-5 text-red-400" />
+                    <h4 className="text-red-300 font-semibold">Critical: Variance Comments Required</h4>
+                  </div>
+                  <p className="text-red-200 text-sm mb-3">
+                    You have <strong>5 pending variance comments</strong> that require immediate attention. 
+                    These represent budget overages that exceed established thresholds and need owner review.
+                  </p>
+                  <div className="text-xs text-red-300">
+                    ⚠️ Chris is expecting these by EOD. Comments must be specific and include corrective action plans.
+                  </div>
+                </div>
+
+                {/* Variance Comments Table */}
+                <Card className="bg-gray-800 border-gray-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Calculator className="h-5 w-5" />
+                      Budget Variance Items Requiring Comments
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full">
+                        <thead className="border-b border-gray-600">
+                          <tr>
+                            <th className="text-left py-3 px-4 text-gray-400 font-medium">Property</th>
+                            <th className="text-left py-3 px-4 text-gray-400 font-medium">GL Code & Category</th>
+                            <th className="text-left py-3 px-4 text-gray-400 font-medium">Budget vs Actual</th>
+                            <th className="text-left py-3 px-4 text-gray-400 font-medium">Variance</th>
+                            <th className="text-left py-3 px-4 text-gray-400 font-medium">Status</th>
+                            <th className="text-left py-3 px-4 text-gray-400 font-medium">AI Suggestion</th>
+                            <th className="text-left py-3 px-4 text-gray-400 font-medium">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(() => {
+                            // Mock variance items requiring comments
+                            const varianceItems = [
+                              {
+                                id: 1,
+                                property: 'Stanford GSB',
+                                glCode: '7200',
+                                glName: 'Repairs & Maintenance',
+                                subGL: '7210 - HVAC Repairs',
+                                budgetAmount: 15000,
+                                actualAmount: 23750,
+                                varianceAmount: 8750,
+                                variancePercent: 58.3,
+                                reason: 'Emergency HVAC system replacement',
+                                hasComment: false,
+                                aiSuggestion: 'Suggest explaining emergency nature of HVAC failure, age of equipment (15+ years), and preventive maintenance schedule going forward.',
+                                urgency: 'high'
+                              },
+                              {
+                                id: 2,
+                                property: 'Stanford GSB',
+                                glCode: '6100',
+                                glName: 'Landscaping & Grounds',
+                                subGL: '6110 - Tree Maintenance',
+                                budgetAmount: 8000,
+                                actualAmount: 13200,
+                                variancePercent: 65.0,
+                                varianceAmount: 5200,
+                                reason: 'Storm damage tree removal',
+                                hasComment: false,
+                                aiSuggestion: 'Reference storm date, insurance claim status, and emergency safety requirements for tree removal.',
+                                urgency: 'high'
+                              },
+                              {
+                                id: 3,
+                                property: 'Mission Bay',
+                                glCode: '5200',
+                                glName: 'Security Services',
+                                subGL: '5210 - Security Guards',
+                                budgetAmount: 24000,
+                                actualAmount: 26800,
+                                variancePercent: 11.7,
+                                varianceAmount: 2800,
+                                reason: 'Additional security for tenant events',
+                                hasComment: true,
+                                comment: 'Increased security coverage for high-profile tenant events and extended hours per security contract amendment.',
+                                aiSuggestion: 'Good explanation. Consider adding tenant reimbursement details if applicable.',
+                                urgency: 'medium'
+                              },
+                              {
+                                id: 4,
+                                property: 'Mission Bay',
+                                glCode: '7300',
+                                glName: 'Professional Services',
+                                subGL: '7310 - Legal Fees',
+                                budgetAmount: 12000,
+                                actualAmount: 18500,
+                                variancePercent: 54.2,
+                                varianceAmount: 6500,
+                                reason: 'Tenant lease dispute resolution',
+                                hasComment: false,
+                                aiSuggestion: 'Explain nature of lease dispute, legal outcome, and measures to prevent similar issues. Include case reference number.',
+                                urgency: 'high'
+                              },
+                              {
+                                id: 5,
+                                property: 'Stanford GSB',
+                                glCode: '8100',
+                                glName: 'Capital Improvements',
+                                subGL: '8110 - Elevator Modernization',
+                                budgetAmount: 50000,
+                                actualAmount: 62750,
+                                variancePercent: 25.5,
+                                varianceAmount: 12750,
+                                reason: 'Code compliance upgrades required',
+                                hasComment: false,
+                                aiSuggestion: 'Detail specific code requirements, inspection findings, and timeline for completion. Include permit costs if applicable.',
+                                urgency: 'medium'
+                              }
+                            ];
+
+                            return varianceItems
+                              .filter(item => selectedVarianceProperty === 'all' || item.property === 
+                                getPropertiesForRole('pm').find(p => p.id.toString() === selectedVarianceProperty)?.name)
+                              .map((item) => (
+                              <tr key={item.id} className="border-b border-gray-700 hover:bg-gray-700/30">
+                                <td className="py-3 px-4">
+                                  <div className="text-white font-medium">{item.property}</div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="text-blue-300 font-medium">{item.glCode} - {item.glName}</div>
+                                  <div className="text-purple-300 text-xs">{item.subGL}</div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="text-gray-300">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-gray-400">Budget:</span>
+                                      <span>${item.budgetAmount.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-gray-400">Actual:</span>
+                                      <span className="text-red-300 font-semibold">${item.actualAmount.toLocaleString()}</span>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="text-red-300 font-semibold">+${item.varianceAmount.toLocaleString()}</div>
+                                  <div className="text-red-200 text-sm">+{item.variancePercent}%</div>
+                                  <div className="text-xs text-orange-300 mt-1">{item.reason}</div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  {item.hasComment ? (
+                                    <Badge className="bg-green-600 text-green-100">
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      Submitted
+                                    </Badge>
+                                  ) : (
+                                    <Badge className={`${
+                                      item.urgency === 'high' 
+                                        ? 'bg-red-600 text-red-100' 
+                                        : 'bg-orange-600 text-orange-100'
+                                    }`}>
+                                      <AlertTriangle className="h-3 w-3 mr-1" />
+                                      {item.urgency === 'high' ? 'Due Now' : 'Due Soon'}
+                                    </Badge>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4 max-w-xs">
+                                  <div className="text-gray-300 text-xs leading-tight mb-2">{item.aiSuggestion}</div>
+                                  <div className="flex items-center gap-1">
+                                    <Bot className="h-3 w-3 text-purple-400" />
+                                    <span className="text-xs text-purple-300">AI Assist</span>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedVarianceItem(item)
+                                      setVarianceCommentForm({
+                                        comment: item.comment || '',
+                                        reason: item.reason || '',
+                                        correctiveAction: ''
+                                      })
+                                      setVarianceCommentDialog(true)
+                                    }}
+                                    className={`text-xs px-3 py-1 ${
+                                      item.hasComment 
+                                        ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                                        : 'bg-red-600 hover:bg-red-700 text-white'
+                                    }`}
+                                  >
+                                    {item.hasComment ? (
+                                      <>
+                                        <Edit className="h-3 w-3 mr-1" />
+                                        Edit Comment
+                                      </>
+                                    ) : (
+                                      <>
+                                        <AlertTriangle className="h-3 w-3 mr-1" />
+                                        Add Comment
+                                      </>
+                                    )}
+                                  </Button>
+                                </td>
+                              </tr>
+                            ));
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Variance Comment Dialog */}
+                <Dialog open={varianceCommentDialog} onOpenChange={setVarianceCommentDialog}>
+                  <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-red-400" />
+                        {selectedVarianceItem?.hasComment ? 'Edit' : 'Add'} Variance Comment
+                      </DialogTitle>
+                      <DialogDescription className="text-gray-400">
+                        Provide detailed explanation for budget variance for owner review
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    {selectedVarianceItem && (
+                      <div className="space-y-6">
+                        {/* Variance Details */}
+                        <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+                          <h4 className="text-red-300 font-medium mb-3">Variance Details</h4>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-400">Property:</span>
+                              <span className="text-white ml-2">{selectedVarianceItem.property}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400">GL Code:</span>
+                              <span className="text-blue-300 ml-2">{selectedVarianceItem.glCode} - {selectedVarianceItem.glName}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400">Budget:</span>
+                              <span className="text-white ml-2">${selectedVarianceItem.budgetAmount.toLocaleString()}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400">Actual:</span>
+                              <span className="text-red-300 ml-2 font-semibold">${selectedVarianceItem.actualAmount.toLocaleString()}</span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="text-gray-400">Variance:</span>
+                              <span className="text-red-300 ml-2 font-semibold">
+                                +${selectedVarianceItem.varianceAmount.toLocaleString()} (+{selectedVarianceItem.variancePercent}%)
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* AI Suggestion */}
+                        <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Bot className="h-4 w-4 text-purple-400" />
+                            <span className="text-purple-300 font-medium">AI Writing Suggestion</span>
+                          </div>
+                          <div className="text-purple-200 text-sm">
+                            {selectedVarianceItem.aiSuggestion}
+                          </div>
+                        </div>
+
+                        {/* Comment Form */}
+                        <div className="space-y-4">
+                          <div>
+                            <Label className="text-gray-300 mb-2 block">Variance Explanation</Label>
+                            <Textarea
+                              value={varianceCommentForm.comment}
+                              onChange={(e) => setVarianceCommentForm(prev => ({ ...prev, comment: e.target.value }))}
+                              className="bg-gray-800 border-gray-600 text-white h-24"
+                              placeholder="Provide detailed explanation of what caused this variance..."
+                            />
+                          </div>
+
+                          <div>
+                            <Label className="text-gray-300 mb-2 block">Root Cause</Label>
+                            <Input
+                              value={varianceCommentForm.reason}
+                              onChange={(e) => setVarianceCommentForm(prev => ({ ...prev, reason: e.target.value }))}
+                              className="bg-gray-800 border-gray-600 text-white"
+                              placeholder="Emergency repair, code compliance, etc."
+                            />
+                          </div>
+
+                          <div>
+                            <Label className="text-gray-300 mb-2 block">Corrective Action Plan</Label>
+                            <Textarea
+                              value={varianceCommentForm.correctiveAction}
+                              onChange={(e) => setVarianceCommentForm(prev => ({ ...prev, correctiveAction: e.target.value }))}
+                              className="bg-gray-800 border-gray-600 text-white h-20"
+                              placeholder="Steps being taken to prevent similar overages in the future..."
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => setVarianceCommentDialog(false)}
+                        className="border-gray-600 text-gray-300"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          // Save variance comment
+                          alert(`Variance comment saved for ${selectedVarianceItem?.glCode} - ${selectedVarianceItem?.glName}. Chris will be notified.`)
+                          setVarianceCommentDialog(false)
+                        }}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        disabled={!varianceCommentForm.comment.trim()}
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Submit Comment
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </>
             )}
             {activeTab === "communications" && (
@@ -14105,9 +14626,136 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                       </div>
                     </div>
 
+                    {/* Flagged Expenses Requiring Attention */}
+                    <div>
+                      <Label className="text-gray-300 mb-3 block">⚠️ Flagged Expenses Requiring Attention</Label>
+                      <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4 mb-6">
+                        <div className="mb-3">
+                          <h4 className="text-sm font-semibold text-orange-300 mb-1 flex items-center gap-2">
+                            <Bot className="h-4 w-4" />
+                            AI-Detected Overages & Policy Violations
+                          </h4>
+                          <div className="text-xs text-orange-200">
+                            These expenses exceed threshold amounts or policy guidelines and require owner review
+                          </div>
+                        </div>
+
+                        <div className="max-h-48 overflow-y-auto border border-orange-500/30 rounded">
+                          <table className="min-w-full text-xs">
+                            <thead className="sticky top-0 bg-orange-900/40 border-b border-orange-500/30">
+                                                             <tr>
+                                 <th className="text-left py-2 px-3 text-orange-200">Date</th>
+                                 <th className="text-left py-2 px-3 text-orange-200">Merchant</th>
+                                 <th className="text-left py-2 px-3 text-orange-200">GL Code</th>
+                                 <th className="text-left py-2 px-3 text-orange-200">Sub-GL</th>
+                                 <th className="text-left py-2 px-3 text-orange-200">Amount</th>
+                                 <th className="text-left py-2 px-3 text-orange-200">PM Memo</th>
+                                 <th className="text-left py-2 px-3 text-orange-200">AI Analysis</th>
+                                 <th className="text-left py-2 px-3 text-orange-200">Action</th>
+                               </tr>
+                            </thead>
+                            <tbody>
+                              {(() => {
+                                // Generate flagged expenses with AI memos
+                                                                 const flaggedExpenses = [
+                                   {
+                                     date: '2025-01-15',
+                                     merchant: 'Home Depot',
+                                     amount: 750.00,
+                                     glCode: '7200',
+                                     glName: 'Repairs & Maintenance',
+                                     subGlCode: '7210',
+                                     subGlName: 'HVAC Repairs',
+                                     pmMemo: 'Emergency heating failure - Unit #3B. Approved by owner Smith via phone call. Parts needed ASAP for tenant comfort.',
+                                     aiMemo: 'Amount exceeds $500 threshold for HVAC category. Similar vendor pattern shows 40% increase vs. last quarter. Recommend owner approval before processing.',
+                                     aiConfidence: 94,
+                                     flagReason: 'Amount threshold exceeded'
+                                   },
+                                   {
+                                     date: '2025-01-17',
+                                     merchant: 'Office Depot',
+                                     amount: 625.75,
+                                     glCode: '6100',
+                                     glName: 'Office Expenses',
+                                     subGlCode: '6110',
+                                     subGlName: 'Office Supplies',
+                                     pmMemo: 'Bulk supplies for Q1 tenant move-outs. Includes cleaning supplies, paint, and office materials for leasing office setup.',
+                                     aiMemo: 'Office expense 250% above monthly average ($187.50). No prior approval detected. Consider if this should be allocated to property improvement rather than operating expense.',
+                                     aiConfidence: 87,
+                                     flagReason: 'Unusual amount pattern'
+                                   },
+                                   {
+                                     date: '2025-01-20',
+                                     merchant: 'ABC Plumbing Services',
+                                     amount: 1250.00,
+                                     glCode: '7200',
+                                     glName: 'Repairs & Maintenance',
+                                     subGlCode: '7220',
+                                     subGlName: 'Plumbing Repairs',
+                                     pmMemo: 'Water main break in basement - emergency repair. Contacted owner but no response. Made executive decision to prevent water damage.',
+                                     aiMemo: 'Emergency repair claim over $1000 requires owner pre-approval per policy. No emergency documentation found. Verify if this qualifies as emergency repair.',
+                                     aiConfidence: 96,
+                                     flagReason: 'Policy violation - Missing pre-approval'
+                                   }
+                                 ];
+
+                                return flaggedExpenses.map((expense, idx) => (
+                                  <tr key={idx} className="border-b border-orange-500/20 hover:bg-orange-900/20">
+                                    <td className="py-2 px-3 text-gray-300">{expense.date}</td>
+                                    <td className="py-2 px-3 text-gray-300">{expense.merchant}</td>
+                                    <td className="py-2 px-3">
+                                      <div className="text-blue-300">{expense.glCode}</div>
+                                      <div className="text-xs text-blue-200">{expense.glName}</div>
+                                    </td>
+                                    <td className="py-2 px-3">
+                                      <div className="text-purple-300">{expense.subGlCode}</div>
+                                      <div className="text-xs text-purple-200">{expense.subGlName}</div>
+                                    </td>
+                                                                         <td className="py-2 px-3">
+                                       <div className="text-red-300 font-semibold">${expense.amount.toFixed(2)}</div>
+                                       <div className="text-xs text-orange-300">{expense.flagReason}</div>
+                                     </td>
+                                     <td className="py-2 px-3 max-w-xs">
+                                       <div className="text-gray-300 text-xs leading-tight mb-1">{expense.pmMemo}</div>
+                                       <div className="text-xs text-blue-300 flex items-center gap-1">
+                                         <User className="h-3 w-3" />
+                                         Property Manager
+                                       </div>
+                                     </td>
+                                     <td className="py-2 px-3 max-w-xs">
+                                       <div className="text-gray-300 text-xs leading-tight mb-1">{expense.aiMemo}</div>
+                                       <div className="flex items-center gap-1">
+                                         <Bot className="h-3 w-3 text-purple-400" />
+                                         <span className="text-xs text-purple-300">{expense.aiConfidence}% confidence</span>
+                                       </div>
+                                     </td>
+                                    <td className="py-2 px-3">
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleRequestInfoFromPM(expense)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1"
+                                      >
+                                        <MessageSquare className="h-3 w-3 mr-1" />
+                                        Request Info
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                ));
+                              })()}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div className="mt-3 text-xs text-orange-300 flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          3 expenses flagged for review • Total flagged amount: $2,625.75
+                        </div>
+                      </div>
+                    </div>
+
                     {/* GL Report Preview */}
                     <div>
-                      <Label className="text-gray-300 mb-3 block">📊 GL Report Preview</Label>
+                      <Label className="text-gray-300 mb-3 block">📊 Monthly GL Report Preview</Label>
                       <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
                         <div className="mb-3">
                           <h4 className="text-sm font-semibold text-white mb-1">Monthly GL-Coded Expense Report</h4>
@@ -14146,6 +14794,7 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                                   <th className="text-left py-2 px-3 text-gray-400">Date</th>
                                   <th className="text-left py-2 px-3 text-gray-400">Merchant</th>
                                   <th className="text-left py-2 px-3 text-gray-400">GL Code</th>
+                                  <th className="text-left py-2 px-3 text-gray-400">Sub-GL</th>
                                   <th className="text-left py-2 px-3 text-gray-400">Property Code</th>
                                   <th className="text-left py-2 px-3 text-gray-400">Billable?</th>
                                   <th className="text-left py-2 px-3 text-gray-400">
@@ -14216,6 +14865,7 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                                 
                                 return sampleTransactions.map((txn, idx) => {
                                   const glCode = txn.billable ? '7200 - Repairs & Maintenance' : '6100 - Office Expenses';
+                                  const subGlCode = txn.billable ? '7210 - HVAC Repairs' : '6110 - Office Supplies';
                                   const propertyCode = selectedPropertyForMonthly.id.toUpperCase();
                                   
                                   // Demo flagging logic - flag specific items for demo purposes
@@ -14226,6 +14876,7 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                                       <td className="py-2 px-3 text-gray-300">{txn.date}</td>
                                       <td className="py-2 px-3 text-gray-300">{txn.vendor}</td>
                                       <td className="py-2 px-3 text-blue-300">{glCode}</td>
+                                      <td className="py-2 px-3 text-purple-300">{subGlCode}</td>
                                       <td className="py-2 px-3 text-purple-300">{propertyCode}</td>
                                       <td className="py-2 px-3">
                                         <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs ${
@@ -14281,7 +14932,7 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                             </tbody>
                             <tfoot className="bg-gray-900 border-t border-gray-600">
                               <tr>
-                                <td colSpan={8} className="py-2 px-3 text-right font-semibold text-gray-300">Total:</td>
+                                <td colSpan={9} className="py-2 px-3 text-right font-semibold text-gray-300">Total:</td>
                                 <td className="py-2 px-3 text-right font-semibold text-white">$2,186.49</td>
                               </tr>
                             </tfoot>
@@ -15058,6 +15709,175 @@ This payment request has been automatically forwarded to ${recipientName} for pr
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
+            {/* Property Manager Message Popup (not a dialog - overlay style) */}
+            {pmMessagePopupOpen && (
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+                <div className="bg-gray-900 border border-blue-500 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="border-b border-gray-700 p-6 bg-gradient-to-r from-blue-900/50 to-purple-900/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-600 rounded-lg">
+                          <MessageSquare className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-semibold text-white">Message Property Manager</h3>
+                          <p className="text-blue-200">Request information about flagged expense</p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => setPmMessagePopupOpen(false)}
+                        variant="outline"
+                        size="sm"
+                        className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="p-6 space-y-6">
+                    {/* Expense Details Summary */}
+                    {selectedFlaggedExpense && (
+                      <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4">
+                        <h4 className="text-orange-300 font-medium mb-3 flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          Flagged Expense Details
+                        </h4>
+                                                 <div className="grid grid-cols-2 gap-4 text-sm">
+                           <div>
+                             <span className="text-gray-400">Date:</span>
+                             <span className="text-white ml-2">{selectedFlaggedExpense.date}</span>
+                           </div>
+                           <div>
+                             <span className="text-gray-400">Amount:</span>
+                             <span className="text-red-300 ml-2 font-semibold">${selectedFlaggedExpense.amount?.toFixed(2)}</span>
+                           </div>
+                           <div>
+                             <span className="text-gray-400">Merchant:</span>
+                             <span className="text-white ml-2">{selectedFlaggedExpense.merchant}</span>
+                           </div>
+                           <div>
+                             <span className="text-gray-400">Flag Reason:</span>
+                             <span className="text-orange-300 ml-2">{selectedFlaggedExpense.flagReason}</span>
+                           </div>
+                           <div>
+                             <span className="text-gray-400">GL Code:</span>
+                             <span className="text-blue-300 ml-2">{selectedFlaggedExpense.glCode} - {selectedFlaggedExpense.glName}</span>
+                           </div>
+                           <div>
+                             <span className="text-gray-400">Sub-GL:</span>
+                             <span className="text-purple-300 ml-2">{selectedFlaggedExpense.subGlCode} - {selectedFlaggedExpense.subGlName}</span>
+                           </div>
+                           <div className="col-span-2">
+                             <span className="text-gray-400">PM Original Memo:</span>
+                             <div className="text-blue-200 ml-2 text-xs italic mt-1 p-2 bg-blue-900/20 rounded border border-blue-500/30">
+                               "{selectedFlaggedExpense.pmMemo}"
+                             </div>
+                           </div>
+                         </div>
+                      </div>
+                    )}
+
+                    {/* Message Type Selection */}
+                    <div>
+                      <Label className="text-gray-300 mb-3 block">Request Type</Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { value: 'clarification', label: 'Clarification', icon: HelpCircle },
+                          { value: 'correction', label: 'Correction', icon: Edit },
+                          { value: 'approval', label: 'Approval', icon: CheckCircle }
+                        ].map(({ value, label, icon: Icon }) => (
+                          <Button
+                            key={value}
+                            onClick={() => setPmMessageForm(prev => ({ ...prev, requestType: value }))}
+                            variant={pmMessageForm.requestType === value ? 'default' : 'outline'}
+                            className={`${
+                              pmMessageForm.requestType === value
+                                ? 'bg-blue-600 text-white'
+                                : 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                            } text-sm`}
+                          >
+                            <Icon className="h-4 w-4 mr-2" />
+                            {label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Subject */}
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Subject</Label>
+                      <Input
+                        value={pmMessageForm.subject}
+                        onChange={(e) => setPmMessageForm(prev => ({ ...prev, subject: e.target.value }))}
+                        className="bg-gray-800 border-gray-600 text-white"
+                        placeholder="Message subject..."
+                      />
+                    </div>
+
+                    {/* Message Body */}
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Message</Label>
+                      <Textarea
+                        value={pmMessageForm.message}
+                        onChange={(e) => setPmMessageForm(prev => ({ ...prev, message: e.target.value }))}
+                        className="bg-gray-800 border-gray-600 text-white h-32"
+                        placeholder="Type your message to the property manager..."
+                      />
+                    </div>
+
+                    {/* Priority Toggle */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          id="urgent"
+                          checked={pmMessageForm.urgent}
+                          onChange={(e) => setPmMessageForm(prev => ({ ...prev, urgent: e.target.checked }))}
+                          className="rounded"
+                        />
+                        <Label htmlFor="urgent" className="text-gray-300 flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4 text-orange-400" />
+                          Mark as urgent
+                        </Label>
+                      </div>
+                    </div>
+
+                    {/* Auto-fill Preview */}
+                                         <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
+                       <div className="text-green-300 text-sm flex items-center gap-2 mb-2">
+                         <ArrowRight className="h-4 w-4" />
+                         This message will be automatically added to the Communications tab
+                       </div>
+                      <div className="text-green-200 text-xs">
+                        Both you and the property manager will be able to track this conversation and responses in the Communications section.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-700 p-6 bg-gray-800/50">
+                    <div className="flex justify-end gap-3">
+                      <Button
+                        onClick={() => setPmMessagePopupOpen(false)}
+                        variant="outline"
+                        className="border-gray-600 text-gray-300"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={sendMessageToPM}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        disabled={!pmMessageForm.subject.trim() || !pmMessageForm.message.trim()}
+                      >
+                        <Send className="h-4 w-4 mr-2" />
+                        Send Message
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
