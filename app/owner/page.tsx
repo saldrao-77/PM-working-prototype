@@ -3541,39 +3541,129 @@ function SmartInsightsTab() {
   const [selectedTimeRange, setSelectedTimeRange] = useState("Quarterly")
   const [selectedRegion, setSelectedRegion] = useState("Bay Area")
   const [selectedViewType, setSelectedViewType] = useState("$/sqft")
+  
+  // New filter states
+  const [selectedPMFirm, setSelectedPMFirm] = useState("All")
+  const [selectedPropertyClass, setSelectedPropertyClass] = useState("All")
+  
+  // Checkbox states for comparables
+  const [showActuals, setShowActuals] = useState(true)
+  const [showMarket, setShowMarket] = useState(true)
+  const [showPortfolio, setShowPortfolio] = useState(true)
+  const [showYearOverYear, setShowYearOverYear] = useState(false)
 
   // Base data for different filter combinations
   const benchmarkingDataSets = {
     "Stanford Graduate School...": {
       "Quarterly": {
-        "HVAC": { actual: 8400, market: 11800, cleanSheet: 8200, portfolio: 8600 },
-        "Elevator": { actual: 6300, market: 8100, cleanSheet: 6500, portfolio: 6400 },
-        "Fire Safety": { actual: 4100, market: 5900, cleanSheet: 4200, portfolio: 4300 },
-        "Plumbing": { actual: 5900, market: 7800, cleanSheet: 5800, portfolio: 6100 },
-        "General R&M": { actual: 11800, market: 15200, cleanSheet: 11500, portfolio: 12000 }
+        "HVAC": { actual: 8400, market: 11800, shouldCost: 8200, portfolio: 8600, yearOverYear: 8900 },
+        "Elevator": { actual: 6300, market: 8100, shouldCost: 6500, portfolio: 6400, yearOverYear: 6650 },
+        "Fire Safety": { actual: 4100, market: 5900, shouldCost: 4200, portfolio: 4300, yearOverYear: 4350 },
+        "Plumbing": { actual: 5900, market: 7800, shouldCost: 5800, portfolio: 6100, yearOverYear: 6200 },
+        "General R&M": { actual: 11800, market: 15200, shouldCost: 11500, portfolio: 12000, yearOverYear: 12400 }
       },
       "Monthly": {
-        "HVAC": { actual: 2800, market: 3930, cleanSheet: 2733, portfolio: 2867 },
-        "Elevator": { actual: 2100, market: 2700, cleanSheet: 2167, portfolio: 2133 },
-        "Fire Safety": { actual: 1367, market: 1967, cleanSheet: 1400, portfolio: 1433 },
-        "Plumbing": { actual: 1967, market: 2600, cleanSheet: 1933, portfolio: 2033 },
-        "General R&M": { actual: 3933, market: 5067, cleanSheet: 3833, portfolio: 4000 }
+        "HVAC": { actual: 2800, market: 3930, shouldCost: 2733, portfolio: 2867, yearOverYear: 2967 },
+        "Elevator": { actual: 2100, market: 2700, shouldCost: 2167, portfolio: 2133, yearOverYear: 2217 },
+        "Fire Safety": { actual: 1367, market: 1967, shouldCost: 1400, portfolio: 1433, yearOverYear: 1450 },
+        "Plumbing": { actual: 1967, market: 2600, shouldCost: 1933, portfolio: 2033, yearOverYear: 2067 },
+        "General R&M": { actual: 3933, market: 5067, shouldCost: 3833, portfolio: 4000, yearOverYear: 4133 }
+      }
+    },
+    "Mission Bay Tech Campus": {
+      "Quarterly": {
+        "HVAC": { actual: 9200, market: 12800, shouldCost: 9000, portfolio: 9400, yearOverYear: 9600 },
+        "Elevator": { actual: 6800, market: 8600, shouldCost: 6600, portfolio: 6900, yearOverYear: 7100 },
+        "Fire Safety": { actual: 4400, market: 6200, shouldCost: 4300, portfolio: 4500, yearOverYear: 4600 },
+        "Plumbing": { actual: 6200, market: 8100, shouldCost: 6000, portfolio: 6300, yearOverYear: 6500 },
+        "General R&M": { actual: 12500, market: 16200, shouldCost: 12200, portfolio: 12800, yearOverYear: 13100 }
+      },
+      "Monthly": {
+        "HVAC": { actual: 3067, market: 4267, shouldCost: 3000, portfolio: 3133, yearOverYear: 3200 },
+        "Elevator": { actual: 2267, market: 2867, shouldCost: 2200, portfolio: 2300, yearOverYear: 2367 },
+        "Fire Safety": { actual: 1467, market: 2067, shouldCost: 1433, portfolio: 1500, yearOverYear: 1533 },
+        "Plumbing": { actual: 2067, market: 2700, shouldCost: 2000, portfolio: 2100, yearOverYear: 2167 },
+        "General R&M": { actual: 4167, market: 5400, shouldCost: 4067, portfolio: 4267, yearOverYear: 4367 }
+      }
+    },
+    "Redwood Shores Office Complex": {
+      "Quarterly": {
+        "HVAC": { actual: 7800, market: 11200, shouldCost: 7600, portfolio: 8000, yearOverYear: 8300 },
+        "Elevator": { actual: 5900, market: 7800, shouldCost: 5700, portfolio: 6000, yearOverYear: 6200 },
+        "Fire Safety": { actual: 3800, market: 5600, shouldCost: 3700, portfolio: 3900, yearOverYear: 4000 },
+        "Plumbing": { actual: 5500, market: 7400, shouldCost: 5300, portfolio: 5700, yearOverYear: 5800 },
+        "General R&M": { actual: 11200, market: 14800, shouldCost: 10900, portfolio: 11500, yearOverYear: 11800 }
+      },
+      "Monthly": {
+        "HVAC": { actual: 2600, market: 3733, shouldCost: 2533, portfolio: 2667, yearOverYear: 2767 },
+        "Elevator": { actual: 1967, market: 2600, shouldCost: 1900, portfolio: 2000, yearOverYear: 2067 },
+        "Fire Safety": { actual: 1267, market: 1867, shouldCost: 1233, portfolio: 1300, yearOverYear: 1333 },
+        "Plumbing": { actual: 1833, market: 2467, shouldCost: 1767, portfolio: 1900, yearOverYear: 1933 },
+        "General R&M": { actual: 3733, market: 4933, shouldCost: 3633, portfolio: 3833, yearOverYear: 3933 }
+      }
+    },
+    "Palo Alto Research Center": {
+      "Quarterly": {
+        "HVAC": { actual: 6900, market: 10600, shouldCost: 6700, portfolio: 7100, yearOverYear: 7400 },
+        "Elevator": { actual: 5200, market: 7300, shouldCost: 5000, portfolio: 5300, yearOverYear: 5500 },
+        "Fire Safety": { actual: 3300, market: 5200, shouldCost: 3200, portfolio: 3400, yearOverYear: 3500 },
+        "Plumbing": { actual: 4800, market: 6900, shouldCost: 4600, portfolio: 4900, yearOverYear: 5100 },
+        "General R&M": { actual: 10100, market: 13900, shouldCost: 9800, portfolio: 10400, yearOverYear: 10700 }
+      },
+      "Monthly": {
+        "HVAC": { actual: 2300, market: 3533, shouldCost: 2233, portfolio: 2367, yearOverYear: 2467 },
+        "Elevator": { actual: 1733, market: 2433, shouldCost: 1667, portfolio: 1767, yearOverYear: 1833 },
+        "Fire Safety": { actual: 1100, market: 1733, shouldCost: 1067, portfolio: 1133, yearOverYear: 1167 },
+        "Plumbing": { actual: 1600, market: 2300, shouldCost: 1533, portfolio: 1633, yearOverYear: 1700 },
+        "General R&M": { actual: 3367, market: 4633, shouldCost: 3267, portfolio: 3467, yearOverYear: 3567 }
+      }
+    },
+    "South Bay Industrial Park": {
+      "Quarterly": {
+        "HVAC": { actual: 11800, market: 15400, shouldCost: 11500, portfolio: 12100, yearOverYear: 12500 },
+        "Elevator": { actual: 8200, market: 10300, shouldCost: 8000, portfolio: 8400, yearOverYear: 8700 },
+        "Fire Safety": { actual: 5100, market: 7300, shouldCost: 4900, portfolio: 5200, yearOverYear: 5400 },
+        "Plumbing": { actual: 7300, market: 9800, shouldCost: 7100, portfolio: 7500, yearOverYear: 7800 },
+        "General R&M": { actual: 14200, market: 18600, shouldCost: 13900, portfolio: 14500, yearOverYear: 15000 }
+      },
+      "Monthly": {
+        "HVAC": { actual: 3933, market: 5133, shouldCost: 3833, portfolio: 4033, yearOverYear: 4167 },
+        "Elevator": { actual: 2733, market: 3433, shouldCost: 2667, portfolio: 2800, yearOverYear: 2900 },
+        "Fire Safety": { actual: 1700, market: 2433, shouldCost: 1633, portfolio: 1733, yearOverYear: 1800 },
+        "Plumbing": { actual: 2433, market: 3267, shouldCost: 2367, portfolio: 2500, yearOverYear: 2600 },
+        "General R&M": { actual: 4733, market: 6200, shouldCost: 4633, portfolio: 4833, yearOverYear: 5000 }
+      }
+    },
+    "Financial District Tower": {
+      "Quarterly": {
+        "HVAC": { actual: 9800, market: 13200, shouldCost: 9600, portfolio: 10000, yearOverYear: 10300 },
+        "Elevator": { actual: 7100, market: 8900, shouldCost: 6900, portfolio: 7300, yearOverYear: 7500 },
+        "Fire Safety": { actual: 4500, market: 6400, shouldCost: 4400, portfolio: 4600, yearOverYear: 4700 },
+        "Plumbing": { actual: 6500, market: 8600, shouldCost: 6300, portfolio: 6700, yearOverYear: 6900 },
+        "General R&M": { actual: 12800, market: 16800, shouldCost: 12500, portfolio: 13100, yearOverYear: 13500 }
+      },
+      "Monthly": {
+        "HVAC": { actual: 3267, market: 4400, shouldCost: 3200, portfolio: 3333, yearOverYear: 3433 },
+        "Elevator": { actual: 2367, market: 2967, shouldCost: 2300, portfolio: 2433, yearOverYear: 2500 },
+        "Fire Safety": { actual: 1500, market: 2133, shouldCost: 1467, portfolio: 1533, yearOverYear: 1567 },
+        "Plumbing": { actual: 2167, market: 2867, shouldCost: 2100, portfolio: 2233, yearOverYear: 2300 },
+        "General R&M": { actual: 4267, market: 5600, shouldCost: 4167, portfolio: 4367, yearOverYear: 4500 }
       }
     },
     "All Properties": {
       "Quarterly": {
-        "HVAC": { actual: 10200, market: 13800, cleanSheet: 9800, portfolio: 10400 },
-        "Elevator": { actual: 7500, market: 9200, cleanSheet: 7200, portfolio: 7600 },
-        "Fire Safety": { actual: 5200, market: 7100, cleanSheet: 4900, portfolio: 5300 },
-        "Plumbing": { actual: 6800, market: 8900, cleanSheet: 6500, portfolio: 7100 },
-        "General R&M": { actual: 13500, market: 17200, cleanSheet: 13000, portfolio: 13800 }
+        "HVAC": { actual: 10200, market: 13800, shouldCost: 9800, portfolio: 10400, yearOverYear: 10800 },
+        "Elevator": { actual: 7500, market: 9200, shouldCost: 7200, portfolio: 7600, yearOverYear: 7900 },
+        "Fire Safety": { actual: 5200, market: 7100, shouldCost: 4900, portfolio: 5300, yearOverYear: 5500 },
+        "Plumbing": { actual: 6800, market: 8900, shouldCost: 6500, portfolio: 7100, yearOverYear: 7300 },
+        "General R&M": { actual: 13500, market: 17200, shouldCost: 13000, portfolio: 13800, yearOverYear: 14200 }
       },
       "Monthly": {
-        "HVAC": { actual: 3400, market: 4600, cleanSheet: 3267, portfolio: 3467 },
-        "Elevator": { actual: 2500, market: 3067, cleanSheet: 2400, portfolio: 2533 },
-        "Fire Safety": { actual: 1733, market: 2367, cleanSheet: 1633, portfolio: 1767 },
-        "Plumbing": { actual: 2267, market: 2967, cleanSheet: 2167, portfolio: 2367 },
-        "General R&M": { actual: 4500, market: 5733, cleanSheet: 4333, portfolio: 4600 }
+        "HVAC": { actual: 3400, market: 4600, shouldCost: 3267, portfolio: 3467, yearOverYear: 3600 },
+        "Elevator": { actual: 2500, market: 3067, shouldCost: 2400, portfolio: 2533, yearOverYear: 2633 },
+        "Fire Safety": { actual: 1733, market: 2367, shouldCost: 1633, portfolio: 1767, yearOverYear: 1833 },
+        "Plumbing": { actual: 2267, market: 2967, shouldCost: 2167, portfolio: 2367, yearOverYear: 2433 },
+        "General R&M": { actual: 4500, market: 5733, shouldCost: 4333, portfolio: 4600, yearOverYear: 4733 }
       }
     }
   }
@@ -3707,7 +3797,7 @@ function SmartInsightsTab() {
     
     return Object.keys(timeData).map(category => {
       const data = timeData[category as keyof typeof timeData]
-      const maxValue = Math.max(data.actual, data.market, data.cleanSheet, data.portfolio)
+      const maxValue = Math.max(data.actual, data.market, data.shouldCost, data.portfolio, data.yearOverYear)
       
       return {
         category,
@@ -3715,13 +3805,15 @@ function SmartInsightsTab() {
         actualWidth: (data.actual / maxValue) * 100,
         market: data.market,
         marketWidth: (data.market / maxValue) * 100,
-        cleanSheet: data.cleanSheet,
-        cleanSheetWidth: (data.cleanSheet / maxValue) * 100,
+        shouldCost: data.shouldCost,
+        shouldCostWidth: (data.shouldCost / maxValue) * 100,
         portfolio: data.portfolio,
         portfolioWidth: (data.portfolio / maxValue) * 100,
-        overCleanSheet: data.actual > data.cleanSheet ? 
-          `${Math.round(((data.actual - data.cleanSheet) / data.cleanSheet) * 100)}% over clean sheet` :
-          `${Math.round(((data.cleanSheet - data.actual) / data.cleanSheet) * 100)}% under clean sheet`,
+        yearOverYear: data.yearOverYear,
+        yearOverYearWidth: (data.yearOverYear / maxValue) * 100,
+        overShouldCost: data.actual > data.shouldCost ? 
+          `${Math.round(((data.actual - data.shouldCost) / data.shouldCost) * 100)}% over should cost` :
+          `${Math.round(((data.shouldCost - data.actual) / data.shouldCost) * 100)}% under should cost`,
         recommendations: ["Contract optimization", "Vendor consolidation"]
       }
     })
@@ -3874,21 +3966,28 @@ function SmartInsightsTab() {
         <CardContent>
           <div className="space-y-6">
             {/* Filter Dropdowns */}
-            <div className="grid grid-cols-4 gap-4 text-center text-sm font-medium text-gray-300 mb-4">
+            <div className="grid grid-cols-6 gap-4 text-center text-sm font-medium text-gray-300 mb-4">
               <div>Properties</div>
               <div>Time Range</div>
               <div>Region</div>
               <div>View Type</div>
+              <div>PM Firm</div>
+              <div>Property Class</div>
             </div>
             
-            <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-6 gap-4 mb-6">
               <Select value={selectedProperty} onValueChange={setSelectedProperty}>
                 <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-600">
-                  <SelectItem value="Stanford Graduate School..." className="text-white">Stanford Graduate School...</SelectItem>
                   <SelectItem value="All Properties" className="text-white">All Properties</SelectItem>
+                  <SelectItem value="Stanford Graduate School..." className="text-white">Stanford Graduate School</SelectItem>
+                  <SelectItem value="Mission Bay Tech Campus" className="text-white">Mission Bay Tech Campus</SelectItem>
+                  <SelectItem value="Redwood Shores Office Complex" className="text-white">Redwood Shores Office Complex</SelectItem>
+                  <SelectItem value="Palo Alto Research Center" className="text-white">Palo Alto Research Center</SelectItem>
+                  <SelectItem value="South Bay Industrial Park" className="text-white">South Bay Industrial Park</SelectItem>
+                  <SelectItem value="Financial District Tower" className="text-white">Financial District Tower</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -3925,6 +4024,76 @@ function SmartInsightsTab() {
                   <SelectItem value="Variance" className="text-white">Variance</SelectItem>
                 </SelectContent>
               </Select>
+              
+              <Select value={selectedPMFirm} onValueChange={setSelectedPMFirm}>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="All" className="text-white">All PM Firms</SelectItem>
+                  <SelectItem value="CBRE" className="text-white">CBRE</SelectItem>
+                  <SelectItem value="JLL" className="text-white">JLL</SelectItem>
+                  <SelectItem value="Local PM" className="text-white">Local PM</SelectItem>
+                  <SelectItem value="Mainstreet PM" className="text-white">Mainstreet PM</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={selectedPropertyClass} onValueChange={setSelectedPropertyClass}>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="All" className="text-white">All Classes</SelectItem>
+                  <SelectItem value="Residential" className="text-white">Residential</SelectItem>
+                  <SelectItem value="Commercial" className="text-white">Commercial</SelectItem>
+                  <SelectItem value="Mixed Use" className="text-white">Mixed Use</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Comparables Checkboxes */}
+            <div className="mb-6 p-4 bg-gray-900 rounded-lg">
+              <div className="flex items-center gap-2 mb-3">
+                <h4 className="text-sm font-medium text-gray-300">Show Comparables:</h4>
+              </div>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showActuals}
+                    onChange={(e) => setShowActuals(e.target.checked)}
+                    className="rounded bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-white">Actuals</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showMarket}
+                    onChange={(e) => setShowMarket(e.target.checked)}
+                    className="rounded bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-white">Market</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showPortfolio}
+                    onChange={(e) => setShowPortfolio(e.target.checked)}
+                    className="rounded bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-white">Portfolio</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showYearOverYear}
+                    onChange={(e) => setShowYearOverYear(e.target.checked)}
+                    className="rounded bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-white">Year-over-Year</span>
+                </label>
+              </div>
             </div>
             
             {getCurrentData().map((item, index) => (
@@ -3932,65 +4101,99 @@ function SmartInsightsTab() {
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium text-white">{item.category}</h4>
                   <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-400">Versus: Market Median, Clean Sheet Pro, Chambre Diversified</span>
+                    <span className="text-sm text-gray-400">Versus: Market Median, Should Cost Pro, Chambre Diversified</span>
                     <span className={`text-sm font-bold px-2 py-1 rounded ${
-                      item.overCleanSheet.includes('under') 
+                      item.overShouldCost.includes('under') 
                         ? 'text-green-400 bg-green-900' 
                         : 'text-red-400 bg-red-900'
                     }`}>
-                      {item.overCleanSheet}
+                      {item.overShouldCost}
                     </span>
                   </div>
                 </div>
                 
                 <div className="space-y-2">
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 text-xs text-gray-400">Actual</div>
-                    <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
-                      <div 
-                        className="bg-blue-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
-                        style={{ width: `${item.actualWidth}%` }}
-                      >
-                        ${item.actual.toLocaleString()}
+                  {showActuals && (
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 text-xs text-gray-400">Actual</div>
+                      <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
+                        <div 
+                          className="bg-blue-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
+                          style={{ width: `${item.actualWidth}%` }}
+                        >
+                          ${item.actual.toLocaleString()}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                   
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 text-xs text-gray-400">Market</div>
-                    <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
-                      <div 
-                        className="bg-gray-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
-                        style={{ width: `${item.marketWidth}%` }}
-                      >
-                        ${item.market.toLocaleString()}
+                  {showMarket && (
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 text-xs text-gray-400">Market</div>
+                      <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
+                        <div 
+                          className="bg-gray-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
+                          style={{ width: `${item.marketWidth}%` }}
+                        >
+                          ${item.market.toLocaleString()}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                   
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 text-xs text-gray-400">Clean Sheet</div>
-                    <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
-                      <div 
-                        className="bg-green-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
-                        style={{ width: `${item.cleanSheetWidth}%` }}
-                      >
-                        ${item.cleanSheet.toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-4">
+                          <div className="w-20 text-xs text-gray-400 flex items-center gap-1">
+                            Should cost
+                            <Info className="h-3 w-3 text-gray-500 cursor-help" />
+                          </div>
+                          <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
+                            <div 
+                              className="bg-green-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
+                              style={{ width: `${item.shouldCostWidth}%` }}
+                            >
+                              ${item.shouldCost.toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-gray-800 border-gray-600 text-white max-w-xs">
+                        <p className="text-sm">
+                          AI-led clean sheet estimate based on market rates, trends, seasonality, and other factors.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 text-xs text-gray-400">Portfolio</div>
-                    <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
-                      <div 
-                        className="bg-purple-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
-                        style={{ width: `${item.portfolioWidth}%` }}
-                      >
-                        ${item.portfolio.toLocaleString()}
+                  {showPortfolio && (
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 text-xs text-gray-400">Portfolio</div>
+                      <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
+                        <div 
+                          className="bg-purple-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
+                          style={{ width: `${item.portfolioWidth}%` }}
+                        >
+                          ${item.portfolio.toLocaleString()}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
+                  
+                  {showYearOverYear && (
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 text-xs text-gray-400">YoY</div>
+                      <div className="flex-1 bg-gray-700 rounded-full h-8 relative">
+                        <div 
+                          className="bg-orange-500 h-8 rounded-full flex items-center justify-end pr-2 text-white text-sm font-medium"
+                          style={{ width: `${item.yearOverYearWidth}%` }}
+                        >
+                          ${item.yearOverYear.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex flex-wrap gap-2">
