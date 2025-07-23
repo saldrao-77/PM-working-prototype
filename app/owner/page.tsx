@@ -366,7 +366,7 @@ export default function OwnerDashboard() {
           <div className="p-6">
             {/* Tab Content */}
             {activeTab === "dashboard" && <DashboardTab setActiveTab={setActiveTab} />}
-            {activeTab === "expenses" && <ExpensesTab />}
+            {activeTab === "expenses" && <ExpensesTab setActiveTab={setActiveTab} setSharedMessages={setSharedMessages} />}
             {activeTab === "properties" && <PropertiesTab setActiveTab={setActiveTab} />}
             {activeTab === "forecasting" && <ForecastingTab setActiveTab={setActiveTab} addMessage={addMessage} />}
             {activeTab === "smart-insights" && <SmartInsightsTab />}
@@ -877,7 +877,24 @@ function PropertyExpenseStatus({ name, ytdSpent, budget, isUnderBudget, variance
 
 
 // Expenses Tab Component
-function ExpensesTab() {
+function ExpensesTab({ setActiveTab, setSharedMessages }: { 
+  setActiveTab: (tab: string) => void;
+  setSharedMessages: React.Dispatch<React.SetStateAction<{
+    id: string;
+    propertyId: string;
+    propertyName: string;
+    senderId: string;
+    senderName: string;
+    senderRole: string;
+    content: string;
+    timestamp: Date;
+    status: string;
+    threadId: string;
+    type?: string;
+    relatedExpenses?: string[];
+    packetId?: string;
+  }[]>>;
+}) {
   const [selectedPeriod, setSelectedPeriod] = useState("MTD")
   const [statusFilter, setStatusFilter] = useState("All")
   const [typeFilter, setTypeFilter] = useState("All")
@@ -897,6 +914,9 @@ function ExpensesTab() {
   const [allExpensesMadeByFilter, setAllExpensesMadeByFilter] = useState("all")
   const [allExpensesDateFromFilter, setAllExpensesDateFromFilter] = useState("")
   const [allExpensesDateToFilter, setAllExpensesDateToFilter] = useState("")
+
+  // Expense Errors States
+  const [approvedErrors, setApprovedErrors] = useState<Set<string>>(new Set())
 
   // Mock expense data for approval
   const expensesNeedingApproval = [
@@ -1023,6 +1043,70 @@ function ExpensesTab() {
       status: "Processed",
       memo: "Regular office supplies",
       receipt: "✓"
+    }
+  ]
+
+  // Mock expense errors data - AI-flagged potential PM errors
+  const expenseErrors = [
+    {
+      id: "error1",
+      date: "2025-01-15",
+      merchant: "Home Depot",
+      amount: 150.00,
+      type: "Card",
+      madeBy: "John Smith",
+      property: "Stanford GSB",
+      workOrder: "HVAC System Maintenance - Annual Service",
+      errorType: "Missing receipt",
+      aiFlag: "Missing receipt",
+      billable: "Yes",
+      status: "Reimbursed",
+      description: "Purchase receipt not uploaded to system"
+    },
+    {
+      id: "error2", 
+      date: "2025-01-17",
+      merchant: "Ace Hardware",
+      amount: 45.25,
+      type: "Card",
+      madeBy: "Alice Johnson",
+      property: "Stanford GSB",
+      workOrder: "HVAC System Maintenance - Annual Service",
+      errorType: "Wrong property",
+      aiFlag: "Wrong property",
+      billable: "No",
+      status: "Non-Reimbursable",
+      description: "Expense charged to wrong property code"
+    },
+    {
+      id: "error3",
+      date: "2025-01-19", 
+      merchant: "Staples",
+      amount: 89.99,
+      type: "Card",
+      madeBy: "Lisa Wong",
+      property: "Sunnyvale 432",
+      workOrder: "Emergency Plumbing Repair - Kitchen Sink",
+      errorType: "Unusual amount",
+      aiFlag: "Unusual amount",
+      billable: "No",
+      status: "Non-Reimbursable", 
+      description: "Amount significantly higher than typical for this vendor/category"
+    },
+    {
+      id: "error4",
+      date: "2025-01-20",
+      merchant: "ABC Electrical Services", 
+      amount: 2500.00,
+      type: "Vendor",
+      madeBy: "Property Manager",
+      property: "Sunnyvale 432",
+      workOrder: "Electrical Panel Upgrade",
+      errorType: "Missing receipt",
+      aiFlag: "Missing receipt",
+      billable: "Yes",
+      status: "Pending",
+      description: "High-value transaction without supporting documentation"
     }
   ]
 
@@ -1249,6 +1333,38 @@ function ExpensesTab() {
       setApproveExpenseDialog(null)
       // TODO: Update expense status
     }
+  }
+
+  // Expense Error Handlers
+  const handleApproveError = (errorId: string) => {
+    // Add to approved errors set
+    setApprovedErrors(prev => new Set([...prev, errorId]))
+    console.log(`Approved expense error: ${errorId}`)
+  }
+
+  const handleContactPM = (error: any) => {
+    // Directly send message to communications hub without dialog
+    const messageContent = `Hi, I noticed an issue with the expense from ${error.merchant} on ${error.date} for $${error.amount.toFixed(2)}. The AI system flagged this as: ${error.description}. Can you please review and clarify?`
+    
+    const newMessage = {
+      id: Date.now().toString(),
+      propertyId: error.property.toLowerCase().replace(/\s+/g, ''),
+      propertyName: error.property,
+      senderId: "owner1",
+      senderName: "Property Owner",
+      senderRole: "owner",
+      content: messageContent,
+      timestamp: new Date(),
+      status: "sent",
+      threadId: `expense_error_${error.id}`,
+      type: "expense_error",
+      relatedExpenses: [error.id]
+    }
+    
+    setSharedMessages((prev: any) => [...prev, newMessage])
+    
+    // Navigate directly to communications tab
+    setActiveTab("communications")
   }
 
   const handleBulkExport = (type: 'csv' | 'receipts' | 'bookkeeper') => {
@@ -1565,6 +1681,96 @@ function ExpensesTab() {
                           className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
                         >
                           Deny
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Expense Errors */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <FileWarning className="h-5 w-5 text-orange-400" />
+            Expense Errors ({expenseErrors.length})
+          </CardTitle>
+          <CardDescription className="text-gray-400">
+            AI-detected potential errors that need review. These include missing receipts, wrong property assignments, unusual amounts, and other data inconsistencies.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-gray-700">
+                <tr>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Date</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Merchant</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Amount</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Made By</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Property</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Work Order</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Billable</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Status</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">AI Flag</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expenseErrors.map((error) => (
+                  <tr key={error.id} className="border-b border-gray-700 hover:bg-gray-700">
+                    <td className="py-3 px-4 text-white">{error.date}</td>
+                    <td className="py-3 px-4 text-white">{error.merchant}</td>
+                    <td className="py-3 px-4 text-white">${error.amount.toFixed(2)}</td>
+                    <td className="py-3 px-4 text-white">{error.madeBy}</td>
+                    <td className="py-3 px-4 text-white">{error.property}</td>
+                    <td className="py-3 px-4 text-white">{error.workOrder || 'N/A'}</td>
+                    <td className="py-3 px-4">
+                      <Badge className={error.billable === 'Yes' ? 'bg-green-600' : 'bg-red-600'}>
+                        {error.billable}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-4">
+                      <Badge className={
+                        error.status === 'Reimbursed' ? 'bg-blue-600' : 
+                        error.status === 'Pending' ? 'bg-yellow-600' : 
+                        'bg-gray-600'
+                      }>
+                        {error.status}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-4">
+                      <Badge className="bg-orange-600 text-white">
+                        {error.aiFlag}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex gap-2">
+                        {approvedErrors.has(error.id) ? (
+                          <div className="flex items-center gap-2 text-green-400">
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="text-sm font-medium">Approved</span>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => handleApproveError(error.id)}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            Approve
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          onClick={() => handleContactPM(error)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          <MessageSquare className="h-4 w-4 mr-1" />
+                          Contact PM
                         </Button>
                       </div>
                     </td>
@@ -2039,6 +2245,8 @@ function ExpensesTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+
     </div>
   )
 }
@@ -2542,7 +2750,7 @@ function PropertiesTab({ setActiveTab }: { setActiveTab?: (tab: string) => void 
 
       {/* Properties Table - Matching Screenshot */}
       <div className="space-y-4">
-        <h3 className="text-lg font-bold text-white">Properties</h3>
+        <h3 className="text-lg font-bold text-white">Staff list</h3>
         
         <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
           {/* Table Header */}
@@ -5352,6 +5560,11 @@ function ReportingTab() {
       description: "Breaks down expenses by deductible/non-deductible GL categories. Totals by property and time period. CSV includes memo fields, category mapping, and receipt links."
     },
     {
+      id: "quarterly-lp-report",
+      name: "Quarterly LP Report",
+      description: "Comprehensive quarterly report for Limited Partners including: Property-level financial summary (gross income, operating expenses, NOI, CapEx, net cash flow), Budget vs. Actuals analysis, Distribution history and status, Key metrics (occupancy, rent roll, delinquencies), Major events, Forward-looking forecast, and tax-ready attachments."
+    },
+    {
       id: "tax-report",
       name: "Annual Expense Summary for Tax Filing",
       description: "A clean, downloadable PDF or Excel report that includes:\n\n• All billable expenses across the portfolio\n\n• GL-coded line items (Date, Vendor, Property, Category, Amount)\n\n• Attached receipts and memos\n\n• Trust account tie-outs\n\n• Tax-deductible vs. non-deductible flagging\n\nPurpose: To make it one-click easy to forward a complete, accountant-ready expense package—no chasing PMs, no missing documentation."
@@ -5700,6 +5913,15 @@ function ReportingTab() {
                         </>
                       )}
                     </Button>
+                    {reportType === "quarterly-lp-report" && (
+                      <Button
+                        onClick={() => window.open('/quarterly-lp-dashboard', '_blank')}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Live Dashboard
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
