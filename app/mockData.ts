@@ -474,6 +474,51 @@ export const collateralDocuments: CollateralDocument[] = [
     thumbnailUrl: '/thumbnails/compliance_report_q4.jpg',
     description: 'Quarterly compliance report',
     status: 'active'
+  },
+  {
+    id: 'doc11',
+    filename: 'Manhattan_Plaza_Lease_Agreement.pdf',
+    documentType: 'vendor_contract',
+    uploadDate: '2024-01-12',
+    uploadedBy: 'Sarah Chen',
+    propertyId: 'prop5',
+    propertyName: 'Manhattan Plaza',
+    tags: ['Lease', 'Contract', 'NYC'],
+    fileSize: 1800000,
+    fileUrl: '/documents/manhattan_lease.pdf',
+    thumbnailUrl: '/thumbnails/manhattan_lease.jpg',
+    description: 'Master lease agreement for Manhattan Plaza',
+    status: 'active'
+  },
+  {
+    id: 'doc12',
+    filename: 'Chicago_Loop_Insurance_2024.pdf',
+    documentType: 'insurance_certificate',
+    uploadDate: '2024-01-08',
+    uploadedBy: 'Mike Chen',
+    propertyId: 'prop7',
+    propertyName: 'Chicago Loop Tower',
+    tags: ['Insurance', 'Chicago', 'Commercial'],
+    fileSize: 950000,
+    fileUrl: '/documents/chicago_insurance.pdf',
+    thumbnailUrl: '/thumbnails/chicago_insurance.jpg',
+    description: 'Commercial property insurance certificate',
+    status: 'active'
+  },
+  {
+    id: 'doc13',
+    filename: 'Seattle_Waterfront_Warranty.pdf',
+    documentType: 'warranty',
+    uploadDate: '2024-01-05',
+    uploadedBy: 'Alice Johnson',
+    propertyId: 'prop10',
+    propertyName: 'Seattle Waterfront',
+    tags: ['Warranty', 'Seattle', 'Equipment'],
+    fileSize: 750000,
+    fileUrl: '/documents/seattle_warranty.pdf',
+    thumbnailUrl: '/thumbnails/seattle_warranty.jpg',
+    description: 'HVAC equipment warranty documentation',
+    status: 'active'
   }
 ];
 
@@ -490,12 +535,28 @@ export const documentTypeLabels: Record<DocumentType, string> = {
   other: 'Other'
 };
 
+// Area options for filters
+export const areaOptions = [
+  { id: 'all', name: 'All Areas' },
+  { id: 'bay-area', name: 'Bay Area' },
+  { id: 'new-york', name: 'New York' },
+  { id: 'chicago', name: 'Chicago' },
+  { id: 'los-angeles', name: 'Los Angeles' },
+  { id: 'seattle', name: 'Seattle' }
+];
+
 // Property options for filters
 export const propertyOptions = [
-  { id: 'prop1', name: 'Stanford GSB' },
-  { id: 'prop2', name: 'Sunnyvale 432' },
-  { id: 'prop3', name: 'Downtown Lofts' },
-  { id: 'prop4', name: 'Redwood Shores' }
+  { id: 'prop1', name: 'Stanford GSB', area: 'bay-area' },
+  { id: 'prop2', name: 'Sunnyvale 432', area: 'bay-area' },
+  { id: 'prop3', name: 'Downtown Lofts', area: 'bay-area' },
+  { id: 'prop4', name: 'Redwood Shores', area: 'bay-area' },
+  { id: 'prop5', name: 'Manhattan Plaza', area: 'new-york' },
+  { id: 'prop6', name: 'Brooklyn Heights', area: 'new-york' },
+  { id: 'prop7', name: 'Chicago Loop Tower', area: 'chicago' },
+  { id: 'prop8', name: 'River North Condos', area: 'chicago' },
+  { id: 'prop9', name: 'Beverly Hills Office', area: 'los-angeles' },
+  { id: 'prop10', name: 'Seattle Waterfront', area: 'seattle' }
 ];
 
 // Staff options for filters

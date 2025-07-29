@@ -85,6 +85,7 @@ import {
   collateralDocuments, 
   documentTypeLabels, 
   propertyOptions, 
+  areaOptions,
   staffOptions, 
   DocumentType, 
   CollateralDocument,
@@ -6203,6 +6204,7 @@ function CollateralTab() {
   const [collateralFilterProperty, setCollateralFilterProperty] = useState('all')
   const [collateralFilterDocType, setCollateralFilterDocType] = useState('all')
   const [collateralFilterUploadedBy, setCollateralFilterUploadedBy] = useState('all')
+  const [collateralFilterArea, setCollateralFilterArea] = useState('all')
   const [collateralFilterDateFrom, setCollateralFilterDateFrom] = useState('')
   const [collateralFilterDateTo, setCollateralFilterDateTo] = useState('')
   const [collateralUploadDialogOpen, setCollateralUploadDialogOpen] = useState(false)
@@ -6560,6 +6562,14 @@ function CollateralTab() {
         return false
       }
       
+      // Area filter
+      if (collateralFilterArea !== 'all') {
+        const property = propertyOptions.find(p => p.id === doc.propertyId)
+        if (!property || property.area !== collateralFilterArea) {
+          return false
+        }
+      }
+      
       // Document type filter
       if (collateralFilterDocType !== 'all' && doc.documentType !== collateralFilterDocType) {
         return false
@@ -6749,7 +6759,7 @@ function CollateralTab() {
       </div>
 
       {/* Search and Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-6">
         <div className="md:col-span-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -6771,6 +6781,19 @@ function CollateralTab() {
             {propertyOptions.map((property) => (
               <SelectItem key={property.id} value={property.id} className="text-white">
                 {property.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={collateralFilterArea} onValueChange={setCollateralFilterArea}>
+          <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+            <SelectValue placeholder="All Areas" />
+          </SelectTrigger>
+          <SelectContent className="bg-gray-800 border-gray-600">
+            {areaOptions.map((area) => (
+              <SelectItem key={area.id} value={area.id} className="text-white">
+                {area.name}
               </SelectItem>
             ))}
           </SelectContent>

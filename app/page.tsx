@@ -99,7 +99,7 @@ import { cn } from "@/lib/utils"
 import { useRouter } from 'next/navigation'
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { jobsList, activityMilestones, jobNotes, activityFiles, collateralDocuments, documentTypeLabels, propertyOptions, staffOptions, DocumentType, CollateralDocument, bankAccounts, ownerTrustAccounts, invoices, creditCards, teamMembers } from './mockData';
+import { jobsList, activityMilestones, jobNotes, activityFiles, collateralDocuments, documentTypeLabels, propertyOptions, areaOptions, staffOptions, DocumentType, CollateralDocument, bankAccounts, ownerTrustAccounts, invoices, creditCards, teamMembers } from './mockData';
 
 // Sample staff list
 const staffList = [
@@ -846,6 +846,10 @@ function BudgetingTab() {
     aggressiveGrowth: false,
     freeformNotes: ''
   })
+  const [expandedSubGL, setExpandedSubGL] = useState<Set<number>>(new Set())
+  const [accountingMethod, setAccountingMethod] = useState<'cash' | 'accrual'>('accrual')
+  const [uploadDialog, setUploadDialog] = useState<'chartOfAccounts' | null>(null)
+  const [previousBudgetFile, setPreviousBudgetFile] = useState<File | null>(null)
 
     // Property budget data structure
   const properties = [
@@ -854,28 +858,103 @@ function BudgetingTab() {
     { id: 'prop3', name: 'Redwood Shores Office Complex' }
   ]
 
+  // Sub GL accounts data
+  const subGLAccounts = {
+    412: [ // Rent Income sub accounts
+      { subAccount: '412.1', name: 'Base Rent', lastYear: 2200000, budget2025: 2300000, ytdActual: 1340000 },
+      { subAccount: '412.2', name: 'Late Fees', lastYear: 120000, budget2025: 130000, ytdActual: 75000 },
+      { subAccount: '412.3', name: 'Rent Escalations', lastYear: 80000, budget2025: 90000, ytdActual: 45000 }
+    ],
+    413: [ // Renters Insurance Income sub accounts
+      { subAccount: '413.1', name: 'Insurance Commission', lastYear: 15000, budget2025: 16000, ytdActual: 9000 },
+      { subAccount: '413.2', name: 'Administrative Fee', lastYear: 9000, budget2025: 10000, ytdActual: 6000 }
+    ],
+    414: [ // Repairs Income sub accounts
+      { subAccount: '414.1', name: 'Tenant Damage Reimbursement', lastYear: 12000, budget2025: 13000, ytdActual: 8000 },
+      { subAccount: '414.2', name: 'Insurance Claims', lastYear: 6000, budget2025: 7000, ytdActual: 4000 }
+    ],
+    415: [ // Utility Income sub accounts
+      { subAccount: '415.1', name: 'Electricity Reimbursement', lastYear: 85000, budget2025: 90000, ytdActual: 52000 },
+      { subAccount: '415.2', name: 'Water/Sewer Reimbursement', lastYear: 35000, budget2025: 38000, ytdActual: 22000 },
+      { subAccount: '415.3', name: 'Gas Reimbursement', lastYear: 25000, budget2025: 27000, ytdActual: 15000 }
+    ],
+    416: [ // Pet Fee Income sub accounts
+      { subAccount: '416.1', name: 'Pet Deposits', lastYear: 20000, budget2025: 22000, ytdActual: 13000 },
+      { subAccount: '416.2', name: 'Monthly Pet Fees', lastYear: 16000, budget2025: 17000, ytdActual: 9500 }
+    ],
+    505: [ // Cleaning and Maintenance sub accounts
+      { subAccount: '505.1', name: 'Regular Cleaning', lastYear: 120000, budget2025: 125000, ytdActual: 72000 },
+      { subAccount: '505.2', name: 'Deep Cleaning', lastYear: 35000, budget2025: 35000, ytdActual: 20000 },
+      { subAccount: '505.3', name: 'Maintenance Supplies', lastYear: 25000, budget2025: 25000, ytdActual: 16000 }
+    ],
+    509: [ // Insurance sub accounts
+      { subAccount: '509.1', name: 'Property Insurance', lastYear: 65000, budget2025: 70000, ytdActual: 35000 },
+      { subAccount: '509.2', name: 'Liability Insurance', lastYear: 20000, budget2025: 22000, ytdActual: 11000 },
+      { subAccount: '509.3', name: 'Workers Comp', lastYear: 10000, budget2025: 10000, ytdActual: 5000 }
+    ],
+    510: [ // Landscaping sub accounts
+      { subAccount: '510.1', name: 'Regular Maintenance', lastYear: 45000, budget2025: 48000, ytdActual: 28000 },
+      { subAccount: '510.2', name: 'Seasonal Plantings', lastYear: 15000, budget2025: 16000, ytdActual: 9000 },
+      { subAccount: '510.3', name: 'Irrigation', lastYear: 8000, budget2025: 8000, ytdActual: 5000 }
+    ],
+    511: [ // Legal and Professional Fees sub accounts
+      { subAccount: '511.1', name: 'Legal Fees', lastYear: 25000, budget2025: 30000, ytdActual: 18000 },
+      { subAccount: '511.2', name: 'Accounting Fees', lastYear: 15000, budget2025: 15000, ytdActual: 8000 },
+      { subAccount: '511.3', name: 'Consulting Fees', lastYear: 5000, budget2025: 5000, ytdActual: 2000 }
+    ],
+    513: [ // Management Fees sub accounts
+      { subAccount: '513.1', name: 'Base Management Fee', lastYear: 120000, budget2025: 126000, ytdActual: 73000 },
+      { subAccount: '513.2', name: 'Leasing Fees', lastYear: 24000, budget2025: 25200, ytdActual: 14600 }
+    ],
+    522: [ // Repairs sub accounts
+      { subAccount: '522.1', name: 'Emergency Repairs', lastYear: 45000, budget2025: 50000, ytdActual: 28000 },
+      { subAccount: '522.2', name: 'Scheduled Maintenance', lastYear: 25000, budget2025: 25000, ytdActual: 15000 },
+      { subAccount: '522.3', name: 'Tenant Damage Repairs', lastYear: 15000, budget2025: 15000, ytdActual: 9000 }
+    ],
+    524: [ // Appliance Repairs sub accounts
+      { subAccount: '524.1', name: 'HVAC Appliances', lastYear: 18000, budget2025: 20000, ytdActual: 10000 },
+      { subAccount: '524.2', name: 'Kitchen Appliances', lastYear: 14000, budget2025: 15000, ytdActual: 8000 }
+    ],
+    525: [ // Bathroom Repairs sub accounts
+      { subAccount: '525.1', name: 'Plumbing Fixtures', lastYear: 15000, budget2025: 16000, ytdActual: 8000 },
+      { subAccount: '525.2', name: 'Tile and Flooring', lastYear: 13000, budget2025: 14000, ytdActual: 7000 }
+    ],
+    537: [ // Electric sub accounts
+      { subAccount: '537.1', name: 'Common Area Electric', lastYear: 110000, budget2025: 98000, ytdActual: 56000 },
+      { subAccount: '537.2', name: 'Unit Electric', lastYear: 75000, budget2025: 67000, ytdActual: 39000 }
+    ],
+    538: [ // Gas sub accounts
+      { subAccount: '538.1', name: 'Heating Gas', lastYear: 45000, budget2025: 48000, ytdActual: 27000 },
+      { subAccount: '538.2', name: 'Hot Water Gas', lastYear: 23000, budget2025: 24000, ytdActual: 14000 }
+    ],
+    539: [ // Water/Sewer sub accounts
+      { subAccount: '539.1', name: 'Water Usage', lastYear: 65000, budget2025: 60000, ytdActual: 35000 },
+      { subAccount: '539.2', name: 'Sewer Fees', lastYear: 30000, budget2025: 28000, ytdActual: 17000 }
+    ]
+  }
+
   // Complete GL Chart of Accounts structure based on provided chart
   const chartOfAccounts = {
     // Income Accounts (4000s)
     income: [
-      { account: 412, name: 'Rent Income', type: 'Income', lastYear: 2400000, budget2025: 2520000, ytdActual: 1460000, aiGenerated: true, rationale: 'AI: 5% increase based on market rates + 2 new leases' },
-      { account: 413, name: 'Renters Insurance Income', type: 'Income', lastYear: 24000, budget2025: 26000, ytdActual: 15000, aiGenerated: true, rationale: 'AI: Optional insurance program growth' },
-      { account: 414, name: 'Repairs Income', type: 'Income', lastYear: 18000, budget2025: 20000, ytdActual: 12000, aiGenerated: true, rationale: 'AI: Tenant-caused damage reimbursements' },
-      { account: 415, name: 'Utility Income', type: 'Income', lastYear: 145000, budget2025: 155000, ytdActual: 89000, aiGenerated: true, rationale: 'AI: Utility reimbursement from tenants, 7% rate increase' },
-      { account: 416, name: 'Pet Fee Income', type: 'Income', lastYear: 36000, budget2025: 39000, ytdActual: 22500, aiGenerated: true, rationale: 'AI: Pet policy expansion, $50/month per pet' }
+      { account: 412, name: 'Rent Income', type: 'Income', lastYear: 2400000, budget2025: 2520000, ytdActual: 1460000, aiGenerated: true, rationale: 'AI: 5% increase based on market rates + 2 new leases', hasSubGL: true },
+      { account: 413, name: 'Renters Insurance Income', type: 'Income', lastYear: 24000, budget2025: 26000, ytdActual: 15000, aiGenerated: true, rationale: 'AI: Optional insurance program growth', hasSubGL: true },
+      { account: 414, name: 'Repairs Income', type: 'Income', lastYear: 18000, budget2025: 20000, ytdActual: 12000, aiGenerated: true, rationale: 'AI: Tenant-caused damage reimbursements', hasSubGL: true },
+      { account: 415, name: 'Utility Income', type: 'Income', lastYear: 145000, budget2025: 155000, ytdActual: 89000, aiGenerated: true, rationale: 'AI: Utility reimbursement from tenants, 7% rate increase', hasSubGL: true },
+      { account: 416, name: 'Pet Fee Income', type: 'Income', lastYear: 36000, budget2025: 39000, ytdActual: 22500, aiGenerated: true, rationale: 'AI: Pet policy expansion, $50/month per pet', hasSubGL: true }
     ],
     // Operating Expenses (5000s)
     operatingExpenses: [
-      { account: 505, name: 'Cleaning and Maintenance', type: 'Operating Expenses', lastYear: 180000, budget2025: 185000, ytdActual: 108000, aiGenerated: true, rationale: 'AI: Contract renewal +2.8% inflation adjustment' },
-      { account: 509, name: 'Insurance', type: 'Operating Expenses', lastYear: 95000, budget2025: 102000, ytdActual: 51000, aiGenerated: true, rationale: 'AI: Property insurance +7% premium increase' },
-      { account: 510, name: 'Landscaping', type: 'Operating Expenses', lastYear: 68000, budget2025: 72000, ytdActual: 42000, aiGenerated: true, rationale: 'AI: Drought-resistant plants reducing water costs' },
-      { account: 511, name: 'Legal and Professional Fees', type: 'Operating Expenses', lastYear: 45000, budget2025: 50000, ytdActual: 28000, aiGenerated: false, rationale: 'Manual: Anticipated legal work for lease updates' },
-      { account: 513, name: 'Management Fees', type: 'Operating Expenses', lastYear: 144000, budget2025: 151200, ytdActual: 87600, aiGenerated: true, rationale: 'AI: 6% of gross rent income' },
+      { account: 505, name: 'Cleaning and Maintenance', type: 'Operating Expenses', lastYear: 180000, budget2025: 185000, ytdActual: 108000, aiGenerated: true, rationale: 'AI: Contract renewal +2.8% inflation adjustment', hasSubGL: true },
+      { account: 509, name: 'Insurance', type: 'Operating Expenses', lastYear: 95000, budget2025: 102000, ytdActual: 51000, aiGenerated: true, rationale: 'AI: Property insurance +7% premium increase', hasSubGL: true },
+      { account: 510, name: 'Landscaping', type: 'Operating Expenses', lastYear: 68000, budget2025: 72000, ytdActual: 42000, aiGenerated: true, rationale: 'AI: Drought-resistant plants reducing water costs', hasSubGL: true },
+      { account: 511, name: 'Legal and Professional Fees', type: 'Operating Expenses', lastYear: 45000, budget2025: 50000, ytdActual: 28000, aiGenerated: false, rationale: 'Manual: Anticipated legal work for lease updates', hasSubGL: true },
+      { account: 513, name: 'Management Fees', type: 'Operating Expenses', lastYear: 144000, budget2025: 151200, ytdActual: 87600, aiGenerated: true, rationale: 'AI: 6% of gross rent income', hasSubGL: true },
       
       // Repairs subcategories
-      { account: 522, name: 'Repairs', type: 'Operating Expenses', lastYear: 85000, budget2025: 90000, ytdActual: 52000, aiGenerated: true, rationale: 'AI: General repair reserves' },
-      { account: 524, name: 'Appliance Repairs', type: 'Operating Expenses', lastYear: 32000, budget2025: 35000, ytdActual: 18000, aiGenerated: true, rationale: 'AI: Aging appliances require more service' },
-      { account: 525, name: 'Bathroom Repairs', type: 'Operating Expenses', lastYear: 28000, budget2025: 30000, ytdActual: 15000, aiGenerated: true, rationale: 'AI: Fixture replacements scheduled' },
+      { account: 522, name: 'Repairs', type: 'Operating Expenses', lastYear: 85000, budget2025: 90000, ytdActual: 52000, aiGenerated: true, rationale: 'AI: General repair reserves', hasSubGL: true },
+      { account: 524, name: 'Appliance Repairs', type: 'Operating Expenses', lastYear: 32000, budget2025: 35000, ytdActual: 18000, aiGenerated: true, rationale: 'AI: Aging appliances require more service', hasSubGL: true },
+      { account: 525, name: 'Bathroom Repairs', type: 'Operating Expenses', lastYear: 28000, budget2025: 30000, ytdActual: 15000, aiGenerated: true, rationale: 'AI: Fixture replacements scheduled', hasSubGL: true },
       { account: 526, name: 'Electrical Repairs', type: 'Operating Expenses', lastYear: 42000, budget2025: 45000, ytdActual: 26000, aiGenerated: true, rationale: 'AI: Panel upgrades in progress' },
       { account: 527, name: 'Flooring Repairs', type: 'Operating Expenses', lastYear: 55000, budget2025: 60000, ytdActual: 32000, aiGenerated: true, rationale: 'AI: High-traffic area replacements' },
       { account: 529, name: 'HVAC Repairs', type: 'Operating Expenses', lastYear: 125000, budget2025: 140000, ytdActual: 78000, aiGenerated: true, rationale: 'AI: Equipment age analysis suggests increased maintenance' },
@@ -883,10 +962,10 @@ function BudgetingTab() {
       { account: 531, name: 'Plumbing Repairs', type: 'Operating Expenses', lastYear: 67000, budget2025: 65000, ytdActual: 35000, aiGenerated: true, rationale: 'AI: Recent pipe replacements reducing future costs' },
       
       // Utilities
-      { account: 536, name: 'Utilities', type: 'Operating Expenses', lastYear: 0, budget2025: 0, ytdActual: 0, aiGenerated: true, rationale: 'AI: Parent category - see subcategories below' },
-      { account: 537, name: 'Electric', type: 'Operating Expenses', lastYear: 185000, budget2025: 165000, ytdActual: 95000, aiGenerated: true, rationale: 'AI: LED upgrades + solar panels = 11% reduction estimated', utilityRate: '$0.32/kWh', utilityEstimate: '515,625 kWh annually' },
-      { account: 538, name: 'Gas', type: 'Operating Expenses', lastYear: 68000, budget2025: 72000, ytdActual: 41000, aiGenerated: true, rationale: 'AI: Winter heating + 6% rate increase', utilityRate: '$1.20/therm', utilityEstimate: '60,000 therms annually' },
-      { account: 539, name: 'Water/Sewer', type: 'Operating Expenses', lastYear: 95000, budget2025: 88000, ytdActual: 52000, aiGenerated: true, rationale: 'AI: Water-efficient fixtures installed, 7% reduction', utilityRate: '$12.50/CCF', utilityEstimate: '7,040 CCF annually' },
+      { account: 536, name: 'Utilities', type: 'Operating Expenses', lastYear: 0, budget2025: 0, ytdActual: 0, aiGenerated: true, rationale: 'AI: Parent category - see subcategories below', hasSubGL: false },
+      { account: 537, name: 'Electric', type: 'Operating Expenses', lastYear: 185000, budget2025: 165000, ytdActual: 95000, aiGenerated: true, rationale: 'AI: LED upgrades + solar panels = 11% reduction estimated', utilityRate: '$0.32/kWh', utilityEstimate: '515,625 kWh annually', hasSubGL: true },
+      { account: 538, name: 'Gas', type: 'Operating Expenses', lastYear: 68000, budget2025: 72000, ytdActual: 41000, aiGenerated: true, rationale: 'AI: Winter heating + 6% rate increase', utilityRate: '$1.20/therm', utilityEstimate: '60,000 therms annually', hasSubGL: true },
+      { account: 539, name: 'Water/Sewer', type: 'Operating Expenses', lastYear: 95000, budget2025: 88000, ytdActual: 52000, aiGenerated: true, rationale: 'AI: Water-efficient fixtures installed, 7% reduction', utilityRate: '$12.50/CCF', utilityEstimate: '7,040 CCF annually', hasSubGL: true },
       { account: 540, name: 'Trash', type: 'Operating Expenses', lastYear: 24000, budget2025: 25000, ytdActual: 14500, aiGenerated: true, rationale: 'AI: Waste contract renewal +4% increase' }
     ],
     // Fixed Assets / Capital Improvements (100s)
@@ -1001,6 +1080,90 @@ function BudgetingTab() {
     setEditingLineItem(null)
   }
 
+  const toggleSubGL = (accountNumber: number) => {
+    const newExpanded = new Set(expandedSubGL)
+    if (newExpanded.has(accountNumber)) {
+      newExpanded.delete(accountNumber)
+    } else {
+      newExpanded.add(accountNumber)
+    }
+    setExpandedSubGL(newExpanded)
+  }
+
+  const handleExportToXLS = () => {
+    // Create CSV content (Excel will open CSV files)
+    const csvContent = [
+      ['Account #', 'Account Name', 'Type', 'Last Year Actual', '2025 Budget', 'YTD Actual', 'Variance %', 'AI Rationale'],
+      ...chartOfAccounts.income.map(item => {
+        const variance = ((item.ytdActual / (item.budget2025 * 0.58)) * 100) - 100
+        return [
+          item.account,
+          item.name,
+          item.type,
+          item.lastYear,
+          item.budget2025,
+          item.ytdActual,
+          variance.toFixed(1) + '%',
+          item.rationale
+        ]
+      }),
+      ...chartOfAccounts.operatingExpenses.map(item => {
+        const variance = ((item.ytdActual / (item.budget2025 * 0.58)) * 100) - 100
+        return [
+          item.account,
+          item.name,
+          item.type,
+          item.lastYear,
+          item.budget2025,
+          item.ytdActual,
+          variance.toFixed(1) + '%',
+          item.rationale
+        ]
+      }),
+      ...chartOfAccounts.capitalImprovements.map(item => {
+        const variance = ((item.ytdActual / (item.budget2025 * 0.58)) * 100) - 100
+        return [
+          item.account,
+          item.name,
+          item.type,
+          item.lastYear,
+          item.budget2025,
+          item.ytdActual,
+          variance.toFixed(1) + '%',
+          item.rationale
+        ]
+      })
+    ].map(row => row.join(',')).join('\n')
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `budget_${selectedPropertyName.replace(/\s+/g, '_')}_${selectedBudgetYear}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, type: 'chartOfAccounts' | 'previousBudget') => {
+    const file = event.target.files?.[0]
+    if (file) {
+      console.log(`Uploading ${type}:`, file.name)
+      if (type === 'chartOfAccounts') {
+        alert(`Chart of Accounts file "${file.name}" uploaded successfully!`)
+        setUploadDialog(null)
+      } else if (type === 'previousBudget') {
+        setPreviousBudgetFile(file)
+        console.log(`Previous budget file "${file.name}" selected for AI analysis`)
+      }
+    }
+  }
+
+  const handlePreviousBudgetRemove = () => {
+    setPreviousBudgetFile(null)
+  }
+
   const totals = calculateTotals()
   const selectedPropertyName = properties.find(p => p.id === selectedProperty)?.name || 'Unknown Property'
 
@@ -1010,11 +1173,33 @@ function BudgetingTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Budget: {selectedPropertyName}</h2>
-          <p className="text-gray-400">General Ledger Budget for {selectedBudgetYear}</p>
+          <div className="flex items-center gap-4">
+            <p className="text-gray-400">General Ledger Budget for {selectedBudgetYear}</p>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">Accounting Method:</span>
+              <Select value={accountingMethod} onValueChange={(value: 'cash' | 'accrual') => setAccountingMethod(value)}>
+                <SelectTrigger className="w-24 bg-gray-800 border-gray-600 text-white text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="accrual" className="text-white">Accrual</SelectItem>
+                  <SelectItem value="cash" className="text-white">Cash</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="group relative">
+                <Info className="h-4 w-4 text-gray-400 cursor-help" />
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-80 bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                  <div className="font-medium text-white mb-1">Accounting Methods:</div>
+                  <div className="mb-2"><span className="font-medium text-blue-300">Accrual:</span> Records income when earned and expenses when incurred, regardless of cash flow. Provides accurate financial position.</div>
+                  <div><span className="font-medium text-green-300">Cash:</span> Records transactions only when money changes hands. Shows actual cash flow but may not reflect true financial health.</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <Select value={selectedProperty} onValueChange={setSelectedProperty}>
-            <SelectTrigger className="w-64 bg-gray-800 border-gray-600 text-white">
+            <SelectTrigger className="w-52 bg-gray-800 border-gray-600 text-white">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-gray-800 border-gray-600">
@@ -1024,7 +1209,7 @@ function BudgetingTab() {
             </SelectContent>
           </Select>
           <Select value={selectedBudgetYear} onValueChange={setSelectedBudgetYear}>
-            <SelectTrigger className="w-32 bg-gray-800 border-gray-600 text-white">
+            <SelectTrigger className="w-20 bg-gray-800 border-gray-600 text-white">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-gray-800 border-gray-600">
@@ -1034,12 +1219,28 @@ function BudgetingTab() {
             </SelectContent>
           </Select>
           <Button 
+            onClick={() => setUploadDialog('chartOfAccounts')}
+            variant="outline"
+            className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Upload COA
+          </Button>
+          <Button 
+            onClick={handleExportToXLS}
+            variant="outline"
+            className="bg-green-600 border-green-600 text-white hover:bg-green-700"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export XLS
+          </Button>
+          <Button 
             onClick={handleAiGenerate}
             variant="outline"
             className="bg-purple-600 border-purple-600 text-white hover:bg-purple-700"
           >
             <Bot className="h-4 w-4 mr-2" />
-            AI Generate
+            Generate
           </Button>
           <Button 
             onClick={() => setShareWithOwnerDialog(true)}
@@ -1139,46 +1340,82 @@ function BudgetingTab() {
               <tbody>
                 {chartOfAccounts.income.map((item) => {
                   const variance = ((item.ytdActual / (item.budget2025 * 0.58)) * 100) - 100 // Assuming 58% through year
+                  const hasSubAccounts = item.hasSubGL && subGLAccounts[item.account]
+                  const isExpanded = expandedSubGL.has(item.account)
+                  
                   return (
-                    <tr key={item.account} className="border-b border-gray-700 hover:bg-gray-700/50">
-                      <td className="py-3 px-4 text-blue-300 font-mono">{item.account}</td>
-                      <td className="py-3 px-4 text-white font-medium">{item.name}</td>
-                      <td className="py-3 px-4 text-right text-gray-300">${item.lastYear.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-right text-white font-medium">
-                        {editingLineItem === item.account.toString() ? (
-                          <Input
-                            type="number"
-                            defaultValue={item.budget2025}
-                            className="w-32 text-right bg-gray-700 border-gray-600 text-white"
-                            onBlur={(e) => handleSaveLineItem(item.account, parseInt(e.target.value))}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSaveLineItem(item.account, parseInt((e.target as HTMLInputElement).value))}
-                            autoFocus
-                          />
-                        ) : (
-                          `$${item.budget2025.toLocaleString()}`
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-right text-green-300">${item.ytdActual.toLocaleString()}</td>
-                      <td className={`py-3 px-4 text-right font-medium ${variance > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {variance > 0 ? '+' : ''}{variance.toFixed(1)}%
-                      </td>
-                      <td className="py-3 px-4 text-gray-300 max-w-xs">
-                        <div className="flex items-center gap-2">
-                          {item.aiGenerated && <Bot className="h-3 w-3 text-purple-400 flex-shrink-0" />}
-                          <span className="truncate">{item.rationale}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditLineItem(item.account)}
-                          className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                      </td>
-                    </tr>
+                    <React.Fragment key={item.account}>
+                      <tr className="border-b border-gray-700 hover:bg-gray-700/50">
+                        <td className="py-3 px-4 text-blue-300 font-mono">
+                          <div className="flex items-center gap-2">
+                            {hasSubAccounts && (
+                              <button
+                                onClick={() => toggleSubGL(item.account)}
+                                className="text-gray-400 hover:text-white transition-colors"
+                              >
+                                <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                              </button>
+                            )}
+                            {item.account}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-white font-medium">{item.name}</td>
+                        <td className="py-3 px-4 text-right text-gray-300">${item.lastYear.toLocaleString()}</td>
+                        <td className="py-3 px-4 text-right text-white font-medium">
+                          {editingLineItem === item.account.toString() ? (
+                            <Input
+                              type="number"
+                              defaultValue={item.budget2025}
+                              className="w-32 text-right bg-gray-700 border-gray-600 text-white"
+                              onBlur={(e) => handleSaveLineItem(item.account, parseInt(e.target.value))}
+                              onKeyDown={(e) => e.key === 'Enter' && handleSaveLineItem(item.account, parseInt((e.target as HTMLInputElement).value))}
+                              autoFocus
+                            />
+                          ) : (
+                            `$${item.budget2025.toLocaleString()}`
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right text-green-300">${item.ytdActual.toLocaleString()}</td>
+                        <td className={`py-3 px-4 text-right font-medium ${variance > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {variance > 0 ? '+' : ''}{variance.toFixed(1)}%
+                        </td>
+                        <td className="py-3 px-4 text-gray-300 max-w-xs">
+                          <div className="flex items-center gap-2">
+                            {item.aiGenerated && <Bot className="h-3 w-3 text-purple-400 flex-shrink-0" />}
+                            <span className="truncate">{item.rationale}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditLineItem(item.account)}
+                            className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        </td>
+                      </tr>
+                      
+                      {/* Sub GL Accounts */}
+                      {hasSubAccounts && isExpanded && subGLAccounts[item.account].map((subItem) => {
+                        const subVariance = ((subItem.ytdActual / (subItem.budget2025 * 0.58)) * 100) - 100
+                        return (
+                          <tr key={subItem.subAccount} className="border-b border-gray-700 hover:bg-gray-700/30 bg-gray-800/50">
+                            <td className="py-2 px-4 pl-12 text-blue-200 font-mono text-sm">{subItem.subAccount}</td>
+                            <td className="py-2 px-4 text-gray-300 text-sm">{subItem.name}</td>
+                            <td className="py-2 px-4 text-right text-gray-400 text-sm">${subItem.lastYear.toLocaleString()}</td>
+                            <td className="py-2 px-4 text-right text-gray-300 text-sm">${subItem.budget2025.toLocaleString()}</td>
+                            <td className="py-2 px-4 text-right text-green-200 text-sm">${subItem.ytdActual.toLocaleString()}</td>
+                            <td className={`py-2 px-4 text-right text-sm ${subVariance > 0 ? 'text-green-300' : 'text-red-300'}`}>
+                              {subVariance > 0 ? '+' : ''}{subVariance.toFixed(1)}%
+                            </td>
+                            <td className="py-2 px-4 text-gray-500 text-sm">Sub-account detail</td>
+                            <td className="py-2 px-4"></td>
+                          </tr>
+                        )
+                      })}
+                    </React.Fragment>
                   )
                 })}
               </tbody>
@@ -1214,54 +1451,91 @@ function BudgetingTab() {
               <tbody>
                 {chartOfAccounts.operatingExpenses.map((item) => {
                   const variance = ((item.ytdActual / (item.budget2025 * 0.58)) * 100) - 100
+                  const hasSubAccounts = item.hasSubGL && subGLAccounts[item.account]
+                  const isExpanded = expandedSubGL.has(item.account)
+                  
                   return (
-                    <tr key={item.account} className="border-b border-gray-700 hover:bg-gray-700/50">
-                      <td className="py-3 px-4 text-red-300 font-mono">{item.account}</td>
-                      <td className="py-3 px-4 text-white font-medium">{item.name}</td>
-                      <td className="py-3 px-4 text-right text-gray-300">${item.lastYear.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-right text-white font-medium">
-                        {editingLineItem === item.account.toString() ? (
-                          <Input
-                            type="number"
-                            defaultValue={item.budget2025}
-                            className="w-32 text-right bg-gray-700 border-gray-600 text-white"
-                            onBlur={(e) => handleSaveLineItem(item.account, parseInt(e.target.value))}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSaveLineItem(item.account, parseInt((e.target as HTMLInputElement).value))}
-                            autoFocus
-                          />
-                        ) : (
-                          `$${item.budget2025.toLocaleString()}`
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-right text-red-300">${item.ytdActual.toLocaleString()}</td>
-                      <td className={`py-3 px-4 text-right font-medium ${variance < 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {variance > 0 ? '+' : ''}{variance.toFixed(1)}%
-                      </td>
-                      <td className="py-3 px-4 text-gray-300 max-w-xs">
-                        <div className="flex items-center gap-2">
-                          {item.aiGenerated && <Bot className="h-3 w-3 text-purple-400 flex-shrink-0" />}
-                          <span className="truncate">{item.rationale}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-gray-400 text-xs max-w-xs">
-                        {(item as any).utilityRate && (
-                          <div>
-                            <div>Rate: {(item as any).utilityRate}</div>
-                            <div>Est: {(item as any).utilityEstimate}</div>
+                    <React.Fragment key={item.account}>
+                      <tr className="border-b border-gray-700 hover:bg-gray-700/50">
+                        <td className="py-3 px-4 text-red-300 font-mono">
+                          <div className="flex items-center gap-2">
+                            {hasSubAccounts && (
+                              <button
+                                onClick={() => toggleSubGL(item.account)}
+                                className="text-gray-400 hover:text-white transition-colors"
+                              >
+                                <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                              </button>
+                            )}
+                            {item.account}
                           </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditLineItem(item.account)}
-                          className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="py-3 px-4 text-white font-medium">{item.name}</td>
+                        <td className="py-3 px-4 text-right text-gray-300">${item.lastYear.toLocaleString()}</td>
+                        <td className="py-3 px-4 text-right text-white font-medium">
+                          {editingLineItem === item.account.toString() ? (
+                            <Input
+                              type="number"
+                              defaultValue={item.budget2025}
+                              className="w-32 text-right bg-gray-700 border-gray-600 text-white"
+                              onBlur={(e) => handleSaveLineItem(item.account, parseInt(e.target.value))}
+                              onKeyDown={(e) => e.key === 'Enter' && handleSaveLineItem(item.account, parseInt((e.target as HTMLInputElement).value))}
+                              autoFocus
+                            />
+                          ) : (
+                            `$${item.budget2025.toLocaleString()}`
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right text-red-300">${item.ytdActual.toLocaleString()}</td>
+                        <td className={`py-3 px-4 text-right font-medium ${variance < 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {variance > 0 ? '+' : ''}{variance.toFixed(1)}%
+                        </td>
+                        <td className="py-3 px-4 text-gray-300 max-w-xs">
+                          <div className="flex items-center gap-2">
+                            {item.aiGenerated && <Bot className="h-3 w-3 text-purple-400 flex-shrink-0" />}
+                            <span className="truncate">{item.rationale}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-gray-400 text-xs max-w-xs">
+                          {(item as any).utilityRate && (
+                            <div>
+                              <div>Rate: {(item as any).utilityRate}</div>
+                              <div>Est: {(item as any).utilityEstimate}</div>
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditLineItem(item.account)}
+                            className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        </td>
+                      </tr>
+                      
+                      {/* Sub GL Accounts */}
+                      {hasSubAccounts && isExpanded && subGLAccounts[item.account].map((subItem) => {
+                        const subVariance = ((subItem.ytdActual / (subItem.budget2025 * 0.58)) * 100) - 100
+                        return (
+                          <tr key={subItem.subAccount} className="border-b border-gray-700 hover:bg-gray-700/30 bg-gray-800/50">
+                            <td className="py-2 px-4 pl-12 text-red-200 font-mono text-sm">{subItem.subAccount}</td>
+                            <td className="py-2 px-4 text-gray-300 text-sm">{subItem.name}</td>
+                            <td className="py-2 px-4 text-right text-gray-400 text-sm">${subItem.lastYear.toLocaleString()}</td>
+                            <td className="py-2 px-4 text-right text-gray-300 text-sm">${subItem.budget2025.toLocaleString()}</td>
+                            <td className="py-2 px-4 text-right text-red-200 text-sm">${subItem.ytdActual.toLocaleString()}</td>
+                            <td className={`py-2 px-4 text-right text-sm ${subVariance < 0 ? 'text-green-300' : 'text-red-300'}`}>
+                              {subVariance > 0 ? '+' : ''}{subVariance.toFixed(1)}%
+                            </td>
+                            <td className="py-2 px-4 text-gray-500 text-sm">Sub-account detail</td>
+                            <td className="py-2 px-4"></td>
+                            <td className="py-2 px-4"></td>
+                          </tr>
+                        )
+                      })}
+                    </React.Fragment>
                   )
                 })}
               </tbody>
@@ -1566,6 +1840,62 @@ function BudgetingTab() {
               </div>
             </div>
 
+            {/* Previous Budget Upload */}
+            <div>
+              <Label className="text-gray-300 text-sm font-medium mb-3 block">Previous Year Budget (Optional)</Label>
+              <div className="border-2 border-dashed border-gray-600 rounded-lg p-6">
+                {previousBudgetFile ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FileSpreadsheet className="h-8 w-8 text-green-400" />
+                      <div>
+                        <div className="text-white font-medium">{previousBudgetFile.name}</div>
+                        <div className="text-sm text-gray-400">
+                          {(previousBudgetFile.size / 1024 / 1024).toFixed(2)} MB • Ready for AI analysis
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePreviousBudgetRemove}
+                      className="bg-red-600 border-red-600 text-white hover:bg-red-700"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <Upload className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-300 mb-2">Upload previous year's budget for enhanced AI accuracy</p>
+                    <p className="text-sm text-gray-500 mb-4">CSV, XLS, XLSX supported • AI will analyze patterns and trends</p>
+                    <input
+                      type="file"
+                      accept=".csv,.xls,.xlsx"
+                      onChange={(e) => handleFileUpload(e, 'previousBudget')}
+                      className="hidden"
+                      id="previousBudgetUploadInline"
+                    />
+                    <label htmlFor="previousBudgetUploadInline">
+                      <Button variant="outline" className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600" asChild>
+                        <span>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Choose Previous Budget File
+                        </span>
+                      </Button>
+                    </label>
+                  </div>
+                )}
+              </div>
+              {previousBudgetFile && (
+                <div className="mt-2 text-xs text-green-400 flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" />
+                  AI will use this budget as a baseline for more accurate projections
+                </div>
+              )}
+            </div>
+
             {/* Freeform Notes */}
             <div>
               <Label className="text-gray-300 text-sm font-medium">Special Instructions & Notes</Label>
@@ -1635,6 +1965,47 @@ function BudgetingTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Upload Dialog for Chart of Accounts */}
+      <Dialog open={uploadDialog === 'chartOfAccounts'} onOpenChange={() => setUploadDialog(null)}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5 text-blue-400" />
+              Upload Chart of Accounts
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Upload a CSV or Excel file containing your chart of accounts structure
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center">
+              <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-300 mb-2">Drag and drop your file here, or click to browse</p>
+              <p className="text-sm text-gray-500">Supports CSV, XLS, XLSX files</p>
+              <input
+                type="file"
+                accept=".csv,.xls,.xlsx"
+                onChange={(e) => handleFileUpload(e, 'chartOfAccounts')}
+                className="hidden"
+                id="chartOfAccountsUpload"
+              />
+              <label htmlFor="chartOfAccountsUpload">
+                <Button variant="outline" className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600 mt-4" asChild>
+                  <span>Choose File</span>
+                </Button>
+              </label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUploadDialog(null)} className="border-gray-600 text-gray-300">
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
     </div>
   )
 }
@@ -2669,6 +3040,7 @@ export default function PMFinancialDashboard() {
   const [collateralFilterProperty, setCollateralFilterProperty] = useState('all');
   const [collateralFilterDocType, setCollateralFilterDocType] = useState('all');
   const [collateralFilterUploadedBy, setCollateralFilterUploadedBy] = useState('all');
+  const [collateralFilterArea, setCollateralFilterArea] = useState('all');
   const [collateralFilterDateFrom, setCollateralFilterDateFrom] = useState('');
   const [collateralFilterDateTo, setCollateralFilterDateTo] = useState('');
   const [collateralUploadDialogOpen, setCollateralUploadDialogOpen] = useState(false);
@@ -4176,7 +4548,7 @@ export default function PMFinancialDashboard() {
   };
 
   // Helper to filter expenses by role (for technicians, only show their own expenses)
-  const filterExpensesByRole = (expenses: Transaction[]) => {
+  const filterExpensesByRole = useCallback((expenses: Transaction[]) => {
     return expenses.filter(txn => {
       if (role === 'technician') {
         // For technicians, only show expenses from their own cards
@@ -4190,7 +4562,7 @@ export default function PMFinancialDashboard() {
       }
       return true;
     });
-  };
+  }, [role, technicianName]);
 
   // Export to CSV (browser-based, no dependency)
   function exportTransactionsToCSV() {
@@ -4314,7 +4686,7 @@ export default function PMFinancialDashboard() {
   const [transactionDetailsOpen, setTransactionDetailsOpen] = useState(false);
 
   // Get current user name based on role
-  const getCurrentUserName = () => {
+  const getCurrentUserName = useCallback(() => {
     if (role === 'technician') {
       return technicianName;
     } else if (role === 'pm') {
@@ -4323,10 +4695,10 @@ export default function PMFinancialDashboard() {
       return 'Central Office'; // Central Office can see all expenses
     }
     return '';
-  };
+  }, [role, technicianName]);
 
   // Helper to filter work orders by role (for technicians, only show their assigned work orders)
-  const filterWorkOrdersByRole = (workOrders: typeof jobs) => {
+  const filterWorkOrdersByRole = useCallback((workOrders: typeof jobs) => {
     if (role === 'technician') {
       // For technicians, only show work orders assigned to them
       return workOrders.filter(job => job.technician === technicianName);
@@ -4337,15 +4709,15 @@ export default function PMFinancialDashboard() {
       // For Central Office, show all work orders
       return workOrders;
     }
-  };
+  }, [role, technicianName]);
 
-  // Get technician-specific data for Dashboard
-  const technicianWorkOrders = filterWorkOrdersByRole(jobs);
-  const technicianExpenses = filterExpensesByRole([...transactions, ...technicianTransactions]);
+  // Memoize expensive role-based computations
+  const technicianWorkOrders = useMemo(() => filterWorkOrdersByRole(jobs), [filterWorkOrdersByRole, jobs]);
+  const technicianExpenses = useMemo(() => filterExpensesByRole([...transactions, ...technicianTransactions]), [filterExpensesByRole, transactions, technicianTransactions]);
   
-  // Calculate technician-specific KPIs
-  const technicianOpenJobs = technicianWorkOrders.filter(job => job.statusValue === 'open');
-  const technicianInProgressJobs = technicianWorkOrders.filter(job => job.techStatus === 'In Progress');
+  // Calculate technician-specific KPIs with memoization
+  const technicianOpenJobs = useMemo(() => technicianWorkOrders.filter(job => job.statusValue === 'open'), [technicianWorkOrders]);
+  const technicianInProgressJobs = useMemo(() => technicianWorkOrders.filter(job => job.techStatus === 'In Progress'), [technicianWorkOrders]);
   const technicianFinishedJobs = technicianWorkOrders.filter(job => job.techStatus === 'Finished');
   const technicianOverdueJobs = technicianWorkOrders.filter(job => {
     const dueDate = new Date(job.requested);
@@ -5518,6 +5890,14 @@ Central Office`,
         return false;
       }
       
+      // Area filter
+      if (collateralFilterArea !== 'all') {
+        const property = propertyOptions.find(p => p.id === doc.propertyId);
+        if (!property || property.area !== collateralFilterArea) {
+          return false;
+        }
+      }
+      
       // Document type filter
       if (collateralFilterDocType !== 'all' && doc.documentType !== collateralFilterDocType) {
         return false;
@@ -5542,6 +5922,7 @@ Central Office`,
     collateralDocs,
     collateralDebouncedSearchQuery,
     collateralFilterProperty,
+    collateralFilterArea,
     collateralFilterDocType,
     collateralFilterUploadedBy,
     collateralFilterDateFrom,
@@ -11005,6 +11386,22 @@ Central Office`,
                           <SelectItem value="all">All Properties</SelectItem>
                           {propertyOptions.map(property => (
                             <SelectItem key={property.id} value={property.id}>{property.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-300">Area</Label>
+                      <Select value={collateralFilterArea} onValueChange={setCollateralFilterArea}>
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white w-40">
+                          <SelectValue>
+                            {collateralFilterArea === 'all' ? 'All Areas' : 
+                             areaOptions.find(a => a.id === collateralFilterArea)?.name || 'All Areas'}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                          {areaOptions.map(area => (
+                            <SelectItem key={area.id} value={area.id}>{area.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
