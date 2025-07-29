@@ -2,7 +2,7 @@
 export const jobsList = [
   {
     id: 'job1',
-    property: 'Stanford GSB',
+    property: '01 STANFORD',
     owner: 'John Smith',
     priority: 'High',
     status: 'Pending',
@@ -17,7 +17,7 @@ export const jobsList = [
   },
   {
     id: 'job2',
-    property: 'Sunnyvale 432',
+    property: '02 SUNNYVALE',
     owner: 'Mike Chen',
     priority: 'Medium',
     status: 'Approved',
@@ -32,7 +32,7 @@ export const jobsList = [
   },
   {
     id: 'job3',
-    property: 'Downtown Lofts',
+    property: '03 DOWNTOWN',
     owner: 'Alex Rodriguez',
     priority: 'Low',
     status: 'Rejected',
@@ -47,7 +47,7 @@ export const jobsList = [
   },
   {
     id: 'job4',
-    property: 'Stanford GSB',
+    property: '01 STANFORD',
     owner: 'John Smith',
     priority: 'Medium',
     status: 'Approved',
@@ -62,7 +62,7 @@ export const jobsList = [
   },
   {
     id: 'job5',
-    property: 'Sunnyvale 432',
+    property: '02 SUNNYVALE',
     owner: 'Mike Chen',
     priority: 'High',
     status: 'Approved',
@@ -312,7 +312,7 @@ export const collateralDocuments: CollateralDocument[] = [
     uploadDate: '2024-01-15',
     uploadedBy: 'John Smith',
     propertyId: 'prop1',
-    propertyName: 'Stanford GSB',
+    propertyName: '01 STANFORD',
     tags: ['HVAC', 'Service Agreement', 'Annual'],
     fileSize: 2048000,
     fileUrl: '/documents/hvac_service_agreement.pdf',
@@ -329,7 +329,7 @@ export const collateralDocuments: CollateralDocument[] = [
     uploadDate: '2024-01-10',
     uploadedBy: 'Sarah Chen',
     propertyId: 'prop1',
-    propertyName: 'Stanford GSB',
+    propertyName: '01 STANFORD',
     tags: ['Insurance', 'Property', 'Liability'],
     fileSize: 1024000,
     fileUrl: '/documents/property_insurance_cert.pdf',
@@ -345,7 +345,7 @@ export const collateralDocuments: CollateralDocument[] = [
     uploadDate: '2024-01-20',
     uploadedBy: 'Mike Chen',
     propertyId: 'prop1',
-    propertyName: 'Stanford GSB',
+    propertyName: '01 STANFORD',
     glExpenseId: 'exp_001',
     tags: ['Kitchen', 'Renovation', 'Bid'],
     fileSize: 3072000,
@@ -364,7 +364,7 @@ export const collateralDocuments: CollateralDocument[] = [
     uploadDate: '2024-01-18',
     uploadedBy: 'Alice Johnson',
     propertyId: 'prop1',
-    propertyName: 'Stanford GSB',
+    propertyName: '01 STANFORD',
     glExpenseId: 'exp_002',
     tags: ['Home Depot', 'Receipt', 'HVAC Parts'],
     fileSize: 512000,
@@ -382,7 +382,7 @@ export const collateralDocuments: CollateralDocument[] = [
     uploadDate: '2024-01-12',
     uploadedBy: 'Bob Wilson',
     propertyId: 'prop2',
-    propertyName: 'Sunnyvale 432',
+    propertyName: '02 SUNNYVALE',
     tags: ['Plumbing', 'Warranty', 'Emergency Repair'],
     fileSize: 768000,
     fileUrl: '/documents/plumbing_warranty.pdf',
@@ -400,7 +400,7 @@ export const collateralDocuments: CollateralDocument[] = [
     uploadDate: '2024-01-14',
     uploadedBy: 'Central Office',
     propertyId: 'prop2',
-    propertyName: 'Sunnyvale 432',
+    propertyName: '02 SUNNYVALE',
     glExpenseId: 'exp_003',
     tags: ['Electrical', 'Invoice', 'Panel Upgrade'],
     fileSize: 1536000,
@@ -419,7 +419,7 @@ export const collateralDocuments: CollateralDocument[] = [
     uploadDate: '2024-01-08',
     uploadedBy: 'Sarah Chen',
     propertyId: 'prop1',
-    propertyName: 'Stanford GSB',
+    propertyName: '01 STANFORD',
     tags: ['Workers Comp', 'Insurance', 'Contractors'],
     fileSize: 896000,
     fileUrl: '/documents/workers_comp_insurance.pdf',
@@ -435,7 +435,7 @@ export const collateralDocuments: CollateralDocument[] = [
     uploadDate: '2024-01-25',
     uploadedBy: 'John Smith',
     propertyId: 'prop1',
-    propertyName: 'Stanford GSB',
+    propertyName: '01 STANFORD',
     tags: ['Communication', 'Owner', 'Log'],
     fileSize: 640000,
     fileUrl: '/documents/owner_communication_log.pdf',
@@ -547,16 +547,16 @@ export const areaOptions = [
 
 // Property options for filters
 export const propertyOptions = [
-  { id: 'prop1', name: 'Stanford GSB', area: 'bay-area' },
-  { id: 'prop2', name: 'Sunnyvale 432', area: 'bay-area' },
-  { id: 'prop3', name: 'Downtown Lofts', area: 'bay-area' },
-  { id: 'prop4', name: 'Redwood Shores', area: 'bay-area' },
-  { id: 'prop5', name: 'Manhattan Plaza', area: 'new-york' },
-  { id: 'prop6', name: 'Brooklyn Heights', area: 'new-york' },
-  { id: 'prop7', name: 'Chicago Loop Tower', area: 'chicago' },
-  { id: 'prop8', name: 'River North Condos', area: 'chicago' },
-  { id: 'prop9', name: 'Beverly Hills Office', area: 'los-angeles' },
-  { id: 'prop10', name: 'Seattle Waterfront', area: 'seattle' }
+  { id: 'prop1', name: '01 STANFORD', area: 'bay-area' },
+  { id: 'prop2', name: '02 SUNNYVALE', area: 'bay-area' },
+  { id: 'prop3', name: '03 DOWNTOWN', area: 'bay-area' },
+  { id: 'prop4', name: '04 REDWOOD', area: 'bay-area' },
+  { id: 'prop5', name: '05 MANHATTAN', area: 'new-york' },
+  { id: 'prop6', name: '06 BROOKLYN', area: 'new-york' },
+  { id: 'prop7', name: '07 CHICAGO', area: 'chicago' },
+  { id: 'prop8', name: '08 RIVER NORTH', area: 'chicago' },
+  { id: 'prop9', name: '09 BEVERLY HILLS', area: 'los-angeles' },
+  { id: 'prop10', name: '10 SEATTLE', area: 'seattle' }
 ];
 
 // Staff options for filters
@@ -606,7 +606,7 @@ export const bankAccounts = [
 export const ownerTrustAccounts = [
   {
     id: 'trust1',
-    propertyName: 'Stanford GSB',
+    propertyName: '01 STANFORD',
     ownerName: 'John Smith',
     accountNumber: '****3456',
     bankName: 'Wells Fargo',
@@ -616,7 +616,7 @@ export const ownerTrustAccounts = [
   },
   {
     id: 'trust2',
-    propertyName: 'Sunnyvale 432',
+    propertyName: '02 SUNNYVALE',
     ownerName: 'Mike Chen',
     accountNumber: '****7890',
     bankName: 'Chase',
@@ -626,7 +626,7 @@ export const ownerTrustAccounts = [
   },
   {
     id: 'trust3',
-    propertyName: 'Downtown Lofts',
+    propertyName: '03 DOWNTOWN',
     ownerName: 'Alex Rodriguez',
     accountNumber: '****2345',
     bankName: 'Bank of America',
@@ -645,9 +645,9 @@ export const invoices = [
     dueDate: '2025-02-15',
     origin: 'Direct',
     status: 'pending',
-    description: 'Emergency plumbing repair - Stanford GSB',
+    description: 'Emergency plumbing repair - 01 STANFORD',
     linkedExpenseId: 'exp1',
-    propertyName: 'Stanford GSB',
+    propertyName: '01 STANFORD',
     invoiceNumber: 'INV-2025-001'
   },
   {
@@ -659,7 +659,7 @@ export const invoices = [
     status: 'pending',
     description: 'Annual HVAC maintenance service',
     linkedExpenseId: 'exp2',
-    propertyName: 'Stanford GSB',
+    propertyName: '01 STANFORD',
     invoiceNumber: 'INV-2025-002'
   },
   {
@@ -669,9 +669,9 @@ export const invoices = [
     dueDate: '2025-02-10',
     origin: 'Direct',
     status: 'pending',
-    description: 'Electrical panel upgrade - Sunnyvale 432',
+    description: 'Electrical panel upgrade - 02 SUNNYVALE',
     linkedExpenseId: 'exp3',
-    propertyName: 'Sunnyvale 432',
+    propertyName: '02 SUNNYVALE',
     invoiceNumber: 'INV-2025-003'
   }
 ];
@@ -723,7 +723,7 @@ export const teamMembers = [
         description: 'Emergency plumbing supplies',
         status: 'pending_reimbursement',
         receipt: true,
-        propertyName: 'Stanford GSB'
+        propertyName: '01 STANFORD'
       },
       {
         id: 'exp2',
@@ -751,7 +751,7 @@ export const teamMembers = [
         description: 'Electrical supplies for emergency repair',
         status: 'pending_reimbursement',
         receipt: true,
-        propertyName: 'Sunnyvale 432'
+        propertyName: '02 SUNNYVALE'
       }
     ]
   },

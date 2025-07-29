@@ -853,9 +853,9 @@ function BudgetingTab() {
 
     // Property budget data structure
   const properties = [
-    { id: 'prop1', name: 'Stanford Graduate School of Business' },
-    { id: 'prop2', name: 'Mission Bay Tech Campus' },
-    { id: 'prop3', name: 'Redwood Shores Office Complex' }
+    { id: 'prop1', name: '01 STANFORD' },
+    { id: 'prop2', name: '02 MISSION BAY' },
+    { id: 'prop3', name: '03 REDWOOD' }
   ]
 
   // Sub GL accounts data
@@ -2254,21 +2254,21 @@ function EnhancedPropertiesTab({
   // Property-specific data for table
   const propertyTableData = [
     { 
-      name: "Stanford GSB", 
+      name: "01 STANFORD", 
       address: "655 Knight Way, Stanford, CA",
       staff: [
         { name: "Sarah Chen", role: "Property Manager", phone: "(650) 723-2146", email: "sarah.chen@stanford.edu" }
       ]
     },
     { 
-      name: "Sunnyvale 432", 
+      name: "02 SUNNYVALE", 
       address: "432 Sunnyvale Ave, Sunnyvale, CA",
       staff: [
         { name: "Mike Johnson", role: "Site Manager", phone: "(408) 555-0198", email: "mike.johnson@sunnyvale.com" }
       ]
     },
     { 
-      name: "Downtown Lofts", 
+      name: "03 DOWNTOWN", 
       address: "123 Market St, San Francisco, CA",
       staff: [
         { name: "Lisa Wong", role: "Building Manager", phone: "(415) 555-0142", email: "lisa.wong@dtlofts.com" }
@@ -3522,7 +3522,7 @@ export default function PMFinancialDashboard() {
     },
     {
       id: "stanford",
-      name: "Stanford GSB",
+      name: "01 STANFORD",
       address: "655 Knight Way, Stanford, CA",
       totalBalance: 1250.0,
       cardCount: 2,
@@ -3587,7 +3587,7 @@ export default function PMFinancialDashboard() {
     },
     {
       id: "sunnyvale",
-      name: "Sunnyvale 432",
+      name: "02 SUNNYVALE",
       address: "432 Sunnyvale Ave, Sunnyvale, CA",
       totalBalance: 2991.25,
       cardCount: 2,
@@ -3652,7 +3652,7 @@ export default function PMFinancialDashboard() {
     },
     {
       id: "downtown",
-      name: "Downtown Lofts",
+      name: "03 DOWNTOWN",
       address: "123 Market St, San Francisco, CA",
       totalBalance: 450.0,
       cardCount: 1,
@@ -3891,7 +3891,7 @@ export default function PMFinancialDashboard() {
       vendor: 'Lowe\'s', 
       amount: 89.99, 
       status: 'reconciled', 
-      jobId: 'job1', 
+      jobId: 'job2', 
       billable: false, 
       madeBy: 'Alice Johnson', 
       cardHolder: 'Alice Johnson', 
@@ -3905,12 +3905,54 @@ export default function PMFinancialDashboard() {
       vendor: 'Ace Hardware', 
       amount: 45.00, 
       status: 'pending', 
-      jobId: 'job1', 
+      jobId: 'job3', 
       billable: true, 
       madeBy: 'Alice Johnson', 
       cardHolder: 'Alice Johnson', 
       memo: 'Hardware supplies',
       receipt: 'receipt-t3.pdf',
+      expenseType: 'credit_card'
+    },
+    { 
+      id: 't4', 
+      date: '2025-01-12', 
+      vendor: 'Office Depot', 
+      amount: 67.50, 
+      status: 'reconciled', 
+      jobId: 'job4', 
+      billable: true, 
+      madeBy: 'Alice Johnson', 
+      cardHolder: 'Alice Johnson', 
+      memo: 'Office supplies for work site',
+      receipt: 'receipt-t4.pdf',
+      expenseType: 'credit_card'
+    },
+    { 
+      id: 't5', 
+      date: '2025-01-11', 
+      vendor: 'AutoZone', 
+      amount: 34.99, 
+      status: 'pending', 
+      jobId: 'job5', 
+      billable: false, 
+      madeBy: 'Alice Johnson', 
+      cardHolder: 'Alice Johnson', 
+      memo: 'Van maintenance',
+      receipt: 'receipt-t5.pdf',
+      expenseType: 'credit_card'
+    },
+    { 
+      id: 't6', 
+      date: '2025-01-10', 
+      vendor: 'Staples', 
+      amount: 23.45, 
+      status: 'reconciled', 
+      jobId: '', 
+      billable: false, 
+      madeBy: 'Alice Johnson', 
+      cardHolder: 'Alice Johnson', 
+      memo: 'General office supplies',
+      receipt: 'receipt-t6.pdf',
       expenseType: 'credit_card'
     },
   ];
@@ -4204,8 +4246,8 @@ export default function PMFinancialDashboard() {
   // Sample properties for dropdown
   const propertyOptions = [
     { id: 'general', name: 'General' },
-    { id: 'prop1', name: 'Stanford GSB' },
-    { id: 'prop2', name: 'Sunnyvale 432' },
+    { id: 'prop1', name: '01 STANFORD' },
+    { id: 'prop2', name: '02 SUNNYVALE' },
   ]
 
   type JobType = typeof jobsList[0];
@@ -8706,6 +8748,7 @@ Central Office`,
                                             <th className="text-left p-3 text-gray-300">Vendor</th>
                                             <th className="text-left p-3 text-gray-300">Description</th>
                                             <th className="text-left p-3 text-gray-300">Property</th>
+                                            <th className="text-left p-3 text-gray-300">GL Code</th>
                                             <th className="text-left p-3 text-gray-300">Amount</th>
                                             <th className="text-left p-3 text-gray-300">Receipt</th>
                                           </tr>
@@ -8731,6 +8774,10 @@ Central Office`,
                                               <td className="p-3 text-white">{expense.vendor}</td>
                                               <td className="p-3 text-gray-300">{expense.description}</td>
                                               <td className="p-3 text-gray-300">{expense.propertyName}</td>
+                                              <td className="p-3">
+                                                <div className="text-blue-300">505.3</div>
+                                                <div className="text-xs text-blue-200">Maintenance Supplies</div>
+                                              </td>
                                               <td className="p-3 text-white">${expense.amount.toFixed(2)}</td>
                                               <td className="p-3">
                                                 {expense.receipt ? (
@@ -9303,6 +9350,7 @@ Central Office`,
                           <th className="text-left py-3 px-4 font-semibold text-white">Made By</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Work Order</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">GL Code</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Billable</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Memo</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Documents</th>
@@ -9384,8 +9432,21 @@ Central Office`,
                                       </SelectContent>
                                     </Select>
                                   ) : (
-                                    <span className="text-gray-300">{job ? job.description : 'Not Assigned'}</span>
+                                    job ? (
+                                      <button
+                                        className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                                        onClick={() => router.push(`/workorders/${job.id}?role=${role}&returnTo=wallet`)}
+                                      >
+                                        {job.description}
+                                      </button>
+                                    ) : (
+                                      <span className="text-gray-300">Not Assigned</span>
+                                    )
                                   )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="text-blue-300">522.1</div>
+                                  <div className="text-xs text-blue-200">HVAC Repairs</div>
                                 </td>
                                 <td className="py-3 px-4">
                                   {isEditing ? (
@@ -9626,6 +9687,7 @@ Central Office`,
                           <th className="text-left py-3 px-4 font-semibold text-white">Made By</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Work Order</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">GL Code</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Billable</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Memo</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Documents</th>
@@ -9709,8 +9771,26 @@ Central Office`,
                                       </SelectContent>
                                     </Select>
                                   ) : (
-                                    assignment.job ? (jobs.find(j => j.id === assignment.job)?.description || assignment.job) : (job ? job.description : 'Not Assigned')
+                                    assignment.job ? (
+                                      <button
+                                        className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                                        onClick={() => window.location.href = `/workorders/${assignment.job}?role=${role}&returnTo=expenses`}
+                                      >
+                                        {jobs.find(j => j.id === assignment.job)?.description || assignment.job}
+                                      </button>
+                                    ) : (job ? (
+                                      <button
+                                        className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                                        onClick={() => window.location.href = `/workorders/${job.id}?role=${role}&returnTo=expenses`}
+                                      >
+                                        {job.description}
+                                      </button>
+                                    ) : 'Not Assigned')
                                   )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="text-blue-300">522.1</div>
+                                  <div className="text-xs text-blue-200">HVAC Repairs</div>
                                 </td>
                                 <td className="py-3 px-4">
                                   {isEditing ? (
@@ -9964,6 +10044,7 @@ Central Office`,
                           <th className="text-left py-3 px-4 font-semibold text-white">Made By</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Work Order</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">GL Code</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Billable</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Memo</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Receipt</th>
@@ -9992,7 +10073,22 @@ Central Office`,
                                 <td className="py-3 px-4 text-gray-300">${txn.amount.toFixed(2)}</td>
                                 <td className="py-3 px-4 text-gray-300">{txn.madeBy}</td>
                                 <td className="py-3 px-4 text-gray-300">{property ? property.name : 'Not Assigned'}</td>
-                                <td className="py-3 px-4 text-gray-300">{job ? job.description : 'Not Assigned'}</td>
+                                <td className="py-3 px-4">
+                                  {job ? (
+                                    <button
+                                      className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                                      onClick={() => router.push(`/workorders/${job.id}?role=${role}&returnTo=technicianExpenses`)}
+                                    >
+                                      {job.description}
+                                    </button>
+                                  ) : (
+                                    <span className="text-gray-300">Not Assigned</span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="text-blue-300">505.3</div>
+                                  <div className="text-xs text-blue-200">Maintenance Supplies</div>
+                                </td>
                                 <td className="py-3 px-4">
                                   <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${txn.billable ? 'bg-green-700 text-green-100' : 'bg-gray-700 text-gray-200'}`}>
                                     {txn.billable ? 'Yes' : 'No'}
@@ -10036,6 +10132,7 @@ Central Office`,
                           <th className="text-left py-3 px-4 font-semibold text-white">Made By</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Work Order</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">GL Code</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Billable</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Memo</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Receipt</th>
@@ -10105,8 +10202,21 @@ Central Office`,
                                       </SelectContent>
                                     </Select>
                                   ) : (
-                                    <span className="text-gray-300">{job ? job.description : 'Not Assigned'}</span>
+                                    job ? (
+                                      <button
+                                        className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                                        onClick={() => router.push(`/workorders/${job.id}?role=${role}&returnTo=expenses`)}
+                                      >
+                                        {job.description}
+                                      </button>
+                                    ) : (
+                                      <span className="text-gray-300">Not Assigned</span>
+                                    )
                                   )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="text-blue-300">522.1</div>
+                                  <div className="text-xs text-blue-200">HVAC Repairs</div>
                                 </td>
                                 <td className="py-3 px-4">
                                   {isEditing ? (
@@ -10297,6 +10407,7 @@ Central Office`,
                                 <th className="text-left py-3 px-4 font-semibold text-white">Made By</th>
                                 <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
                                 <th className="text-left py-3 px-4 font-semibold text-white">Work Order</th>
+                                <th className="text-left py-3 px-4 font-semibold text-white">GL Code</th>
                                 <th className="text-left py-3 px-4 font-semibold text-white">Billable</th>
                                 <th className="text-left py-3 px-4 font-semibold text-white">Status</th>
                                 <th className="text-left py-3 px-4 font-semibold text-white">AI Flag</th>
@@ -10320,7 +10431,22 @@ Central Office`,
                                     <td className="py-3 px-4 text-gray-300">${txn.amount.toFixed(2)}</td>
                                     <td className="py-3 px-4 text-gray-300">{txn.madeBy}</td>
                                     <td className="py-3 px-4 text-gray-300">{property ? property.name : 'Not Assigned'}</td>
-                                    <td className="py-3 px-4 text-gray-300">{job ? job.description : 'Not Assigned'}</td>
+                                    <td className="py-3 px-4">
+                                      {job ? (
+                                        <button
+                                          className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                                          onClick={() => router.push(`/workorders/${job.id}?role=${role}&returnTo=transactions`)}
+                                        >
+                                          {job.description}
+                                        </button>
+                                      ) : (
+                                        <span className="text-gray-300">Not Assigned</span>
+                                      )}
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <div className="text-blue-300">522.1</div>
+                                      <div className="text-xs text-blue-200">HVAC Repairs</div>
+                                    </td>
                                     <td className="py-3 px-4">
                                       <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${
                                         txn.billable ? 'bg-green-700 text-green-100' : 'bg-gray-700 text-gray-200'
@@ -10489,6 +10615,7 @@ Central Office`,
                           <th className="text-left py-3 px-4 font-semibold text-white">Made By</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Property</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Work Order</th>
+                          <th className="text-left py-3 px-4 font-semibold text-white">GL Code</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Billable</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Status</th>
                           <th className="text-left py-3 px-4 font-semibold text-white">Details</th>
@@ -10508,7 +10635,23 @@ Central Office`,
                               <td className="py-3 px-4 text-gray-300">${txn.amount.toFixed(2)}</td>
                               <td className="py-3 px-4 text-gray-300">{txn.madeBy}</td>
                               <td className="py-3 px-4 text-gray-300">{assignment.property || (property ? property.name : 'Not Assigned')}</td>
-                              <td className="py-3 px-4 text-gray-300">{assignment.job ? (jobs.find(j => j.id === assignment.job)?.description || assignment.job) : (job ? job.description : 'Not Assigned')}</td>
+                              <td className="py-3 px-4">
+                                {assignment.job || job ? (
+                                  <button
+                                    className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                                    onClick={() => {
+                                      const workOrderId = assignment.job || txn.jobId;
+                                      if (workOrderId) {
+                                        router.push(`/workorders/${workOrderId}?role=${role}`);
+                                      }
+                                    }}
+                                  >
+                                    {assignment.job ? (jobs.find(j => j.id === assignment.job)?.description || assignment.job) : (job ? job.description : 'Not Assigned')}
+                                  </button>
+                                ) : (
+                                  <span className="text-gray-300">Not Assigned</span>
+                                )}
+                              </td>
                               <td className="py-3 px-4">
                                 <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${
                                   txn.billable ? 'bg-green-700 text-green-100' : 'bg-gray-700 text-gray-200'
@@ -15044,7 +15187,6 @@ Central Office`,
                                  <th className="text-left py-2 px-3 text-orange-200">Date</th>
                                  <th className="text-left py-2 px-3 text-orange-200">Merchant</th>
                                  <th className="text-left py-2 px-3 text-orange-200">GL Code</th>
-                                 <th className="text-left py-2 px-3 text-orange-200">Sub-GL</th>
                                  <th className="text-left py-2 px-3 text-orange-200">Amount</th>
                                  <th className="text-left py-2 px-3 text-orange-200">PM Memo</th>
                                  <th className="text-left py-2 px-3 text-orange-200">AI Analysis</th>
@@ -15101,12 +15243,8 @@ Central Office`,
                                     <td className="py-2 px-3 text-gray-300">{expense.date}</td>
                                     <td className="py-2 px-3 text-gray-300">{expense.merchant}</td>
                                     <td className="py-2 px-3">
-                                      <div className="text-blue-300">{expense.glCode}</div>
-                                      <div className="text-xs text-blue-200">{expense.glName}</div>
-                                    </td>
-                                    <td className="py-2 px-3">
-                                      <div className="text-purple-300">{expense.subGlCode}</div>
-                                      <div className="text-xs text-purple-200">{expense.subGlName}</div>
+                                      <div className="text-blue-300">{expense.subGlCode} - {expense.subGlName}</div>
+                                      <div className="text-xs text-blue-200">{expense.glCode} - {expense.glName}</div>
                                     </td>
                                                                          <td className="py-2 px-3">
                                        <div className="text-red-300 font-semibold">${expense.amount.toFixed(2)}</div>
@@ -15191,7 +15329,6 @@ Central Office`,
                                   <th className="text-left py-2 px-3 text-gray-400">Date</th>
                                   <th className="text-left py-2 px-3 text-gray-400">Merchant</th>
                                   <th className="text-left py-2 px-3 text-gray-400">GL Code</th>
-                                  <th className="text-left py-2 px-3 text-gray-400">Sub-GL</th>
                                   <th className="text-left py-2 px-3 text-gray-400">Property Code</th>
                                   <th className="text-left py-2 px-3 text-gray-400">Billable?</th>
                                   <th className="text-left py-2 px-3 text-gray-400">
@@ -15272,8 +15409,10 @@ Central Office`,
                                     <tr key={idx} className="border-b border-gray-700 hover:bg-gray-700/30">
                                       <td className="py-2 px-3 text-gray-300">{txn.date}</td>
                                       <td className="py-2 px-3 text-gray-300">{txn.vendor}</td>
-                                      <td className="py-2 px-3 text-blue-300">{glCode}</td>
-                                      <td className="py-2 px-3 text-purple-300">{subGlCode}</td>
+                                      <td className="py-2 px-3">
+                                        <div className="text-blue-300">{subGlCode}</div>
+                                        <div className="text-xs text-blue-200">{glCode}</div>
+                                      </td>
                                       <td className="py-2 px-3 text-purple-300">{propertyCode}</td>
                                       <td className="py-2 px-3">
                                         <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs ${

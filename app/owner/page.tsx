@@ -131,9 +131,9 @@ export default function OwnerDashboard() {
   }[]>([
     {
       id: "1",
-      propertyId: "redwood",
-      propertyName: "Redwood Shores Office Complex",
-      senderId: "pm1",
+          propertyId: "redwood",
+    propertyName: "03 DOWNTOWN",
+    senderId: "pm1",
       senderName: "Jessica Chen",
       senderRole: "pm",
       content: "Hi! I wanted to update you on the HVAC repair work order. We've received quotes from 3 contractors and are ready to proceed with the work.",
@@ -156,7 +156,7 @@ export default function OwnerDashboard() {
     {
       id: "3",
       propertyId: "mission",
-      propertyName: "Mission Bay Tech Campus",
+      propertyName: "02 SUNNYVALE",
       senderId: "pm2",
       senderName: "James Wilson",
       senderRole: "pm",
@@ -762,7 +762,7 @@ function DashboardTab({ setActiveTab }: { setActiveTab?: (tab: string) => void }
                 <div className="p-2 bg-gray-900 rounded">
                   <div className="text-xs text-green-400">Best Performance</div>
                   <div className="text-sm text-white">Sarah Chen</div>
-                  <div className="text-xs text-gray-400">Stanford GSB • -11.6%</div>
+                  <div className="text-xs text-gray-400">01 STANFORD • -11.6%</div>
                 </div>
                 <div className="p-2 bg-gray-900 rounded">
                   <div className="text-xs text-red-400">Needs Attention</div>
@@ -928,13 +928,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 5500.00,
       type: "Vendor",
       madeBy: "Jessica Chen (Property Manager)",
-      property: "Stanford Graduate School of Business",
+      property: "01 STANFORD",
       workOrder: "HVAC System Maintenance - Annual Service",
       workOrderId: "job1",
       isWorkOrderRelated: true,
       memo: "Energy efficient retrofit for entire building",
       receipt: "✓",
-      status: "Flagged"
+      status: "Flagged",
+      glCode: "522.1",
+      glName: "HVAC Repairs"
     },
     {
       id: "exp2",
@@ -943,13 +945,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 4800.00,
       type: "Vendor",
       madeBy: "David Chen (Property Manager)",
-      property: "Mission Bay Tech Campus",
+      property: "02 SUNNYVALE",
       workOrder: "Emergency Plumbing Repair - Kitchen Sink",
       workOrderId: "job2",
       isWorkOrderRelated: true,
       memo: "Upgrade req...",
       receipt: "✓",
-      status: "Flagged"
+      status: "Flagged",
+      glCode: "522.2",
+      glName: "Plumbing Repairs"
     },
     {
       id: "exp3",
@@ -958,13 +962,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 2800.00,
       type: "Card",
       madeBy: "Mike Rodriguez (Property Manager)",
-      property: "Redwood Shores Office Complex",
+      property: "03 DOWNTOWN",
       workOrder: "Kitchen Renovation - Countertop Replacement",
       workOrderId: "job4",
       isWorkOrderRelated: true,
       memo: "Emergency t...",
       receipt: "✓",
-      status: "Flagged"
+      status: "Flagged",
+      glCode: "522.2",
+      glName: "Plumbing Repairs"
     },
     {
       id: "exp3a",
@@ -973,13 +979,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 245.00,
       type: "Card",
       madeBy: "Alice Johnson (Technician)",
-      property: "Stanford Graduate School of Business",
+      property: "01 STANFORD",
       workOrder: null,
       workOrderId: null,
       isWorkOrderRelated: false,
       memo: "General office supplies",
       receipt: "✓",
-      status: "Flagged"
+      status: "Flagged",
+      glCode: "505.3",
+      glName: "Maintenance Supplies"
     }
   ]
 
@@ -992,13 +1000,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 1850.00,
       type: "Card",
       madeBy: "Alice Johnson (Technician)",
-      property: "Financial District Tower",
+      property: "01 STANFORD",
       workOrder: "Electrical Panel Upgrade",
       workOrderId: "job5",
       isWorkOrderRelated: true,
       status: "Processed",
       memo: "Routine task leak fix",
-      receipt: "✓"
+      receipt: "✓",
+      glCode: "522.3",
+      glName: "Electrical Repairs"
     },
     {
       id: "exp5",
@@ -1007,13 +1017,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 320.00,
       type: "Card",
       madeBy: "Bob Wilson (Technician)",
-      property: "Palo Alto Research Center",
+      property: "02 SUNNYVALE",
       workOrder: null,
       workOrderId: null,
       isWorkOrderRelated: false,
       status: "Processed",
       memo: "Monthly cleaning service",
-      receipt: "✓"
+      receipt: "✓",
+      glCode: "520.1",
+      glName: "Cleaning Services"
     },
     {
       id: "exp6",
@@ -1022,13 +1034,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 12000.00,
       type: "Vendor",
       madeBy: "Sarah Kim (Property Manager)",
-      property: "Apple Park Campus",
+      property: "03 DOWNTOWN",
       workOrder: null,
       workOrderId: null,
       isWorkOrderRelated: false,
       status: "Processed",
       memo: "Quarterly maintenance",
-      receipt: "✓"
+      receipt: "✓",
+      glCode: "521.1",
+      glName: "Landscaping & Grounds"
     },
     {
       id: "exp7",
@@ -1037,13 +1051,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 450.00,
       type: "Card",
       madeBy: "Jennifer Lopez (Technician)",
-      property: "Redwood City Office",
+      property: "01 STANFORD",
       workOrder: null,
       workOrderId: null,
       isWorkOrderRelated: false,
       status: "Processed",
       memo: "Regular office supplies",
-      receipt: "✓"
+      receipt: "✓",
+      glCode: "505.3",
+      glName: "Maintenance Supplies"
     }
   ]
 
@@ -1056,13 +1072,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 150.00,
       type: "Card",
       madeBy: "John Smith",
-      property: "Stanford GSB",
+      property: "01 STANFORD",
       workOrder: "HVAC System Maintenance - Annual Service",
       errorType: "Missing receipt",
       aiFlag: "Missing receipt",
       billable: "Yes",
       status: "Reimbursed",
-      description: "Purchase receipt not uploaded to system"
+      description: "Purchase receipt not uploaded to system",
+      glCode: "522.1",
+      glName: "HVAC Repairs"
     },
     {
       id: "error2", 
@@ -1071,13 +1089,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 45.25,
       type: "Card",
       madeBy: "Alice Johnson",
-      property: "Stanford GSB",
+      property: "01 STANFORD",
       workOrder: "HVAC System Maintenance - Annual Service",
       errorType: "Wrong property",
       aiFlag: "Wrong property",
       billable: "No",
       status: "Non-Reimbursable",
-      description: "Expense charged to wrong property code"
+      description: "Expense charged to wrong property code",
+      glCode: "522.1",
+      glName: "HVAC Repairs"
     },
     {
       id: "error3",
@@ -1086,13 +1106,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 89.99,
       type: "Card",
       madeBy: "Lisa Wong",
-      property: "Sunnyvale 432",
+      property: "02 SUNNYVALE",
       workOrder: "Emergency Plumbing Repair - Kitchen Sink",
       errorType: "Unusual amount",
       aiFlag: "Unusual amount",
       billable: "No",
       status: "Non-Reimbursable", 
-      description: "Amount significantly higher than typical for this vendor/category"
+      description: "Amount significantly higher than typical for this vendor/category",
+      glCode: "505.3",
+      glName: "Maintenance Supplies"
     },
     {
       id: "error4",
@@ -1101,13 +1123,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 2500.00,
       type: "Vendor",
       madeBy: "Property Manager",
-      property: "Sunnyvale 432",
+      property: "02 SUNNYVALE",
       workOrder: "Electrical Panel Upgrade",
       errorType: "Missing receipt",
       aiFlag: "Missing receipt",
       billable: "Yes",
       status: "Pending",
-      description: "High-value transaction without supporting documentation"
+      description: "High-value transaction without supporting documentation",
+      glCode: "522.3",
+      glName: "Electrical Repairs"
     }
   ]
 
@@ -1120,13 +1144,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 5500.00,
       type: "Vendor",
       madeBy: "Jessica Chen (Property Manager)",
-      property: "Stanford Graduate School of Business",
+      property: "01 STANFORD",
       workOrder: "HVAC System Maintenance - Annual Service",
       workOrderId: "job1",
       isWorkOrderRelated: true,
       memo: "Energy efficient retrofit for entire building",
       receipt: "✓",
-      status: "Flagged"
+      status: "Flagged",
+      glCode: "522.1",
+      glName: "HVAC Repairs"
     },
     {
       id: "exp2",
@@ -1135,13 +1161,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 4800.00,
       type: "Vendor",
       madeBy: "David Chen (Property Manager)",
-      property: "Mission Bay Tech Campus",
+      property: "02 SUNNYVALE",
       workOrder: "Emergency Plumbing Repair - Kitchen Sink",
       workOrderId: "job2",
       isWorkOrderRelated: true,
       memo: "Upgrade req...",
       receipt: "✓",
-      status: "Flagged"
+      status: "Flagged",
+      glCode: "522.2",
+      glName: "Plumbing Repairs"
     },
     {
       id: "exp4",
@@ -1150,13 +1178,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 1850.00,
       type: "Card",
       madeBy: "Alice Johnson (Technician)",
-      property: "Financial District Tower",
+      property: "03 DOWNTOWN",
       workOrder: "Electrical Panel Upgrade",
       workOrderId: "job5",
       isWorkOrderRelated: true,
       status: "Processed",
       memo: "Routine task leak fix",
-      receipt: "✓"
+      receipt: "✓",
+      glCode: "522.3",
+      glName: "Electrical Repairs"
     },
     {
       id: "exp5",
@@ -1165,13 +1195,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 320.00,
       type: "Card",
       madeBy: "Bob Wilson (Technician)",
-      property: "Palo Alto Research Center",
+      property: "02 SUNNYVALE",
       workOrder: null,
       workOrderId: null,
       isWorkOrderRelated: false,
       status: "Processed",
       memo: "Monthly cleaning service",
-      receipt: "✓"
+      receipt: "✓",
+      glCode: "520.1",
+      glName: "Cleaning Services"
     },
     {
       id: "exp6",
@@ -1180,13 +1212,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 12000.00,
       type: "Vendor",
       madeBy: "Sarah Kim (Property Manager)",
-      property: "Apple Park Campus",
+      property: "03 DOWNTOWN",
       workOrder: null,
       workOrderId: null,
       isWorkOrderRelated: false,
       status: "Processed",
       memo: "Quarterly maintenance",
-      receipt: "✓"
+      receipt: "✓",
+      glCode: "521.1",
+      glName: "Landscaping & Grounds"
     },
     {
       id: "exp7",
@@ -1195,13 +1229,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 450.00,
       type: "Card",
       madeBy: "Jennifer Lopez (Technician)",
-      property: "Redwood City Office",
+      property: "01 STANFORD",
       workOrder: null,
       workOrderId: null,
       isWorkOrderRelated: false,
       status: "Processed",
       memo: "Regular office supplies",
-      receipt: "✓"
+      receipt: "✓",
+      glCode: "505.3",
+      glName: "Maintenance Supplies"
     },
     {
       id: "exp8",
@@ -1210,13 +1246,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 750.00,
       type: "Vendor",
       madeBy: "Jessica Chen (Property Manager)",
-      property: "Stanford Graduate School of Business",
+      property: "01 STANFORD",
       workOrder: null,
       workOrderId: null,
       isWorkOrderRelated: false,
       status: "Pending",
       memo: "Critical system failure during finals week. Temporary solution in place.",
-      receipt: "✓"
+      receipt: "✓",
+      glCode: "522.0",
+      glName: "General Maintenance"
     },
     {
       id: "exp9",
@@ -1225,13 +1263,15 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       amount: 200.00,
       type: "Vendor",
       madeBy: "Michael Rodriguez (Property Manager)",
-      property: "Mission Bay Tech Center",
+      property: "02 SUNNYVALE",
       workOrder: null,
       workOrderId: null,
       isWorkOrderRelated: false,
       status: "Not Uploaded",
       memo: "City inspector flagged elevator safety issues. Accommodation required for compliance.",
-      receipt: "✓"
+      receipt: "✓",
+      glCode: "523.1",
+      glName: "Elevator Services"
     }
   ]
 
@@ -1246,7 +1286,7 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
       
       // Property filter
       if (propertyFilter !== "All") {
-        if (propertyFilter === "Stanford GSB" && !expense.property.includes("Stanford")) return false
+        if (propertyFilter === "01 STANFORD" && !expense.property.includes("STANFORD")) return false
         if (propertyFilter === "Mission Bay" && !expense.property.includes("Mission Bay")) return false
       }
       
@@ -1577,7 +1617,7 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
           </SelectTrigger>
           <SelectContent className="bg-gray-800 border-gray-600">
             <SelectItem value="All" className="text-white">All</SelectItem>
-            <SelectItem value="Stanford GSB" className="text-white">Stanford GSB</SelectItem>
+                                    <SelectItem value="01 STANFORD" className="text-white">01 STANFORD</SelectItem>
             <SelectItem value="Mission Bay" className="text-white">Mission Bay</SelectItem>
           </SelectContent>
         </Select>
@@ -1627,7 +1667,7 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Made By</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Property</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Work Order</th>
-                  <th className="text-center py-3 px-4 font-medium text-gray-300">WO Related</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">GL Code</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Memo</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Receipt</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Actions</th>
@@ -1646,13 +1686,21 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
                     </td>
                     <td className="py-3 px-4 text-white">{expense.madeBy}</td>
                     <td className="py-3 px-4 text-white">{expense.property}</td>
-                    <td className="py-3 px-4 text-white">{expense.workOrder || 'N/A'}</td>
-                    <td className="py-3 px-4 text-center">
-                      {expense.isWorkOrderRelated ? (
-                        <CheckCircle className="h-4 w-4 text-green-400 mx-auto" />
+                    <td className="py-3 px-4">
+                      {expense.isWorkOrderRelated && expense.workOrderId ? (
+                        <button
+                          className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                          onClick={() => window.location.href = `/workorders/${expense.workOrderId}?role=owner&returnTo=expenses`}
+                        >
+                          {expense.workOrder}
+                        </button>
                       ) : (
-                        <XCircle className="h-4 w-4 text-red-400 mx-auto" />
+                        <span className="text-white">{expense.workOrder || 'N/A'}</span>
                       )}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="text-blue-300">{expense.glCode || 'N/A'}</div>
+                      <div className="text-xs text-blue-200">{expense.glName || ''}</div>
                     </td>
                     <td className="py-3 px-4 text-white">{expense.memo}</td>
                     <td className="py-3 px-4 text-center">
@@ -1715,6 +1763,7 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Made By</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Property</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Work Order</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">GL Code</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Billable</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Status</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">AI Flag</th>
@@ -1729,7 +1778,22 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
                     <td className="py-3 px-4 text-white">${error.amount.toFixed(2)}</td>
                     <td className="py-3 px-4 text-white">{error.madeBy}</td>
                     <td className="py-3 px-4 text-white">{error.property}</td>
-                    <td className="py-3 px-4 text-white">{error.workOrder || 'N/A'}</td>
+                    <td className="py-3 px-4">
+                      {error.workOrder ? (
+                        <button
+                          className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                          onClick={() => window.location.href = `/workorders/job1?role=owner&returnTo=expenses`}
+                        >
+                          {error.workOrder}
+                        </button>
+                      ) : (
+                        <span className="text-white">N/A</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="text-blue-300">{error.glCode || 'N/A'}</div>
+                      <div className="text-xs text-blue-200">{error.glName || ''}</div>
+                    </td>
                     <td className="py-3 px-4">
                       <Badge className={error.billable === 'Yes' ? 'bg-green-600' : 'bg-red-600'}>
                         {error.billable}
@@ -1802,7 +1866,8 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Type</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Made By</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Property</th>
-                  <th className="text-center py-3 px-4 font-medium text-gray-300">WO Related</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Work Order</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">GL Code</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Status</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Memo</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Receipt</th>
@@ -1822,12 +1887,21 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
                     </td>
                     <td className="py-3 px-4 text-white">{expense.madeBy}</td>
                     <td className="py-3 px-4 text-white">{expense.property}</td>
-                    <td className="py-3 px-4 text-center">
-                      {expense.isWorkOrderRelated ? (
-                        <CheckCircle className="h-4 w-4 text-green-400 mx-auto" />
+                    <td className="py-3 px-4">
+                      {expense.isWorkOrderRelated && expense.workOrderId ? (
+                        <button
+                          className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                          onClick={() => window.location.href = `/workorders/${expense.workOrderId}?role=owner&returnTo=expenses`}
+                        >
+                          {expense.workOrder}
+                        </button>
                       ) : (
-                        <XCircle className="h-4 w-4 text-red-400 mx-auto" />
+                        <span className="text-white">{expense.workOrder || 'N/A'}</span>
                       )}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="text-blue-300">{expense.glCode || 'N/A'}</div>
+                      <div className="text-xs text-blue-200">{expense.glName || ''}</div>
                     </td>
                     <td className="py-3 px-4">
                       <Badge className="bg-green-600 text-white">
@@ -1890,7 +1964,7 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-600">
                 <SelectItem value="all" className="text-white">All</SelectItem>
-                <SelectItem value="stanford" className="text-white">Stanford GSB</SelectItem>
+                                      <SelectItem value="stanford" className="text-white">01 STANFORD</SelectItem>
                 <SelectItem value="mission" className="text-white">Mission Bay</SelectItem>
               </SelectContent>
             </Select>
@@ -1930,7 +2004,8 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Type</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Made By</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Property</th>
-                  <th className="text-center py-3 px-4 font-medium text-gray-300">WO Related</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">Work Order</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-300">GL Code</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Status</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Memo</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-300">Receipt</th>
@@ -1950,12 +2025,21 @@ function ExpensesTab({ setActiveTab, setSharedMessages }: {
                     </td>
                     <td className="py-3 px-4 text-white">{expense.madeBy}</td>
                     <td className="py-3 px-4 text-white">{expense.property}</td>
-                    <td className="py-3 px-4 text-center">
-                      {expense.isWorkOrderRelated ? (
-                        <CheckCircle className="h-4 w-4 text-green-400 mx-auto" />
+                    <td className="py-3 px-4">
+                      {expense.isWorkOrderRelated && expense.workOrderId ? (
+                        <button
+                          className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                          onClick={() => window.location.href = `/workorders/${expense.workOrderId}?role=owner&returnTo=expenses`}
+                        >
+                          {expense.workOrder}
+                        </button>
                       ) : (
-                        <XCircle className="h-4 w-4 text-red-400 mx-auto" />
+                        <span className="text-white">{expense.workOrder || 'N/A'}</span>
                       )}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="text-blue-300">{expense.glCode || 'N/A'}</div>
+                      <div className="text-xs text-blue-200">{expense.glName || ''}</div>
                     </td>
                     <td className="py-3 px-4">
                       <Badge className={
@@ -2503,21 +2587,21 @@ function PropertiesTab({ setActiveTab }: { setActiveTab?: (tab: string) => void 
   // Property-specific data for table
   const propertyTableData = [
     { 
-      name: "Stanford GSB", 
+      name: "01 STANFORD", 
       address: "655 Knight Way, Stanford, CA",
       staff: [
         { name: "Sarah Chen", role: "Property Manager", phone: "(650) 723-2146", email: "sarah.chen@stanford.edu" }
       ]
     },
     { 
-      name: "Sunnyvale 432", 
+      name: "02 SUNNYVALE", 
       address: "432 Sunnyvale Ave, Sunnyvale, CA",
       staff: [
         { name: "Mike Johnson", role: "Site Manager", phone: "(408) 555-0198", email: "mike.johnson@sunnyvale.com" }
       ]
     },
     { 
-      name: "Downtown Lofts", 
+      name: "03 DOWNTOWN", 
       address: "123 Market St, San Francisco, CA",
       staff: [
         { name: "Lisa Wong", role: "Building Manager", phone: "(415) 555-0142", email: "lisa.wong@dtlofts.com" }
@@ -2891,7 +2975,7 @@ function ForecastingTab({ setActiveTab, addMessage }: {
   const upcomingExpenses = [
     {
       id: 1,
-      property: "Redwood Shores",
+      property: "03 DOWNTOWN",
       date: "12/14/2024",
       category: "Maintenance",
       amount: 18500,
@@ -2899,7 +2983,7 @@ function ForecastingTab({ setActiveTab, addMessage }: {
     },
     {
       id: 2,
-      property: "Mission Bay",
+      property: "02 SUNNYVALE",
       date: "1/7/2025",
       category: "Capital Improvements",
       amount: 45000,
@@ -2907,7 +2991,7 @@ function ForecastingTab({ setActiveTab, addMessage }: {
     },
     {
       id: 3,
-      property: "Skyline Vista",
+      property: "01 STANFORD",
       date: "1/31/2025",
       category: "Recurring OpEx",
       amount: 12000,
@@ -4292,7 +4376,7 @@ function SmartInsightsTab() {
                 <div className="space-y-2">
                   {[
                     "What's the ROI on replacing HVAC in Building A?",
-                    "Should we repair or replace the elevator at Stanford GSB?",
+                    "Should we repair or replace the elevator at 01 STANFORD?",
                     "ROI analysis for LED lighting upgrade across all properties",
                     "Insurance optimization for leak detection system"
                   ].map((question, index) => (
@@ -4491,7 +4575,7 @@ function ReimbursementsTab({ setActiveTab, addMessage }: {
     jobId: "#job1",
     amount: "241.00",
     notes: "",
-    ownerName: "Stanford GSB Administration",
+    ownerName: "01 STANFORD Administration",
     ownerPhone: "650-725-3341",
     ownerEmail: "owner@stanford.edu",
     ccEmail: "",
@@ -4559,7 +4643,7 @@ function ReimbursementsTab({ setActiveTab, addMessage }: {
           flagged: true,
           status: "Uploaded",
           madeBy: "Jessica Chen (Property Manager)",
-          property: "Redwood Shores Office Complex",
+          property: "03 DOWNTOWN",
           workOrder: "HVAC System Maintenance - Annual Service",
           workOrderId: "job1",
           isWorkOrderRelated: true,
@@ -4577,7 +4661,7 @@ function ReimbursementsTab({ setActiveTab, addMessage }: {
           flagged: false,
           status: "Uploaded",
           madeBy: "David Chen (Property Manager)",
-          property: "Redwood Shores Office Complex",
+          property: "03 DOWNTOWN",
           workOrder: null,
           workOrderId: null,
           isWorkOrderRelated: false,
@@ -4595,7 +4679,7 @@ function ReimbursementsTab({ setActiveTab, addMessage }: {
           flagged: false,
           status: "Uploaded",
           madeBy: "Mike Rodriguez (Property Manager)",
-          property: "Redwood Shores Office Complex",
+          property: "03 DOWNTOWN",
           workOrder: "Security System Upgrade - Building A",
           workOrderId: "job2",
           isWorkOrderRelated: true,
@@ -4613,7 +4697,7 @@ function ReimbursementsTab({ setActiveTab, addMessage }: {
           flagged: true,
           status: "Missing",
           madeBy: "Sarah Johnson (Property Manager)",
-          property: "Redwood Shores Office Complex",
+          property: "03 DOWNTOWN",
           workOrder: null,
           workOrderId: null,
           isWorkOrderRelated: false,
@@ -4647,7 +4731,7 @@ function ReimbursementsTab({ setActiveTab, addMessage }: {
           flagged: false,
           status: "Uploaded",
           madeBy: "James Wilson (Property Manager)",
-          property: "Mission Bay Tech Campus",
+          property: "02 SUNNYVALE",
           workOrder: "Emergency Plumbing Repair - Kitchen Sink",
           workOrderId: "job3",
           isWorkOrderRelated: true,
@@ -4665,7 +4749,7 @@ function ReimbursementsTab({ setActiveTab, addMessage }: {
           flagged: true,
           status: "Flagged",
           madeBy: "Jennifer Davis (Property Manager)",
-          property: "Mission Bay Tech Campus",
+          property: "02 SUNNYVALE",
           workOrder: null,
           workOrderId: null,
           isWorkOrderRelated: false,
@@ -6407,11 +6491,11 @@ function CollateralTab() {
         "What HVAC warranties are expiring soon?",
         
         // Property-Specific Queries
-        "Find all receipts for Stanford GSB property",
-        "Show me Sunnyvale 432 maintenance costs",
+              "Find all receipts for 01 STANFORD property",
+      "Show me 02 SUNNYVALE maintenance costs",
         "What repairs were done at Mission Bay?",
         "Find all Redwood Shores expenses",
-        "Show me Stanford GSB inspection reports",
+        "Show me 01 STANFORD inspection reports",
         "What vendors service our properties?",
         
         // Insurance & Compliance
@@ -6497,13 +6581,13 @@ function CollateralTab() {
     // Mock AI reasoning and document matching
     if (queryLower.includes('hvac') || queryLower.includes('heating') || queryLower.includes('cooling')) {
       return {
-        summary: "Found 8 HVAC-related documents totaling $12,450 in expenses across 3 properties. The most recent service was a $3,200 repair at Stanford GSB on December 15th.",
+        summary: "Found 8 HVAC-related documents totaling $12,450 in expenses across 3 properties. The most recent service was a $3,200 repair at 01 STANFORD on December 15th.",
         documents: collateralDocuments.filter(doc => 
           doc.filename.toLowerCase().includes('hvac') || 
           doc.tags.some(tag => tag.toLowerCase().includes('hvac'))
         ).slice(0, 4),
         insights: [
-          "Stanford GSB has the highest HVAC maintenance costs ($8,200 YTD)",
+          "01 STANFORD has the highest HVAC maintenance costs ($8,200 YTD)",
           "Most common issue: Filter replacements and duct cleaning",
           "Average cost per HVAC service: $1,556"
         ]
@@ -6950,7 +7034,7 @@ function CollateralTab() {
                                     <div>
                                       <label className="block text-sm font-medium text-gray-300 mb-2">Property Assignment</label>
                                       <select className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                                        <option value="prop1">Stanford GSB</option>
+                                        <option value="prop1">01 STANFORD</option>
                                         <option value="prop2">Mission Bay Tech Campus</option>
                                         <option value="prop3">Downtown Office Tower</option>
                                       </select>
