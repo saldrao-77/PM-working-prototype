@@ -15808,8 +15808,11 @@ Central Office`,
                                                              <tr>
                                  <th className="text-left py-2 px-3 text-orange-200">Date</th>
                                  <th className="text-left py-2 px-3 text-orange-200">Merchant</th>
-                                 <th className="text-left py-2 px-3 text-orange-200">GL Code</th>
+                                 <th className="text-left py-2 px-3 text-orange-200">GL Sub-Code</th>
                                  <th className="text-left py-2 px-3 text-orange-200">Amount</th>
+                                 <th className="text-right py-2 px-3 text-orange-200">Budget</th>
+                                 <th className="text-right py-2 px-3 text-orange-200">Variance</th>
+                                 <th className="text-right py-2 px-3 text-orange-200">% Var</th>
                                  <th className="text-left py-2 px-3 text-orange-200">PM Memo</th>
                                  <th className="text-left py-2 px-3 text-orange-200">AI Analysis</th>
                                  <th className="text-left py-2 px-3 text-orange-200">Action</th>
@@ -15817,7 +15820,7 @@ Central Office`,
                             </thead>
                             <tbody>
                               {(() => {
-                                // Generate flagged expenses with AI memos
+                                // Generate flagged expenses with AI memos and budget data
                                                                  const flaggedExpenses = [
                                    {
                                      date: '2025-01-15',
@@ -15827,8 +15830,15 @@ Central Office`,
                                      glName: 'Repairs & Maintenance',
                                      subGlCode: '7210',
                                      subGlName: 'HVAC Repairs',
+                                     monthlyBudget: 1200,
+                                     budgetVariance: -450,
+                                     budgetVariancePercent: -37.5,
+                                     ytdBudget: 14400,
+                                     ytdActual: 8950,
+                                     ytdVariance: -5450,
+                                     ytdVariancePercent: -37.8,
                                      pmMemo: 'Emergency heating failure - Unit #3B. Approved by owner Smith via phone call. Parts needed ASAP for tenant comfort.',
-                                     aiMemo: 'Amount exceeds $500 threshold for HVAC category. Similar vendor pattern shows 40% increase vs. last quarter. Recommend owner approval before processing.',
+                                     aiMemo: 'Over $500 threshold. 40% increase vs Q4. Needs owner approval.',
                                      aiConfidence: 94,
                                      flagReason: 'Amount threshold exceeded'
                                    },
@@ -15840,8 +15850,15 @@ Central Office`,
                                      glName: 'Office Expenses',
                                      subGlCode: '6110',
                                      subGlName: 'Office Supplies',
+                                     monthlyBudget: 250,
+                                     budgetVariance: 375.75,
+                                     budgetVariancePercent: 150.3,
+                                     ytdBudget: 3000,
+                                     ytdActual: 2850,
+                                     ytdVariance: -150,
+                                     ytdVariancePercent: -5.0,
                                      pmMemo: 'Bulk supplies for Q1 tenant move-outs. Includes cleaning supplies, paint, and office materials for leasing office setup.',
-                                     aiMemo: 'Office expense 250% above monthly average ($187.50). No prior approval detected. Consider if this should be allocated to property improvement rather than operating expense.',
+                                     aiMemo: '250% over monthly budget. Check if should be property improvement.',
                                      aiConfidence: 87,
                                      flagReason: 'Unusual amount pattern'
                                    },
@@ -15853,8 +15870,15 @@ Central Office`,
                                      glName: 'Repairs & Maintenance',
                                      subGlCode: '7220',
                                      subGlName: 'Plumbing Repairs',
+                                     monthlyBudget: 800,
+                                     budgetVariance: 450,
+                                     budgetVariancePercent: 56.3,
+                                     ytdBudget: 9600,
+                                     ytdActual: 11250,
+                                     ytdVariance: 1650,
+                                     ytdVariancePercent: 17.2,
                                      pmMemo: 'Water main break in basement - emergency repair. Contacted owner but no response. Made executive decision to prevent water damage.',
-                                     aiMemo: 'Emergency repair claim over $1000 requires owner pre-approval per policy. No emergency documentation found. Verify if this qualifies as emergency repair.',
+                                     aiMemo: 'Over $1000, requires pre-approval. Missing emergency docs.',
                                      aiConfidence: 96,
                                      flagReason: 'Policy violation - Missing pre-approval'
                                    }
@@ -15865,12 +15889,32 @@ Central Office`,
                                     <td className="py-2 px-3 text-gray-300">{expense.date}</td>
                                     <td className="py-2 px-3 text-gray-300">{expense.merchant}</td>
                                     <td className="py-2 px-3">
-                                      <div className="text-blue-300">{expense.subGlCode} - {expense.subGlName}</div>
+                                      <div className="text-blue-300 font-medium">{expense.subGlCode} - {expense.subGlName}</div>
                                       <div className="text-xs text-blue-200">{expense.glCode} - {expense.glName}</div>
                                     </td>
-                                                                         <td className="py-2 px-3">
+                                    <td className="py-2 px-3">
                                        <div className="text-red-300 font-semibold">${expense.amount.toFixed(2)}</div>
                                        <div className="text-xs text-orange-300">{expense.flagReason}</div>
+                                     </td>
+                                     <td className="py-2 px-3 text-right">
+                                       <div className="text-gray-300">${expense.monthlyBudget.toLocaleString()}</div>
+                                       <div className="text-xs text-gray-400">Monthly</div>
+                                     </td>
+                                     <td className="py-2 px-3 text-right">
+                                       <div className={`font-semibold ${
+                                         expense.budgetVariance >= 0 ? 'text-red-300' : 'text-green-300'
+                                       }`}>
+                                         {expense.budgetVariance >= 0 ? '+' : ''}${expense.budgetVariance.toLocaleString()}
+                                       </div>
+                                       <div className="text-xs text-gray-400">vs Budget</div>
+                                     </td>
+                                     <td className="py-2 px-3 text-right">
+                                       <div className={`font-semibold ${
+                                         expense.budgetVariancePercent >= 0 ? 'text-red-300' : 'text-green-300'
+                                       }`}>
+                                         {expense.budgetVariancePercent >= 0 ? '+' : ''}{expense.budgetVariancePercent.toFixed(1)}%
+                                       </div>
+                                       <div className="text-xs text-gray-400">Monthly</div>
                                      </td>
                                      <td className="py-2 px-3 max-w-xs">
                                        <div className="text-gray-300 text-xs leading-tight mb-1">{expense.pmMemo}</div>
@@ -15890,10 +15934,10 @@ Central Office`,
                                       <Button
                                         size="sm"
                                         onClick={() => handleRequestInfoFromPM(expense)}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1"
+                                        className="bg-orange-600 hover:bg-orange-700 text-white text-xs px-2 py-1"
                                       >
                                         <MessageSquare className="h-3 w-3 mr-1" />
-                                        Request Info
+                                        More Info
                                       </Button>
                                     </td>
                                   </tr>
@@ -15903,9 +15947,14 @@ Central Office`,
                           </table>
                         </div>
 
-                        <div className="mt-3 text-xs text-orange-300 flex items-center gap-2">
-                          <AlertTriangle className="h-4 w-4" />
-                          3 expenses flagged for review • Total flagged amount: $2,625.75
+                        <div className="mt-3 text-xs text-orange-300 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            3 expenses flagged for review • Total: $2,625.75
+                          </div>
+                          <div className="text-xs text-red-300">
+                            Budget variance: +$375.75 (+23.5% avg)
+                          </div>
                         </div>
                       </div>
                     </div>
