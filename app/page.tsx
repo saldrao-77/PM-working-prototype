@@ -10652,6 +10652,9 @@ Central Office`,
                                   <span className="text-gray-300">Not Assigned</span>
                                 )}
                               </td>
+                              <td className="py-3 px-4 text-blue-300">
+                                {txn.billable ? '7200 - Repairs & Maintenance' : '6100 - Office Expenses'}
+                              </td>
                               <td className="py-3 px-4">
                                 <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${
                                   txn.billable ? 'bg-green-700 text-green-100' : 'bg-gray-700 text-gray-200'
