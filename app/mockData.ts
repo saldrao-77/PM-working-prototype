@@ -580,7 +580,8 @@ export const bankAccounts = [
     routingNumber: '121000248',
     status: 'linked',
     balance: 25000,
-    type: 'checking'
+    type: 'checking',
+    accountType: 'pm' // 'pm' for Property Manager accounts, 'owner' for Owner accounts
   },
   {
     id: 'bank2',
@@ -589,7 +590,8 @@ export const bankAccounts = [
     routingNumber: '021000021',
     status: 'linked',
     balance: 150000,
-    type: 'savings'
+    type: 'savings',
+    accountType: 'pm'
   },
   {
     id: 'bank3',
@@ -598,7 +600,28 @@ export const bankAccounts = [
     routingNumber: '026009593',
     status: 'not_linked',
     balance: 0,
-    type: 'checking'
+    type: 'checking',
+    accountType: 'pm'
+  },
+  {
+    id: 'bank4',
+    name: 'Wells Fargo Owner Trust - Stanford',
+    accountNumber: '****2468',
+    routingNumber: '121000248',
+    status: 'linked',
+    balance: 75000,
+    type: 'trust',
+    accountType: 'owner'
+  },
+  {
+    id: 'bank5',
+    name: 'Chase Owner Account - Sunnyvale',
+    accountNumber: '****1357',
+    routingNumber: '021000021',
+    status: 'linked',
+    balance: 42000,
+    type: 'checking',
+    accountType: 'owner'
   }
 ];
 
@@ -673,6 +696,90 @@ export const invoices = [
     linkedExpenseId: 'exp3',
     propertyName: '02 SUNNYVALE',
     invoiceNumber: 'INV-2025-003'
+  },
+  {
+    id: 'inv4',
+    vendor: 'Green Landscaping Co',
+    amount: 650.00,
+    dueDate: '2025-02-28',
+    origin: 'PM',
+    status: 'pending',
+    description: 'Monthly landscaping maintenance - 03 DOWNTOWN',
+    linkedExpenseId: 'exp4',
+    propertyName: '03 DOWNTOWN',
+    invoiceNumber: 'INV-2025-004'
+  },
+  {
+    id: 'inv5',
+    vendor: 'Security Systems Plus',
+    amount: 1850.00,
+    dueDate: '2025-02-25',
+    origin: 'Direct',
+    status: 'pending',
+    description: 'Security system upgrade and monitoring setup',
+    linkedExpenseId: 'exp5',
+    propertyName: '02 SUNNYVALE',
+    invoiceNumber: 'INV-2025-005'
+  },
+  {
+    id: 'inv6',
+    vendor: 'Metro Cleaning Services',
+    amount: 425.00,
+    dueDate: '2025-02-18',
+    origin: 'PM',
+    status: 'pending',
+    description: 'Deep cleaning service - common areas',
+    linkedExpenseId: 'exp6',
+    propertyName: '01 STANFORD',
+    invoiceNumber: 'INV-2025-006'
+  },
+  {
+    id: 'inv7',
+    vendor: 'Roofing Specialists Inc',
+    amount: 3200.00,
+    dueDate: '2025-02-22',
+    origin: 'Direct',
+    status: 'pending',
+    description: 'Emergency roof repair after storm damage',
+    linkedExpenseId: 'exp7',
+    propertyName: '03 DOWNTOWN',
+    invoiceNumber: 'INV-2025-007'
+  },
+  {
+    id: 'inv8',
+    vendor: 'Appliance Repair Pro',
+    amount: 285.00,
+    dueDate: '2025-02-16',
+    origin: 'PM',
+    status: 'pending',
+    description: 'Dishwasher repair - Unit 4B',
+    linkedExpenseId: 'exp8',
+    propertyName: '02 SUNNYVALE',
+    invoiceNumber: 'INV-2025-008'
+  },
+  {
+    id: 'inv9',
+    vendor: 'Paint & Finish Co',
+    amount: 975.00,
+    dueDate: '2025-03-01',
+    origin: 'Direct',
+    status: 'pending',
+    description: 'Interior painting - lobby and hallways',
+    linkedExpenseId: 'exp9',
+    propertyName: '01 STANFORD',
+    invoiceNumber: 'INV-2025-009'
+  },
+  {
+    id: 'inv10',
+    vendor: 'Fire Safety Systems',
+    amount: 1450.00,
+    dueDate: '2025-02-27',
+    origin: 'PM',
+    status: 'pending',
+    description: 'Annual fire safety inspection and equipment service',
+    linkedExpenseId: 'exp10',
+    propertyName: '03 DOWNTOWN',
+    invoiceNumber: 'INV-2025-010'
   }
 ];
 

@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import { useRouter } from 'next/navigation'
 import { DialogFooter } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
@@ -11,7 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -96,7 +97,6 @@ import {
   Save
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useRouter } from 'next/navigation'
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { jobsList, activityMilestones, jobNotes, activityFiles, collateralDocuments, documentTypeLabels, propertyOptions, areaOptions, staffOptions, DocumentType, CollateralDocument, bankAccounts, ownerTrustAccounts, invoices, creditCards, teamMembers } from './mockData';
@@ -2575,6 +2575,7 @@ function EnhancedPropertiesTab({
 }
 
 export default function PMFinancialDashboard() {
+  const router = useRouter()
   const [expandedProperty, setExpandedProperty] = useState<string | null>(null)
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
   const [reportDialogOpen, setReportDialogOpen] = useState(false)
@@ -3155,6 +3156,7 @@ export default function PMFinancialDashboard() {
   const [selectedCardForPayment, setSelectedCardForPayment] = useState<any>(null);
   const [processPaymentDialogOpen, setProcessPaymentDialogOpen] = useState(false);
   const [reimbursementReviewDialogOpen, setReimbursementReviewDialogOpen] = useState(false);
+  const [addAccountDialogOpen, setAddAccountDialogOpen] = useState(false);
   
   // Mock state for bank accounts and trust accounts (to simulate updates)
   const [bankAccountsState, setBankAccountsState] = useState(bankAccounts);
@@ -4287,7 +4289,7 @@ export default function PMFinancialDashboard() {
     setNewNote("");
   }
 
-  const router = useRouter();
+
 
   // Helper: get jobs by status
   const openJobs = jobs.filter(j => j.techStatus !== 'Finished');
@@ -8553,16 +8555,36 @@ Central Office`,
                                         {paymentType === 'one-time' ? (
                                           // One-time payment UI
                                           <div className="flex gap-2">
-                                            <Select value={selectedBankAccount} onValueChange={setSelectedBankAccount}>
-                                              <SelectTrigger className="w-48 bg-gray-800 border-gray-600 text-white">
+                                            <Select value={selectedBankAccount} onValueChange={(value) => {
+                                              if (value === 'add-new-account') {
+                                                setAddAccountDialogOpen(true);
+                                              } else {
+                                                setSelectedBankAccount(value);
+                                              }
+                                            }}>
+                                              <SelectTrigger className="w-64 bg-gray-800 border-gray-600 text-white">
                                                 <SelectValue placeholder="Select payment account" />
                                               </SelectTrigger>
                                               <SelectContent className="bg-gray-800 border-gray-600 z-50">
-                                                {bankAccountsState.filter(acc => acc.status === 'linked').map(account => (
-                                                  <SelectItem key={account.id} value={account.id} className="text-white">
-                                                    {account.name}
-                                                  </SelectItem>
-                                                ))}
+                                                <SelectGroup>
+                                                  <SelectLabel className="text-blue-400 font-semibold">PM Accounts</SelectLabel>
+                                                  {bankAccountsState.filter(acc => acc.status === 'linked' && acc.accountType === 'pm').map(account => (
+                                                    <SelectItem key={account.id} value={account.id} className="text-white pl-6">
+                                                      {account.name} (${account.balance?.toLocaleString() || '0'})
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectGroup>
+                                                <SelectGroup>
+                                                  <SelectLabel className="text-green-400 font-semibold">Owner Accounts</SelectLabel>
+                                                  {bankAccountsState.filter(acc => acc.status === 'linked' && acc.accountType === 'owner').map(account => (
+                                                    <SelectItem key={account.id} value={account.id} className="text-white pl-6">
+                                                      {account.name} (${account.balance?.toLocaleString() || '0'})
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectGroup>
+                                                <SelectItem value="add-new-account" className="text-blue-400 font-medium border-t border-gray-600 mt-1 pt-2">
+                                                  + Add New Account
+                                                </SelectItem>
                                               </SelectContent>
                                             </Select>
                                             <Button 
@@ -8919,6 +8941,92 @@ Central Office`,
                     </DialogContent>
                   </Dialog>
 
+                  {/* Add Account Dialog */}
+                  <Dialog open={addAccountDialogOpen} onOpenChange={setAddAccountDialogOpen}>
+                    <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Add New Payment Account</DialogTitle>
+                        <DialogDescription>
+                          Add a new bank account for processing payments
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="space-y-4 py-4">
+                        <div>
+                          <Label className="text-sm text-gray-400 mb-2 block">Account Name</Label>
+                          <Input 
+                            placeholder="e.g., Wells Fargo Business Checking"
+                            className="bg-gray-800 border-gray-600 text-white"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm text-gray-400 mb-2 block">Account Type</Label>
+                          <Select defaultValue="pm">
+                            <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-gray-800 border-gray-600">
+                              <SelectItem value="pm" className="text-white">PM Account</SelectItem>
+                              <SelectItem value="owner" className="text-white">Owner Account</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm text-gray-400 mb-2 block">Bank Type</Label>
+                          <Select defaultValue="checking">
+                            <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-gray-800 border-gray-600">
+                              <SelectItem value="checking" className="text-white">Checking</SelectItem>
+                              <SelectItem value="savings" className="text-white">Savings</SelectItem>
+                              <SelectItem value="trust" className="text-white">Trust Account</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm text-gray-400 mb-2 block">Account Number</Label>
+                          <Input 
+                            placeholder="Account number"
+                            className="bg-gray-800 border-gray-600 text-white"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm text-gray-400 mb-2 block">Routing Number</Label>
+                          <Input 
+                            placeholder="Routing number"
+                            className="bg-gray-800 border-gray-600 text-white"
+                          />
+                        </div>
+                        
+                        <div className="mt-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded">
+                          <div className="text-sm text-blue-300">
+                            💡 New accounts will need verification before they can be used for payments
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setAddAccountDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            // Add logic to create new account here
+                            setAddAccountDialogOpen(false);
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          Add Account
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
                   {/* Expense Details Dialog */}
                   <Dialog open={expenseDetailsDialogOpen} onOpenChange={setExpenseDetailsDialogOpen}>
                     <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
@@ -8931,7 +9039,27 @@ Central Office`,
                       
                       {selectedExpenseForView && (
                         <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
+                          {/* GL Code and Property Info Header */}
+                          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-lg font-semibold text-white">
+                                  {selectedExpenseForView.glCode} - {selectedExpenseForView.description}
+                                </div>
+                                <div className="text-blue-300 text-sm">
+                                  Property: {selectedExpenseForView.property}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm text-gray-400">Priority</div>
+                                <Badge className={selectedExpenseForView.expenseDetails?.priority === 'High' ? 'bg-red-600' : 'bg-gray-600'}>
+                                  {selectedExpenseForView.expenseDetails?.priority || 'Normal'}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <Card className="bg-gray-800 border-gray-700">
                               <CardContent className="p-4">
                                 <div className="text-sm text-gray-400">Invoice Details</div>
@@ -8955,26 +9083,97 @@ Central Office`,
                                 </Badge>
                               </CardContent>
                             </Card>
+
+                            <Card className="bg-gray-800 border-gray-700">
+                              <CardContent className="p-4">
+                                <div className="text-sm text-gray-400">Budget Analysis</div>
+                                <div className="space-y-2">
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-400 text-xs">PTD Actual:</span>
+                                    <span className="text-white text-xs">${selectedExpenseForView.ptdActual?.toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-400 text-xs">PTD Budget:</span>
+                                    <span className="text-white text-xs">${selectedExpenseForView.ptdBudget?.toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-400 text-xs">Variance:</span>
+                                    <span className={`text-xs ${
+                                      (selectedExpenseForView.ptdActual - selectedExpenseForView.ptdBudget) >= 0 ? 'text-red-400' : 'text-green-400'
+                                    }`}>
+                                      ${Math.abs(selectedExpenseForView.ptdActual - selectedExpenseForView.ptdBudget).toLocaleString()}
+                                      {(selectedExpenseForView.ptdActual - selectedExpenseForView.ptdBudget) >= 0 ? ' over' : ' under'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+
+                          {/* Approval Details */}
+                          <div className="bg-gray-800 p-4 rounded-lg">
+                            <div className="text-sm text-gray-400 mb-2">Approval Details</div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <div className="text-xs text-gray-400">Approved by:</div>
+                                <div className="text-white">{selectedExpenseForView.expenseDetails?.approvedBy}</div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-gray-400">Approved on:</div>
+                                <div className="text-white">{selectedExpenseForView.expenseDetails?.approvedDate}</div>
+                              </div>
+                            </div>
                           </div>
                           
                           <div className="bg-gray-800 p-4 rounded-lg">
-                            <div className="text-sm text-gray-400 mb-2">Description</div>
-                            <div className="text-white">{selectedExpenseForView.description}</div>
+                            <div className="text-sm text-gray-400 mb-2">Description & Notes</div>
+                            <div className="text-white mb-3">{selectedExpenseForView.description}</div>
                             
                             {selectedExpenseForView.expenseDetails?.notes && (
                               <>
-                                <div className="text-sm text-gray-400 mt-3 mb-2">Notes</div>
-                                <div className="text-gray-300">{selectedExpenseForView.expenseDetails.notes}</div>
+                                <div className="text-sm text-gray-400 mb-2">PM Notes</div>
+                                <div className="text-gray-300 text-sm bg-gray-700 p-3 rounded">{selectedExpenseForView.expenseDetails.notes}</div>
                               </>
                             )}
                           </div>
+
+                          {/* Attachments */}
+                          {selectedExpenseForView.expenseDetails?.attachments && (
+                            <div className="bg-gray-800 p-4 rounded-lg">
+                              <div className="text-sm text-gray-400 mb-2">Attachments</div>
+                              <div className="space-y-1">
+                                {selectedExpenseForView.expenseDetails.attachments.map((attachment: string, idx: number) => (
+                                  <div key={idx} className="flex items-center gap-2 text-blue-400 text-sm hover:text-blue-300 cursor-pointer">
+                                    <Receipt className="h-3 w-3" />
+                                    {attachment}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           
                           <div className="flex gap-2">
-                            <Button variant="outline" className="text-blue-400 border-blue-600 hover:bg-blue-600 hover:text-white">
+                            <Button 
+                              variant="outline" 
+                              className="text-blue-400 border-blue-600 hover:bg-blue-600 hover:text-white"
+                              onClick={() => {
+                                // Open receipt in new tab
+                                window.open(selectedExpenseForView.receiptUrl, '_blank');
+                              }}
+                            >
                               <Receipt className="h-4 w-4 mr-2" />
                               View Receipt
                             </Button>
-                            <Button variant="outline" className="text-green-400 border-green-600 hover:bg-green-600 hover:text-white">
+                            <Button 
+                              variant="outline" 
+                              className="text-green-400 border-green-600 hover:bg-green-600 hover:text-white"
+                              onClick={() => {
+                                // Navigate to work order page
+                                if (selectedExpenseForView.workOrderId) {
+                                  router.push(`/workorders/${selectedExpenseForView.workOrderId}?role=centralOffice`);
+                                }
+                              }}
+                            >
                               <ExternalLink className="h-4 w-4 mr-2" />
                               View Work Order
                             </Button>
@@ -15715,8 +15914,13 @@ Central Office`,
                     <div>
                       <Label className="text-gray-300 mb-3 block">📊 Monthly GL Report Preview</Label>
                       <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
-                        <div className="mb-3">
-                          <h4 className="text-sm font-semibold text-white mb-1">Monthly GL-Coded Expense Report</h4>
+                        <div className="mb-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                              <CheckCircle className="w-3 h-3 text-white" />
+                            </div>
+                            <h4 className="text-sm font-semibold text-white">✓ Submitted Comments - Completed Variance Explanations</h4>
+                          </div>
                           <div className="text-xs text-gray-400">
                             {selectedPropertyForMonthly.name} • {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                           </div>
@@ -15744,163 +15948,219 @@ Central Office`,
                           </div>
                         </div>
 
-                        <div className="max-h-64 overflow-y-auto border border-gray-600 rounded">
-                          <TooltipProvider>
-                            <table className="min-w-full text-xs">
-                              <thead className="sticky top-0 bg-gray-900 border-b border-gray-600">
-                                <tr>
-                                  <th className="text-left py-2 px-3 text-gray-400">Date</th>
-                                  <th className="text-left py-2 px-3 text-gray-400">Merchant</th>
-                                  <th className="text-left py-2 px-3 text-gray-400">GL Code</th>
-                                  <th className="text-left py-2 px-3 text-gray-400">Property Code</th>
-                                  <th className="text-left py-2 px-3 text-gray-400">Billable?</th>
-                                  <th className="text-left py-2 px-3 text-gray-400">
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <span className="cursor-help">Flag spend</span>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <div>
-                                          <div className="text-sm font-semibold">Auto-flagged spend that triggered owner's approval threshold</div>
-                                          <div className="text-xs text-gray-400">
-                                            Expenses over $500 require pre-approval
-                                          </div>
-                                        </div>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </th>
-                                  <th className="text-left py-2 px-3 text-gray-400">Memo/Notes</th>
-                                  <th className="text-left py-2 px-3 text-gray-400">Receipt</th>
-                                  <th className="text-right py-2 px-3 text-gray-400">Amount</th>
-                                </tr>
-                              </thead>
+                        <div className="max-h-96 overflow-y-auto border border-gray-600 rounded">
+                          <table className="min-w-full text-xs">
+                            <thead className="sticky top-0 bg-gray-900 border-b border-gray-600">
+                              <tr>
+                                <th className="text-left py-3 px-4 font-semibold text-white">Account</th>
+                                <th className="text-left py-3 px-4 font-semibold text-white">PTD Actual</th>
+                                <th className="text-left py-3 px-4 font-semibold text-white">PTD Budget</th>
+                                <th className="text-left py-3 px-4 font-semibold text-white">Variance</th>
+                                <th className="text-left py-3 px-4 font-semibold text-white">% Var</th>
+                                <th className="text-left py-3 px-4 font-semibold text-white">YTD Actual</th>
+                                <th className="text-left py-3 px-4 font-semibold text-white">YTD Budget</th>
+                                <th className="text-left py-3 px-4 font-semibold text-white">Variance</th>
+                                <th className="text-left py-3 px-4 font-semibold text-white">% Var</th>
+                                <th className="text-left py-3 px-4 font-semibold text-white">Annual</th>
+                                <th className="text-left py-3 px-4 font-semibold text-white">Status</th>
+                                <th className="text-left py-3 px-4 font-semibold text-white">PM Memo</th>
+                                <th className="text-left py-3 px-4 font-semibold text-white">Action</th>
+                              </tr>
+                            </thead>
                             <tbody>
                               {(() => {
-                                // Generate sample transactions for the selected month
-                                const sampleTransactions = [
+                                // Multiple GL Code Entries
+                                const glEntries = [
                                   {
-                                    date: '2025-01-15',
-                                    vendor: 'Home Depot',
-                                    amount: 750.00,
-                                    billable: true,
-                                    memo: 'Owner-approved, HVAC repair parts',
-                                    receipt: '[Link]'
+                                    glCode: '7200',
+                                    glDescription: 'HVAC System Maintenance',
+                                    property: selectedPropertyForMonthly.name.split(' ')[0] + ' ' + selectedPropertyForMonthly.name.split(' ')[1] || '01 STANFORD',
+                                    parentCode: '7200 - Total Maintenance and Repairs',
+                                    ptdActual: 2186.49,
+                                    ptdBudget: 1500.00,
+                                    ytdActual: 15850.00,
+                                    ytdBudget: 12000.00,
+                                    annual: 35000,
+                                    memo: 'Emergency repairs and preventive maintenance completed.',
+                                    submittedDate: '2024-12-15'
                                   },
                                   {
-                                    date: '2025-01-16',
-                                    vendor: 'Lowes',
-                                    amount: 275.50,
-                                    billable: true,
-                                    memo: 'Paint supplies',
-                                    receipt: '[Link]'
+                                    glCode: '6425',
+                                    glDescription: 'Property Insurance',
+                                    property: selectedPropertyForMonthly.name.split(' ')[0] + ' ' + selectedPropertyForMonthly.name.split(' ')[1] || '01 STANFORD',
+                                    parentCode: '6400 - Insurance and Taxes',
+                                    ptdActual: 1725.00,
+                                    ptdBudget: 1200.00,
+                                    ytdActual: 8950.00,
+                                    ytdBudget: 7200.00,
+                                    annual: 18500,
+                                    memo: 'Annual policy renewal with coverage adjustments.',
+                                    submittedDate: '2024-12-14'
                                   },
                                   {
-                                    date: '2025-01-17',
-                                    vendor: 'Office Depot',
-                                    amount: 625.75,
-                                    billable: false,
-                                    memo: 'Owner-approved, Office supplies',
-                                    receipt: '[Link]'
+                                    glCode: '7315',
+                                    glDescription: 'Water & Sewer',
+                                    property: selectedPropertyForMonthly.name.split(' ')[0] + ' ' + selectedPropertyForMonthly.name.split(' ')[1] || '01 STANFORD',
+                                    parentCode: '7300 - Total Utilities',
+                                    ptdActual: 945.50,
+                                    ptdBudget: 850.00,
+                                    ytdActual: 5680.00,
+                                    ytdBudget: 5100.00,
+                                    annual: 12200,
+                                    memo: 'Seasonal usage increase due to irrigation needs.',
+                                    submittedDate: '2024-12-13'
                                   },
                                   {
-                                    date: '2025-01-18',
-                                    vendor: 'Ace Hardware',
-                                    amount: 345.25,
-                                    billable: true,
-                                    memo: 'Plumbing tools',
-                                    receipt: '[Link]'
+                                    glCode: '5125',
+                                    glDescription: 'Legal & Professional',
+                                    property: selectedPropertyForMonthly.name.split(' ')[0] + ' ' + selectedPropertyForMonthly.name.split(' ')[1] || '01 STANFORD',
+                                    parentCode: '5100 - Total Administration',
+                                    ptdActual: 850.00,
+                                    ptdBudget: 600.00,
+                                    ytdActual: 4950.00,
+                                    ytdBudget: 3600.00,
+                                    annual: 9500,
+                                    memo: 'Tenant lease consultation and compliance review.',
+                                    submittedDate: '2024-12-12'
                                   },
                                   {
-                                    date: '2025-01-19',
-                                    vendor: 'Sherwin Williams',
-                                    amount: 189.99,
-                                    billable: true,
-                                    memo: 'Interior paint',
-                                    receipt: '[Link]'
+                                    glCode: '8235',
+                                    glDescription: 'Roof Replacement Reserve',
+                                    property: selectedPropertyForMonthly.name.split(' ')[0] + ' ' + selectedPropertyForMonthly.name.split(' ')[1] || '01 STANFORD',
+                                    parentCode: '8200 - Total Reserves and Replacements',
+                                    ptdActual: 3200.00,
+                                    ptdBudget: 2500.00,
+                                    ytdActual: 18900.00,
+                                    ytdBudget: 15000.00,
+                                    annual: 32000,
+                                    memo: 'Accelerated reserve funding for upcoming roof work.',
+                                    submittedDate: '2024-12-11'
                                   }
                                 ];
                                 
-                                return sampleTransactions.map((txn, idx) => {
-                                  const glCode = txn.billable ? '7200 - Repairs & Maintenance' : '6100 - Office Expenses';
-                                  const subGlCode = txn.billable ? '7210 - HVAC Repairs' : '6110 - Office Supplies';
-                                  const propertyCode = selectedPropertyForMonthly.id.toUpperCase();
-                                  
-                                  // Demo flagging logic - flag specific items for demo purposes
-                                  const shouldBeFlagged = txn.amount >= 500 || txn.vendor === 'Home Depot' || (txn.memo && txn.memo.includes('HVAC'));
+                                return glEntries.map((glEntry, idx) => {
+                                  const ptdVariance = glEntry.ptdActual - glEntry.ptdBudget;
+                                  const ptdVariancePercent = ((ptdVariance / glEntry.ptdBudget) * 100);
+                                  const ytdVariance = glEntry.ytdActual - glEntry.ytdBudget;
+                                  const ytdVariancePercent = ((ytdVariance / glEntry.ytdBudget) * 100);
                                   
                                   return (
-                                    <tr key={idx} className="border-b border-gray-700 hover:bg-gray-700/30">
-                                      <td className="py-2 px-3 text-gray-300">{txn.date}</td>
-                                      <td className="py-2 px-3 text-gray-300">{txn.vendor}</td>
-                                      <td className="py-2 px-3">
-                                        <div className="text-blue-300">{subGlCode}</div>
-                                        <div className="text-xs text-blue-200">{glCode}</div>
+                                    <tr key={idx} className="border-b border-gray-600/50">
+                                      <td className="p-3">
+                                        <div className="text-white font-medium">
+                                          {glEntry.glCode} - {glEntry.glDescription}
+                                        </div>
+                                        <div className="text-purple-400 text-xs font-medium">
+                                          {glEntry.property}
+                                        </div>
+                                        <div className="text-gray-400 text-xs">
+                                          {glEntry.parentCode}
+                                        </div>
                                       </td>
-                                      <td className="py-2 px-3 text-purple-300">{propertyCode}</td>
-                                      <td className="py-2 px-3">
-                                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs ${
-                                          txn.billable ? 'bg-green-700 text-green-100' : 'bg-gray-700 text-gray-200'
-                                        }`}>
-                                          {txn.billable ? 'Yes' : 'No'}
+                                      <td className="p-3 text-white">${glEntry.ptdActual.toLocaleString()}</td>
+                                      <td className="p-3 text-white">${glEntry.ptdBudget.toLocaleString()}</td>
+                                      <td className="p-3">
+                                        <span className={ptdVariance >= 0 ? "text-green-400" : "text-red-400"}>
+                                          {ptdVariance >= 0 ? '+' : ''}${ptdVariance.toLocaleString()}
                                         </span>
                                       </td>
-                                      <td className="py-2 px-3">
-                                        <TooltipProvider>
-                                          <Tooltip>
-                                            <TooltipTrigger asChild>
-                                              <span className="cursor-help">
-                                                {shouldBeFlagged ? (
-                                                  <Badge className="bg-orange-700 text-orange-100 text-xs flex items-center gap-1">
-                                                    <Flag className="h-4 w-4" />
-                                                    Flagged
-                                                  </Badge>
-                                                ) : (
-                                                  <Badge className="bg-gray-700 text-gray-300 text-xs flex items-center gap-1">
-                                                    <CheckCircle className="h-4 w-4" />
-                                                    Clear
-                                                  </Badge>
-                                                )}
-                                              </span>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                              {shouldBeFlagged ? (
-                                                <div>
-                                                  <div className="text-sm font-semibold">Auto-flagged spend that triggered owner's threshold for approval</div>
-                                                  <div className="text-xs text-gray-400">
-                                                    {txn.amount >= 500 ? 'Amount exceeds $500 threshold' : ''}
-                                                    {txn.vendor === 'Home Depot' ? 'High-spend vendor flagged' : ''}
-                                                    {txn.memo && txn.memo.includes('HVAC') ? 'HVAC expenses require approval' : ''}
-                                                  </div>
-                                                </div>
-                                              ) : (
-                                                <div className="text-sm">No flags - approved for processing</div>
-                                              )}
-                                            </TooltipContent>
-                                          </Tooltip>
-                                        </TooltipProvider>
+                                      <td className="p-3">
+                                        <span className={ptdVariancePercent >= 0 ? "text-green-400" : "text-red-400"}>
+                                          {ptdVariancePercent >= 0 ? '+' : ''}{ptdVariancePercent.toFixed(1)}%
+                                        </span>
                                       </td>
-                                      <td className="py-2 px-3 text-gray-300">{txn.memo}</td>
-                                      <td className="py-2 px-3">
-                                        <span className="text-blue-400 cursor-pointer hover:text-blue-300">{txn.receipt}</span>
+                                      <td className="p-3 text-white">${glEntry.ytdActual.toLocaleString()}</td>
+                                      <td className="p-3 text-white">${glEntry.ytdBudget.toLocaleString()}</td>
+                                      <td className="p-3">
+                                        <span className={ytdVariance >= 0 ? "text-green-400" : "text-red-400"}>
+                                          {ytdVariance >= 0 ? '+' : ''}${ytdVariance.toLocaleString()}
+                                        </span>
                                       </td>
-                                      <td className="py-2 px-3 text-right text-gray-300">${txn.amount.toFixed(2)}</td>
+                                      <td className="p-3">
+                                        <span className={ytdVariancePercent >= 0 ? "text-green-400" : "text-red-400"}>
+                                          {ytdVariancePercent >= 0 ? '+' : ''}{ytdVariancePercent.toFixed(1)}%
+                                        </span>
+                                      </td>
+                                      <td className="p-3 text-white">${glEntry.annual.toLocaleString()}</td>
+                                      <td className="p-3">
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                          <div>
+                                            <div className="text-green-400 font-medium text-xs">✓ Submitted</div>
+                                            <div className="text-gray-400 text-xs">{glEntry.submittedDate}</div>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="p-3">
+                                        <div className="text-gray-300 text-xs max-w-xs">
+                                          {glEntry.memo}
+                                        </div>
+                                      </td>
+                                      <td className="p-3">
+                                        <Button
+                                          size="sm"
+                                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1"
+                                          onClick={() => {
+                                            // Set up expense for viewing
+                                            setSelectedExpenseForView({
+                                              id: `gl-${glEntry.glCode}`,
+                                              glCode: glEntry.glCode,
+                                              description: glEntry.glDescription,
+                                              amount: glEntry.ptdActual,
+                                              property: glEntry.property,
+                                              memo: glEntry.memo,
+                                              submittedDate: glEntry.submittedDate,
+                                              ptdActual: glEntry.ptdActual,
+                                              ptdBudget: glEntry.ptdBudget,
+                                              ytdActual: glEntry.ytdActual,
+                                              ytdBudget: glEntry.ytdBudget,
+                                              annual: glEntry.annual,
+                                              // Enhanced data for comprehensive view
+                                              vendor: glEntry.glCode === '7200' ? 'HVAC Solutions Inc' : 
+                                                     glEntry.glCode === '6425' ? 'Nationwide Insurance' :
+                                                     glEntry.glCode === '7315' ? 'Metro Water District' :
+                                                     glEntry.glCode === '5125' ? 'Legal Associates LLC' : 'Construction Reserve Fund',
+                                              invoiceNumber: `INV-2024-${1000 + idx}`,
+                                              dueDate: new Date(Date.now() + (7 + idx) * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                                              workOrderId: `job${idx + 1}`,
+                                              receiptUrl: `/receipts/gl-${glEntry.glCode}-receipt.pdf`,
+                                              expenseDetails: {
+                                                category: glEntry.glCode === '7200' ? 'Maintenance & Repairs' : 
+                                                         glEntry.glCode === '6425' ? 'Property Insurance' :
+                                                         glEntry.glCode === '7315' ? 'Utilities' :
+                                                         glEntry.glCode === '5125' ? 'Legal & Professional' : 'Capital Reserve',
+                                                submittedBy: 'Property Manager',
+                                                submittedDate: glEntry.submittedDate,
+                                                approvalStatus: 'Approved',
+                                                approvedBy: 'Central Office',
+                                                approvedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                                                notes: `${glEntry.memo} Budget variance: ${((glEntry.ptdActual - glEntry.ptdBudget) / glEntry.ptdBudget * 100).toFixed(1)}% over PTD budget due to seasonal adjustments and emergency requirements.`,
+                                                priority: glEntry.ptdActual > glEntry.ptdBudget * 1.2 ? 'High' : 'Normal',
+                                                billable: glEntry.glCode.startsWith('7') || glEntry.glCode.startsWith('8'),
+                                                relatedWorkOrders: [`job${idx + 1}`],
+                                                attachments: [
+                                                  `invoice-${glEntry.glCode}.pdf`,
+                                                  `receipt-${glEntry.glCode}.pdf`,
+                                                  `approval-${glEntry.glCode}.pdf`
+                                                ]
+                                              }
+                                            });
+                                            setExpenseDetailsDialogOpen(true);
+                                          }}
+                                        >
+                                          View
+                                        </Button>
+                                      </td>
                                     </tr>
                                   );
                                 });
                               })()}
                             </tbody>
-                            <tfoot className="bg-gray-900 border-t border-gray-600">
-                              <tr>
-                                <td colSpan={9} className="py-2 px-3 text-right font-semibold text-gray-300">Total:</td>
-                                <td className="py-2 px-3 text-right font-semibold text-white">$2,186.49</td>
-                              </tr>
-                            </tfoot>
-                            </table>
-                          </TooltipProvider>
+                          </table>
                         </div>
                         
                         <div className="mt-3 text-xs text-gray-400">
-                          * This is a preview of the GL report that will be generated and sent to the owner
+                          * This GL variance report will be included with the monthly reimbursement processing
                         </div>
                       </div>
                     </div>
